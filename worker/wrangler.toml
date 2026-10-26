@@ -1,0 +1,7 @@
+name = "tugou-hanshuang-jiaoben-app"
+main = "src/index.js"
+compatibility_date = "2026-10-27"
+# KV 绑定在 Cloudflare 控制台建好后再取消注释并填入 id：
+# [[kv_namespaces]]
+# binding = "CACHE_KV"
+# id = ""
