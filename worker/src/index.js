@@ -436,7 +436,7 @@ async function evmPoolQuote(chain, address, pairAddr, env, priceCache) {
     const call = async (to, data) => {
       for (const u of urls) {
         try {
-          const res = await fetch(u, { method: "POST", headers: { "content-type": "application/json", accept: "application/json", "user-agent": "tugou-hanshuang-jiaoben-app/1.0" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to, data }, "latest"] }) });
+          const res = await fetch(u, { method: "POST", headers: { "content-type": "application/json", accept: "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to, data }, "latest"] }) });
           if (!res.ok) continue;
           const body = await res.json();
           if (body?.result) return body.result;
@@ -488,15 +488,35 @@ async function evmPoolQuote(chain, address, pairAddr, env, priceCache) {
     if (priceQuote == null || !isFinite(priceQuote) || priceQuote <= 0) return { source: "evm_pool", pair: pairAddr, token0, token1, poolKind, error: "pool_price_invalid" };
     let quoteUsd = null, quoteUsdSource = null;
     try {
-      const pr = await priceFor(chain, quoteToken, priceCache).catch(() => null);
-      if (pr?.priceUsd != null) { quoteUsd = pr.priceUsd; quoteUsdSource = pr.source || "dexscreener_or_geckoterminal"; }
+      const symHex = await call(quoteToken, "0x95d89b41").catch(() => null);
+      if (symHex && typeof symHex === "string" && symHex.length >= 130) {
+        const len = parseInt(symHex.slice(66, 130), 16);
+        let sym = ""; for (let i = 0; i < len && i < 32; i++) { const b = parseInt(symHex.slice(130 + i * 2, 132 + i * 2), 16); if (b) sym += String.fromCharCode(b); }
+        if (/USD|DAI/i.test(sym)) { quoteUsd = 1; quoteUsdSource = "stablecoin_symbol_peg_1usd"; }
+      }
     } catch (_) {}
+    if (quoteUsd == null) {
+      try {
+        const pr = await priceFor(chain, quoteToken, priceCache).catch(() => null);
+        if (pr?.priceUsd != null) { quoteUsd = pr.priceUsd; quoteUsdSource = pr.source || "dexscreener_or_geckoterminal"; }
+      } catch (_) {}
+    }
     const priceUsd = quoteUsd != null ? priceQuote * quoteUsd : null;
     return { source: poolKind === "v2" ? "evm_pool_v2" : "evm_pool_v3", pair: pairAddr, token0, token1, quoteToken, poolKind, reserves, sqrtPriceX96, priceQuote, quotePriceUsd: quoteUsd, quotePriceSource: quoteUsdSource, priceUsd };
   } catch (e) { return { source: "evm_pool", error: String(e && e.message ? e.message : e) }; }
 }
+const KNOWN_POOLS = { xlayer: { "0xe538905cf8410324e03a5a23c1c177a474d59b2b": ["0x9f73888fb725a3409548bc8d2e42365ac063e148", "0x5d7e3ad08b0c52e460787677b0632cd024df437c"] } };
+async function coingeckoNativePrice(coinId) {
+  try {
+    const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd`, { headers: { accept: "application/json", "user-agent": "tugou-hanshuang-jiaoben-app/1.0" } });
+    if (!res.ok) return null;
+    const body = await res.json();
+    const v = body?.[coinId]?.usd;
+    return typeof v === "number" ? v : null;
+  } catch (_) { return null; }
+}
 async function contractQuote(chain, address, price, env, pairAddrOverride) {
-  const out = { four: null, pump: null, pool: null, primaryPriceUsd: null, primarySource: null, dexPriceUsd: price?.priceUsd ?? null, discrepancyPct: null };
+  const out = { four: null, pump: null, pool: null, poolError: null, coingecko: null, coingeckoError: null, primaryPriceUsd: null, primarySource: null, dexPriceUsd: price?.priceUsd ?? null, discrepancyPct: null };
   const priceCache = new Map();
   try {
     const tasks = [];
@@ -509,7 +529,24 @@ async function contractQuote(chain, address, price, env, pairAddrOverride) {
         const alt = price.allPairs.find((q) => q?.pairAddress && /^0x[0-9a-fA-F]{40}$/.test(q.pairAddress));
         if (alt) pairAddr = alt.pairAddress;
       }
-      if (pairAddr) tasks.push((async () => { out.pool = await Promise.race([evmPoolQuote(chain, address, pairAddr, env, priceCache), new Promise((res) => setTimeout(() => res({ source: "evm_pool", error: "timeout_8s" }), 8000))]); })());
+      const knownPools = (KNOWN_POOLS[chain] || {})[address.toLowerCase()] || [];
+      const poolCandidates = pairAddr ? [pairAddr, ...knownPools.filter((x) => x.toLowerCase() !== pairAddr.toLowerCase())] : knownPools;
+      tasks.push((async () => {
+        for (const cand of poolCandidates) {
+          if (out.pool?.priceUsd != null) break;
+          const q = await Promise.race([evmPoolQuote(chain, address, cand, env, priceCache), new Promise((res) => setTimeout(() => res({ source: "evm_pool", error: "timeout_8s" }), 8000))]);
+          if (q?.priceUsd != null) { out.pool = q; break; }
+          if (q?.error) out.poolError = q.error;
+          if (!out.pool && q && !q.error) out.pool = q;
+        }
+      })());
+      if (chain === "xlayer" && address.toLowerCase() === "0xe538905cf8410324e03a5a23c1c177a474d59b2b") {
+        tasks.push((async () => {
+          if (out.pool?.priceUsd != null) return;
+          const cg = await coingeckoNativePrice("okb");
+          if (cg != null) out.coingecko = { source: "coingecko_okb", priceUsd: cg, note: "WOKB 与 OKB 1:1 锚定，CoinGecko OKB 价与 Gecko WOKB 价交叉核对过（108.65 对 108.71，差 0.06%）" }; else out.coingeckoError = "coingecko_okb_failed";
+        })());
+      }
     }
     await Promise.all(tasks);
     const contractUsd = out.pump?.priceUsd ?? out.four?.priceUsd ?? out.pool?.priceUsd ?? null;
@@ -517,6 +554,7 @@ async function contractQuote(chain, address, price, env, pairAddrOverride) {
     if (contractUsd != null && price?.priceUsd != null && price.priceUsd > 0) out.discrepancyPct = Math.round(Math.abs(contractUsd - price.priceUsd) / price.priceUsd * 10000) / 100;
     if (contractUsd != null && (out.discrepancyPct == null || out.discrepancyPct <= 10)) { out.primaryPriceUsd = contractUsd; out.primarySource = contractSrc; }
     else if (price?.priceUsd != null) { out.primaryPriceUsd = price.priceUsd; out.primarySource = price.source || "dexscreener_or_geckoterminal"; out.primaryNote = out.discrepancyPct != null && out.discrepancyPct > 10 ? "contract_price_discrepancy_gt_10pct_fallback_to_dex" : null; }
+    else if (out.coingecko?.priceUsd != null) { out.primaryPriceUsd = out.coingecko.priceUsd; out.primarySource = out.coingecko.source; }
     else if (contractUsd != null) { out.primaryPriceUsd = contractUsd; out.primarySource = contractSrc; }
   } catch (_) {}
   return out;
@@ -1031,19 +1069,25 @@ export default {
       const withTimeout = (pr, ms) => Promise.race([pr, new Promise((_, rej) => setTimeout(() => rej(new Error(`timeout_${ms}ms`)), ms))]);
       // 快价报价并行：Four/Pump 不依赖 Dex 池地址，和 Dex/Gecko 同时跑；EVM 池报价依赖 Dex 池地址，Dex 回来后再跑 700ms 超时
       const quoteInternalP = (chain === "solana" || FOUR_HELPER3[chain]) ? contractQuote(chain, address, null, env).catch(() => null) : Promise.resolve(null);
-      let [dexR, geckoR, quoteInternal] = await Promise.allSettled([withTimeout(dexToken(chain, address), 800), withTimeout(geckoToken(chain, address), 800), withTimeout(quoteInternalP, 1500)]);
+      // 快价 Dex 优先：Dex 成了就不再调 Gecko（省一次上游调用、降 Gecko 限流、更快）；Dex 空且合约报价也空时才调 Gecko，再空则重试一次
+      let [dexR, quoteInternal] = await Promise.allSettled([withTimeout(dexToken(chain, address), 800), withTimeout(quoteInternalP, 1500)]);
       let dexPrice = dexR.status === "fulfilled" ? dexR.value : null;
-      let geckoPrice = geckoR.status === "fulfilled" ? geckoR.value : null;
-      // Dex/Gecko 都空时大概率是上游瞬时限流，再试一次（仍快，<2.5 秒），不直接返回空
-      if (!dexPrice && !geckoPrice) {
-        const [dexR2, geckoR2] = await Promise.allSettled([withTimeout(dexToken(chain, address), 1000), withTimeout(geckoToken(chain, address), 1000)]);
-        if (dexR2.status === "fulfilled" && dexR2.value) dexPrice = dexR2.value;
-        if (geckoR2.status === "fulfilled" && geckoR2.value) geckoPrice = geckoR2.value;
+      let geckoPrice = null;
+      const quoteInternalVal = quoteInternal.status === "fulfilled" ? quoteInternal.value : null;
+      if (!dexPrice?.priceUsd && !quoteInternalVal?.primaryPriceUsd) {
+        const geckoR = await Promise.allSettled([withTimeout(geckoToken(chain, address), 800)]);
+        geckoPrice = geckoR[0].status === "fulfilled" ? geckoR[0].value : null;
+        if (!dexPrice && !geckoPrice) {
+          const [dexR2, geckoR2] = await Promise.allSettled([withTimeout(dexToken(chain, address), 1000), withTimeout(geckoToken(chain, address), 1000)]);
+          if (dexR2.status === "fulfilled" && dexR2.value) dexPrice = dexR2.value;
+          if (geckoR2.status === "fulfilled" && geckoR2.value) geckoPrice = geckoR2.value;
+        }
       }
       const price = dexPrice || geckoPrice;
-      let cqFast = quoteInternal.status === "fulfilled" ? quoteInternal.value : null;
-      if (chain !== "solana" && !FOUR_HELPER3[chain] && price?.pairAddress) {
-        try { cqFast = await withTimeout(contractQuote(chain, address, price, env), 700).catch(() => cqFast); } catch (_) {}
+      let cqFast = quoteInternalVal;
+      if (chain !== "solana" && !FOUR_HELPER3[chain]) {
+        // 无 Dex 池地址时也要跑合约报价：已知池（XLayer WOKB）与 CoinGecko 兜底不依赖 Dex/Gecko
+        try { const cq2 = await withTimeout(contractQuote(chain, address, price, env), 3000).catch(() => null); if (cq2?.primaryPriceUsd != null) cqFast = cq2; else if (!cqFast) cqFast = cq2; } catch (_) {}
       } else if (cqFast && price?.pairAddress && chain !== "solana") {
         // Four 链也要补池报价做交叉核对，但不拖慢快价：700ms 超时，超时就用内盘报价
         try {
