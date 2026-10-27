@@ -11,6 +11,8 @@ const CHAINS = {
   arbitrum: { dex: "arbitrum", gecko: "arbitrum", evm: true, chainId: 42161 },
   optimism: { dex: "optimism", gecko: "optimism", evm: true, chainId: 10 },
   polygon: { dex: "polygon", gecko: "polygon", evm: true, chainId: 137 },
+  okc: { dex: "okc", gecko: "okc", evm: true, chainId: 66 },
+  xlayer: { dex: "xlayer", gecko: "x-layer", evm: true, chainId: 196 },
 };
 
 const SOURCES = [
@@ -199,7 +201,7 @@ async function rugcheckSecurity(address) {
 
 // Blockscout：ETH / Base / Robinhood / BSC（BSC 实例若不存在会失败，届时走兜底，不报错）。
 const BLOCKSCOUT = { eth: "eth.blockscout.com", base: "base.blockscout.com", robinhood: "robinhoodchain.blockscout.com", bsc: "bsc.blockscout.com", arbitrum: "arb.blockscout.com", optimism: "optimism.blockscout.com", polygon: "polygon.blockscout.com" };
-const RPC = { eth: "https://eth.llamarpc.com", bsc: "https://bsc-dataseed.binance.org", base: "https://mainnet.base.org", arbitrum: "https://arb1.arbitrum.io/rpc", optimism: "https://mainnet.optimism.io", polygon: "https://polygon-rpc.com" };
+const RPC = { eth: "https://eth.llamarpc.com", bsc: "https://bsc-dataseed.binance.org", base: "https://mainnet.base.org", arbitrum: "https://arb1.arbitrum.io/rpc", optimism: "https://mainnet.optimism.io", polygon: "https://polygon-rpc.com", okc: "https://exchainrpc.okex.org", xlayer: "https://rpc.xlayer.tech" };
 const RPC_URLS = {
   eth: ["https://cloudflare-eth.com", "https://ethereum.publicnode.com", "https://eth.llamarpc.com", "https://rpc.ankr.com/eth"],
   bsc: ["https://bsc-dataseed.binance.org", "https://bsc-dataseed1.bnbchain.org", "https://bsc-dataseed2.bnbchain.org", "https://bsc.publicnode.com"],
@@ -207,6 +209,8 @@ const RPC_URLS = {
   arbitrum: ["https://arb1.arbitrum.io/rpc", "https://arbitrum.publicnode.com"],
   optimism: ["https://mainnet.optimism.io", "https://optimism.publicnode.com"],
   polygon: ["https://polygon-rpc.com", "https://polygon.publicnode.com"],
+  okc: ["https://exchainrpc.okex.org", "https://oktc-mainnet.public.blastapi.io"],
+  xlayer: ["https://rpc.xlayer.tech", "https://xlayer-mainnet.public.blastapi.io"],
 };
 const DEAD = "0x000000000000000000000000000000000000dEaD";
 
@@ -246,7 +250,7 @@ async function rpcLpBurn(chain, pairAddress) {
 // Etherscan V2（免费 Key）：源码扫描 + ETH 创建者。注意免费档限制：持仓列表/代币信息是 Pro 接口，
 // Base/BSC 的 getcontractcreation 在免费档返回 Free API access is not supported for this chain，
 // 所以 Top10 占比仍不能靠 Etherscan 免费 Key，creatorHistory 也只在 ETH 上能填。
-const ETHERSCAN_CHAINID = { eth: "1", bsc: "56", base: "8453", arbitrum: "42161", optimism: "10", polygon: "137" };
+const ETHERSCAN_CHAINID = { eth: "1", bsc: "56", base: "8453", arbitrum: "42161", optimism: "10", polygon: "137", okc: "66", xlayer: "196" };
 function scanSource(src) {
   const low = (src || "").toLowerCase();
   if (!low || low.length < 50) return null;
@@ -297,8 +301,8 @@ async function rpcOwner(chain, address) {
   return null;
 }
 
-const NATIVE_SYMBOL = { eth: "ETH", bsc: "BNB", base: "ETH", arbitrum: "ETH", optimism: "ETH", polygon: "MATIC", robinhood: "ETH", solana: "SOL" };
-const NATIVE_WRAPPED = { eth: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", bsc: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c", base: "0x4200000000000000000000000000000000000006", arbitrum: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1", optimism: "0x4200000000000000000000000000000000000006", polygon: "0x0d500B1d8E8eF5fE704DF2C2B8d8c9e8F1e5e5" };
+const NATIVE_SYMBOL = { eth: "ETH", bsc: "BNB", base: "ETH", arbitrum: "ETH", optimism: "ETH", polygon: "MATIC", robinhood: "ETH", solana: "SOL", okc: "OKT", xlayer: "OKB" };
+const NATIVE_WRAPPED = { eth: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", bsc: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c", base: "0x4200000000000000000000000000000000000006", arbitrum: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1", optimism: "0x4200000000000000000000000000000000000006", polygon: "0x0d500B1d8E8eF5fE704DF2C2B8d8c9e8F1e5e5", xlayer: "0xe538905cf8410324e03a5a23c1c177a474d59b2b" };
 async function rpcJson(rpcUrl, method, params) {
   const urls = Array.isArray(rpcUrl) ? rpcUrl : [rpcUrl];
   let lastErr = null;
@@ -344,15 +348,15 @@ async function priceFor(chain, address) {
   return pr;
 }
 
-const BLOCKSCOUT_PRO_CHAINID = { eth: "1", arbitrum: "42161", optimism: "10", robinhood: "4663", base: "8453", polygon: "137", bsc: "56" };
+const BLOCKSCOUT_PRO_CHAINID = { eth: "1", arbitrum: "42161", optimism: "10", robinhood: "4663", base: "8453", polygon: "137", bsc: "56", okc: "66", xlayer: "196" };
 const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 function hexToInt(h) { try { return parseInt(h, 16); } catch (_) { return null; } }
 async function rpcJsonChain(chain, method, params) {
   const urls = RPC_URLS[chain] || (RPC[chain] ? [RPC[chain]] : []);
   return rpcJson(urls, method, params);
 }
-const BLOCK_TIME_SEC = { eth: 12, bsc: 3, base: 2, arbitrum: 1, optimism: 2, polygon: 2, robinhood: 2 };
-const LOG_RPC = { base: "https://base.publicnode.com", bsc: "https://bsc.publicnode.com", polygon: "https://polygon.publicnode.com", eth: "https://ethereum.publicnode.com", arbitrum: "https://arbitrum.publicnode.com", optimism: "https://optimism.publicnode.com" };
+const BLOCK_TIME_SEC = { eth: 12, bsc: 3, base: 2, arbitrum: 1, optimism: 2, polygon: 2, robinhood: 2, okc: 3, xlayer: 2 };
+const LOG_RPC = { base: "https://base.publicnode.com", bsc: "https://bsc.publicnode.com", polygon: "https://polygon.publicnode.com", eth: "https://ethereum.publicnode.com", arbitrum: "https://arbitrum.publicnode.com", optimism: "https://optimism.publicnode.com", okc: "https://exchainrpc.okex.org", xlayer: "https://rpc.xlayer.tech" };
 const ALCHEMY_BASE = { eth: "https://eth-mainnet.g.alchemy.com/v2/", arbitrum: "https://arb-mainnet.g.alchemy.com/v2/", optimism: "https://opt-mainnet.g.alchemy.com/v2/", base: "https://base-mainnet.g.alchemy.com/v2/", polygon: "https://polygon-mainnet.g.alchemy.com/v2/", bsc: "https://bnb-mainnet.g.alchemy.com/v2/" };
 function alchemyUrl(env, chain) {
   const key = env.ALCHEMY_API_KEY;
@@ -514,7 +518,7 @@ async function evmLogScan(env, chain, address, pairCreatedAtMs) {
         return out;
       } catch (e) { out.logScanError = String(e && e.message ? e.message : e); return out; }
     }
-    let from = startBlock, chunk = 50000, calls = 0;
+    let from = startBlock, chunk = chain === "okc" ? 2000 : chain === "xlayer" ? 500 : 50000, calls = 0;
     while (from <= latest && calls < 20) {
       const to = Math.min(latest, from + chunk - 1);
       let logs;
@@ -522,7 +526,7 @@ async function evmLogScan(env, chain, address, pairCreatedAtMs) {
         logs = await rpcJsonChainSlow(env, chain, "eth_getLogs", [{ address, fromBlock: "0x" + from.toString(16), toBlock: "0x" + to.toString(16), topics: [TRANSFER_TOPIC] }]);
       } catch (e) {
         const msg = String(e && e.message ? e.message : e);
-        if (/exceed|too many|max results/i.test(msg) && chunk > 100) { chunk = Math.max(100, Math.floor(chunk / 4)); continue; }
+        if (/exceed|too many|max results|span|less than|range|limit|400/i.test(msg) && chunk > 100) { chunk = Math.max(100, Math.floor(chunk / 4)); continue; }
         out.logScanError = msg; break;
       }
       calls++;
