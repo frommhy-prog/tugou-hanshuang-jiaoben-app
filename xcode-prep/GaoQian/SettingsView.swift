@@ -113,7 +113,7 @@ enum LiveActivityManager {
             costUsd: costUsd,
             pnlPct: (costUsd != nil && priceUsd != nil && costUsd != 0) ? (priceUsd! - costUsd!) / costUsd! * 100 : nil,
             risk: risk, fetchedAtMs: Int(Date().timeIntervalSince1970 * 1000))
-        try? Activity.request(attributes: attrs, content: .init(state: state, staleDate: Date().addingTimeInterval(900)))
+        _ = try? Activity.request(attributes: attrs, content: .init(state: state, staleDate: Date().addingTimeInterval(900)))
     }
     static func stopAll() {
         for activity in Activity<TokenLiveActivityAttributes>.activities {
