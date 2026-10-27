@@ -344,7 +344,7 @@ async function solRpc(method, params, env) {
   }
   throw lastErr || new Error("sol_rpc_no_url");
 }
-async function pumpCurveQuote(address, env) {
+async function pumpCurveQuote(address, env, priceCache) {
   try {
     const mintBytes = b58decode(address);
     const pdaRes = await findPumpPda(mintBytes);
@@ -352,7 +352,7 @@ async function pumpCurveQuote(address, env) {
     const [curveAcc, mintAcc, solPrice] = await Promise.all([
       solRpc("getAccountInfo", [pdaRes.pda, { encoding: "base64" }], env).catch((e) => ({ __err: String(e && e.message ? e.message : e) })),
       solRpc("getAccountInfo", [address, { encoding: "base64" }], env).catch(() => null),
-      priceFor("solana", "So11111111111111111111111111111111111111112").catch(() => null),
+      priceFor("solana", "So11111111111111111111111111111111111111112", priceCache).catch(() => null),
     ]);
     if (!curveAcc?.value?.data?.[0]) return { source: "pump_curve", pda: pdaRes.pda, bump: pdaRes.bump, error: "curve_account_not_found", rpcError: curveAcc?.__err ?? null };
     const raw = Uint8Array.from(atob(curveAcc.value.data[0]), (c) => c.charCodeAt(0));
@@ -375,7 +375,7 @@ async function pumpCurveQuote(address, env) {
     return { source: "pump_curve", pda: pdaRes.pda, bump: pdaRes.bump, complete, virtualTokenReserves: vtok.toString(), virtualSolReserves: vsol.toString(), realTokenReserves: rtok.toString(), realSolReserves: rsol.toString(), totalSupply: total.toString(), decimals, priceSol, solPriceUsd: solUsd, priceUsd, marketCapCurveUsd: priceUsd != null ? priceUsd * (Number(total) / (10 ** decimals)) : null };
   } catch (e) { return { source: "pump_curve", error: String(e && e.message ? e.message : e) }; }
 }
-async function fourQuote(chain, address) {
+async function fourQuote(chain, address, priceCache) {
   const helper = FOUR_HELPER3[chain];
   if (!helper) return null;
   try {
@@ -408,10 +408,10 @@ async function fourQuote(chain, address) {
     try {
       if (quote.toLowerCase() === "0x0000000000000000000000000000000000000000") {
         const wrapped = NATIVE_WRAPPED[chain];
-        const pr = wrapped ? await priceFor(chain, wrapped).catch(() => null) : null;
+        const pr = wrapped ? await priceFor(chain, wrapped, priceCache).catch(() => null) : null;
         if (pr?.priceUsd != null) { quoteUsd = pr.priceUsd; quoteUsdSource = "dexscreener_native_wrapped"; }
       } else {
-        const pr = await priceFor(chain, quote).catch(() => null);
+        const pr = await priceFor(chain, quote, priceCache).catch(() => null);
         if (pr?.priceUsd != null) { quoteUsd = pr.priceUsd; quoteUsdSource = "dexscreener_quote_token"; }
       }
     } catch (_) {}
@@ -419,17 +419,105 @@ async function fourQuote(chain, address) {
     return { source: "four_helper3", helper, version, tokenManager, quote, lastPrice: lastPrice.toString(), priceQuote, quotePriceUsd: quoteUsd, quotePriceSource: quoteUsdSource, funds: funds.toString(), fundsQuote: Number(funds) / 1e18, maxFunds: maxFunds.toString(), maxFundsQuote: Number(maxFunds) / 1e18, liquidityAdded, priceUsd };
   } catch (e) { return { source: "four_helper3", error: String(e && e.message ? e.message : e) }; }
 }
-async function contractQuote(chain, address, price, env) {
-  const out = { four: null, pump: null, primaryPriceUsd: null, primarySource: null };
+
+// EVM 池链上报价：V2 getReserves 比值、V3 slot0 sqrtPriceX96，覆盖全部 EVM 链外盘币。
+// V4 poolId 不是 40 字节合约地址，无法用 eth_call 读 slot0，诚实返回 v4_not_supported，改走 Dex 价。
+// 报价用 Alchemy 优先（6 条链已有 Key），再走公开 RPC；token0/token1/储备/slot0/decimals 并行查，不串行。
+async function evmPoolQuote(chain, address, pairAddr, env, priceCache) {
+  if (CHAINS[chain]?.evm !== true) return null;
+  if (!pairAddr || !/^0x[0-9a-fA-F]{40}$/.test(pairAddr)) return { source: "evm_pool", error: "v4_or_no_pair" };
   try {
-    if (chain === "solana") {
-      out.pump = await Promise.race([pumpCurveQuote(address, env), new Promise((res) => setTimeout(() => res({ source: "pump_curve", error: "timeout_8s" }), 8000))]);
-      if (out.pump?.priceUsd != null) { out.primaryPriceUsd = out.pump.priceUsd; out.primarySource = "pump_curve"; }
-    } else if (FOUR_HELPER3[chain]) {
-      out.four = await Promise.race([fourQuote(chain, address), new Promise((res) => setTimeout(() => res({ source: "four_helper3", error: "timeout_8s" }), 8000))]);
-      if (out.four?.priceUsd != null) { out.primaryPriceUsd = out.four.priceUsd; out.primarySource = "four_helper3"; }
+    const urls = [];
+    const alch = env ? alchemyUrl(env, chain) : null;
+    if (alch) urls.push(alch);
+    urls.push(...(RPC_URLS[chain] || []));
+    if (!urls.length) return { source: "evm_pool", error: "no_rpc_url" };
+    // eth_call 回退即函数不存在（如 V2 池调 slot0），直接返回 null，不逐个 RPC 重试，否则一次池报价要拖 1 秒以上
+    const call = async (to, data) => {
+      for (const u of urls) {
+        try {
+          const res = await fetch(u, { method: "POST", headers: { "content-type": "application/json", accept: "application/json", "user-agent": "tugou-hanshuang-jiaoben-app/1.0" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to, data }, "latest"] }) });
+          if (!res.ok) continue;
+          const body = await res.json();
+          if (body?.result) return body.result;
+          if (body?.error) return null;
+        } catch (_) { continue; }
+      }
+      return null;
+    };
+    const [t0, t1, decTokenHex] = await Promise.all([call(pairAddr, "0x0dfe1681"), call(pairAddr, "0xd21220a7"), call(address, "0x313ce567")]);
+    // 先试 V2 储备，成功就不调 V3 slot0；V2 失败再试 V3，避免两个都调、一个必回退
+    let reservesHex = await call(pairAddr, "0x0902f1ac");
+    let slot0Hex = null;
+    if (!reservesHex) slot0Hex = await call(pairAddr, "0x3850c7bd");
+    const addrOf = (hex) => (hex && typeof hex === "string" && hex.length >= 66 ? "0x" + hex.slice(-40) : null);
+    const token0 = addrOf(t0), token1 = addrOf(t1);
+    if (!token0 || !token1) return { source: "evm_pool", pair: pairAddr, error: "pair_token0_token1_failed" };
+    const decToken = decTokenHex != null ? Number(BigInt(decTokenHex)) : 18;
+    let priceQuote = null, poolKind = null, reserves = null, sqrtPriceX96 = null;
+    if (reservesHex && typeof reservesHex === "string" && reservesHex.length >= 2 + 64 * 2) {
+      const r0 = BigInt("0x" + reservesHex.slice(2, 66)), r1 = BigInt("0x" + reservesHex.slice(66, 130));
+      if (r0 > 0n && r1 > 0n) { poolKind = "v2"; reserves = { reserve0: r0.toString(), reserve1: r1.toString() }; }
     }
-    if (out.primaryPriceUsd == null && price?.priceUsd != null) { out.primaryPriceUsd = price.priceUsd; out.primarySource = price.source || "dexscreener_or_geckoterminal"; }
+    if (!poolKind && slot0Hex && typeof slot0Hex === "string" && slot0Hex.length >= 2 + 64) {
+      const sq = BigInt("0x" + slot0Hex.slice(2, 66));
+      if (sq > 0n) { poolKind = "v3"; sqrtPriceX96 = sq.toString(); }
+    }
+    if (!poolKind) return { source: "evm_pool", pair: pairAddr, token0, token1, error: "not_v2_v3_pool" };
+    const isToken0 = address.toLowerCase() === token0.toLowerCase();
+    const quoteToken = isToken0 ? token1 : token0;
+    const decQuoteHex = await call(quoteToken, "0x313ce567").catch(() => null);
+    const decQuote = decQuoteHex != null ? Number(BigInt(decQuoteHex)) : 18;
+    if (poolKind === "v2") {
+      const r0 = BigInt(reserves.reserve0), r1 = BigInt(reserves.reserve1);
+      const price0in1 = (Number(r1) / (10 ** decQuote)) / (Number(r0) / (10 ** decToken));
+      // 注意：若 token 是 token0，decToken 对应 reserve0，decQuote 对应 reserve1；若 token 是 token1，需反向且 decimals 也要反向
+      if (isToken0) { priceQuote = (Number(r1) / (10 ** decQuote)) / (Number(r0) / (10 ** decToken)); }
+      else {
+        // 此时 decToken 是本币 decimals（reserve1 侧），decQuote 是对手币 decimals（reserve0 侧），上面 decQuote 变量实际是 quoteToken 的 decimals，正确
+        priceQuote = (Number(r0) / (10 ** decQuote)) / (Number(r1) / (10 ** decToken));
+      }
+    } else {
+      const sq = BigInt(sqrtPriceX96);
+      // sqrtPriceX96 / 2^96 的平方，再按 decimals 调整：price0in1 = sq^2 * 10^dec0 / 10^dec1（dec0/token0 侧，dec1/token1 侧）
+      // 本币 decimals 已在 decToken，quote decimals 在 decQuote；若本币是 token0，dec0=decToken, dec1=decQuote；反之 dec0=decQuote, dec1=decToken
+      const sqNum = Number(sq) / (2 ** 96);
+      const price0in1 = sqNum * sqNum * ((isToken0 ? (10 ** decToken) / (10 ** decQuote) : (10 ** decQuote) / (10 ** decToken)));
+      priceQuote = isToken0 ? price0in1 : (price0in1 > 0 ? 1 / price0in1 : null);
+    }
+    if (priceQuote == null || !isFinite(priceQuote) || priceQuote <= 0) return { source: "evm_pool", pair: pairAddr, token0, token1, poolKind, error: "pool_price_invalid" };
+    let quoteUsd = null, quoteUsdSource = null;
+    try {
+      const pr = await priceFor(chain, quoteToken, priceCache).catch(() => null);
+      if (pr?.priceUsd != null) { quoteUsd = pr.priceUsd; quoteUsdSource = pr.source || "dexscreener_or_geckoterminal"; }
+    } catch (_) {}
+    const priceUsd = quoteUsd != null ? priceQuote * quoteUsd : null;
+    return { source: poolKind === "v2" ? "evm_pool_v2" : "evm_pool_v3", pair: pairAddr, token0, token1, quoteToken, poolKind, reserves, sqrtPriceX96, priceQuote, quotePriceUsd: quoteUsd, quotePriceSource: quoteUsdSource, priceUsd };
+  } catch (e) { return { source: "evm_pool", error: String(e && e.message ? e.message : e) }; }
+}
+async function contractQuote(chain, address, price, env, pairAddrOverride) {
+  const out = { four: null, pump: null, pool: null, primaryPriceUsd: null, primarySource: null, dexPriceUsd: price?.priceUsd ?? null, discrepancyPct: null };
+  const priceCache = new Map();
+  try {
+    const tasks = [];
+    if (chain === "solana") {
+      tasks.push((async () => { out.pump = await Promise.race([pumpCurveQuote(address, env, priceCache), new Promise((res) => setTimeout(() => res({ source: "pump_curve", error: "timeout_8s" }), 8000))]); })());
+    } else {
+      if (FOUR_HELPER3[chain]) tasks.push((async () => { out.four = await Promise.race([fourQuote(chain, address, priceCache), new Promise((res) => setTimeout(() => res({ source: "four_helper3", error: "timeout_8s" }), 8000))]); })());
+      let pairAddr = pairAddrOverride || price?.pairAddress || null;
+      if (pairAddr && !/^0x[0-9a-fA-F]{40}$/.test(pairAddr) && Array.isArray(price?.allPairs)) {
+        const alt = price.allPairs.find((q) => q?.pairAddress && /^0x[0-9a-fA-F]{40}$/.test(q.pairAddress));
+        if (alt) pairAddr = alt.pairAddress;
+      }
+      if (pairAddr) tasks.push((async () => { out.pool = await Promise.race([evmPoolQuote(chain, address, pairAddr, env, priceCache), new Promise((res) => setTimeout(() => res({ source: "evm_pool", error: "timeout_8s" }), 8000))]); })());
+    }
+    await Promise.all(tasks);
+    const contractUsd = out.pump?.priceUsd ?? out.four?.priceUsd ?? out.pool?.priceUsd ?? null;
+    const contractSrc = out.pump?.priceUsd != null ? "pump_curve" : out.four?.priceUsd != null ? "four_helper3" : out.pool?.priceUsd != null ? out.pool.source : null;
+    if (contractUsd != null && price?.priceUsd != null && price.priceUsd > 0) out.discrepancyPct = Math.round(Math.abs(contractUsd - price.priceUsd) / price.priceUsd * 10000) / 100;
+    if (contractUsd != null && (out.discrepancyPct == null || out.discrepancyPct <= 10)) { out.primaryPriceUsd = contractUsd; out.primarySource = contractSrc; }
+    else if (price?.priceUsd != null) { out.primaryPriceUsd = price.priceUsd; out.primarySource = price.source || "dexscreener_or_geckoterminal"; out.primaryNote = out.discrepancyPct != null && out.discrepancyPct > 10 ? "contract_price_discrepancy_gt_10pct_fallback_to_dex" : null; }
+    else if (contractUsd != null) { out.primaryPriceUsd = contractUsd; out.primarySource = contractSrc; }
   } catch (_) {}
   return out;
 }
@@ -543,10 +631,13 @@ async function solTokenAmount(walletAddress, mint) {
   for (const a of accounts) { const u = a?.account?.data?.parsed?.info?.tokenAmount?.uiAmount; if (typeof u === "number") sum += u; }
   return accounts.length ? sum : null;
 }
-async function priceFor(chain, address) {
+async function priceFor(chain, address, priceCache) {
+  const ck = `${chain}:${String(address).toLowerCase()}`;
+  if (priceCache && priceCache.has(ck)) return priceCache.get(ck);
   let pr = null;
   try { pr = await dexToken(chain, address); } catch (_) {}
   if (!pr) { try { pr = await geckoToken(chain, address); } catch (_) {} }
+  if (priceCache) priceCache.set(ck, pr);
   return pr;
 }
 
@@ -930,14 +1021,40 @@ export default {
       const address = url.searchParams.get("address") || "";
       if (!CHAINS[chain]) return json({ error: "unknown_chain", chain }, 400);
       if (!isValidAddress(chain, address)) return json({ error: "invalid_address", chain }, 400);
+      try {
+        if (env.CACHE_KV) {
+          const hit = await env.CACHE_KV.get(`tokenfast:${chain}:${address.toLowerCase()}`);
+          if (hit) { const hb = JSON.parse(hit); hb.cached = true; hb.queryTimeMs = 0; return json(hb); }
+        }
+      } catch (_) {}
       const t0 = Date.now();
       const withTimeout = (pr, ms) => Promise.race([pr, new Promise((_, rej) => setTimeout(() => rej(new Error(`timeout_${ms}ms`)), ms))]);
-      const [dexR, geckoR] = await Promise.allSettled([withTimeout(dexToken(chain, address), 800), withTimeout(geckoToken(chain, address), 800)]);
-      const dexPrice = dexR.status === "fulfilled" ? dexR.value : null;
-      const geckoPrice = geckoR.status === "fulfilled" ? geckoR.value : null;
+      // 快价报价并行：Four/Pump 不依赖 Dex 池地址，和 Dex/Gecko 同时跑；EVM 池报价依赖 Dex 池地址，Dex 回来后再跑 700ms 超时
+      const quoteInternalP = (chain === "solana" || FOUR_HELPER3[chain]) ? contractQuote(chain, address, null, env).catch(() => null) : Promise.resolve(null);
+      let [dexR, geckoR, quoteInternal] = await Promise.allSettled([withTimeout(dexToken(chain, address), 800), withTimeout(geckoToken(chain, address), 800), withTimeout(quoteInternalP, 1500)]);
+      let dexPrice = dexR.status === "fulfilled" ? dexR.value : null;
+      let geckoPrice = geckoR.status === "fulfilled" ? geckoR.value : null;
+      // Dex/Gecko 都空时大概率是上游瞬时限流，再试一次（仍快，<2.5 秒），不直接返回空
+      if (!dexPrice && !geckoPrice) {
+        const [dexR2, geckoR2] = await Promise.allSettled([withTimeout(dexToken(chain, address), 1000), withTimeout(geckoToken(chain, address), 1000)]);
+        if (dexR2.status === "fulfilled" && dexR2.value) dexPrice = dexR2.value;
+        if (geckoR2.status === "fulfilled" && geckoR2.value) geckoPrice = geckoR2.value;
+      }
       const price = dexPrice || geckoPrice;
+      let cqFast = quoteInternal.status === "fulfilled" ? quoteInternal.value : null;
+      if (chain !== "solana" && !FOUR_HELPER3[chain] && price?.pairAddress) {
+        try { cqFast = await withTimeout(contractQuote(chain, address, price, env), 700).catch(() => cqFast); } catch (_) {}
+      } else if (cqFast && price?.pairAddress && chain !== "solana") {
+        // Four 链也要补池报价做交叉核对，但不拖慢快价：700ms 超时，超时就用内盘报价
+        try {
+          const poolQ = await withTimeout(evmPoolQuote(chain, address, price.pairAddress, env, new Map()), 700).catch(() => null);
+          if (poolQ?.priceUsd != null) { cqFast.pool = poolQ; if (cqFast.primaryPriceUsd == null) { cqFast.primaryPriceUsd = poolQ.priceUsd; cqFast.primarySource = poolQ.source; } }
+        } catch (_) {}
+      }
       const poolAge = price?.pairCreatedAt ? Math.round(((Date.now() - Number(price.pairCreatedAt)) / 86400000) * 10) / 10 : null;
-      return json({ chain, address, fast: true, price, poolAge, txns24h: price?.txns24h ?? null, totalVolume24hUsd: price?.totalVolume24hUsd ?? null, allPairs: price?.allPairs ?? null, priceDexUsd: dexPrice?.priceUsd ?? null, priceGeckoUsd: geckoPrice?.priceUsd ?? null, queryTimeMs: Date.now() - t0, note: "快价只含价格/流动性/量/买卖笔数/池龄，完整体检走 /api/token" });
+      const body = { chain, address, fast: true, price, poolAge, txns24h: price?.txns24h ?? null, totalVolume24hUsd: price?.totalVolume24hUsd ?? null, allPairs: price?.allPairs ?? null, priceDexUsd: dexPrice?.priceUsd ?? null, priceGeckoUsd: geckoPrice?.priceUsd ?? null, contractQuote: cqFast, quoteUsd: cqFast?.primaryPriceUsd ?? price?.priceUsd ?? null, quoteSource: cqFast?.primarySource ?? null, queryTimeMs: Date.now() - t0, note: "快价含 Dex/Gecko 价 + 合约报价（Four Helper / Pump 曲线 / EVM 池），缓存 60 秒，完整体检走 /api/token" };
+      try { if (env.CACHE_KV && (body.price?.priceUsd != null || body.contractQuote?.primaryPriceUsd != null || body.priceDexUsd != null || body.priceGeckoUsd != null)) await env.CACHE_KV.put(`tokenfast:${chain}:${address.toLowerCase()}`, JSON.stringify(body), { expirationTtl: 60 }); } catch (_) {}
+      return json(body);
     }
 
     if (path === "/api/token" && request.method === "GET") {
