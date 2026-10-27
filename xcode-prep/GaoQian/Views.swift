@@ -1,4 +1,7 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 import Charts
 import Foundation
 
@@ -804,36 +807,155 @@ struct FeedbackView: View {
     }
 }
 
-// 寒霜页起步：码表 + 官方兑换链接 + 手动兑换清单；自动兑换未接，不冒充已通。
+// 寒霜页：一键跳转 + 自动备好信息，不冒充自动兑换。
+// 官方流程（多家指南一致）：iOS 游戏内没有兑换按钮，只能走官方网页；
+// 官网只要 Player ID，不要密码；填 ID 后点 Login，核对头像是你本人，
+// 再贴码点 Confirm，奖励进游戏内邮箱；最后一步如有验证码，必须手动填。
+// 所以 App 能做的、也是这次做的：领主信息（你已给的）直接显示在页上，
+// 点按钮就把码（或 ID）复制好并一键打开官网，你在官网只剩“粘贴 + Confirm”；
+// App 不替你点 Confirm，不碰游戏密码，也不会把你的 Player ID 交给第三方自动兑换服务。
 struct WosView: View {
     @State private var codes: APIClient.WosCodesResponse?
     @State private var errorText: String?
+    @State private var lastAction: String?
+    @Environment(\.openURL) private var openURL
+
+    private var playerName: String { codes?.player?.name ?? "[ONE]卡皮巴拉" }
+    private var playerId: String { codes?.player?.id ?? "726154631" }
+    private var playerKingdom: String { codes?.player?.kingdom ?? "4124" }
+    private var playerInitialKingdom: String { codes?.player?.initialKingdom ?? "4186" }
+    private var playerAlliance: String { codes?.player?.alliance ?? "ONE" }
+    private var redeemURL: URL? {
+        URL(string: codes?.redeemUrl ?? "https://wos-giftcode.centurygame.com/")
+    }
+
+    private func copyText(_ text: String) -> Bool {
+#if canImport(UIKit)
+        UIPasteboard.general.string = text
+        return true
+#else
+        return false
+#endif
+    }
+
+    private func openRedeemSite(copying text: String?, hint: String) {
+        if let text, copyText(text) { lastAction = hint } else { lastAction = "复制在当前设备上不可用，请长按下面文字手动复制，再点打开官网。" }
+        if let url = redeemURL { openURL(url) }
+    }
+
+    private func sortedCodes() -> [APIClient.WosCode] {
+        let list = codes?.codes ?? []
+        func priority(_ c: APIClient.WosCode) -> Int {
+            if c.code == "WOS1025" { return 0 }
+            let s = c.status ?? ""
+            if s.contains("listed_active") { return 1 }
+            if s.contains("mixed") { return 2 }
+            if s.contains("expired") { return 3 }
+            return 4
+        }
+        return list.enumerated().sorted { priority($0.element) < priority($1.element) || (priority($0.element) == priority($1.element) && $0.offset < $1.offset) }.map { $0.element }
+    }
+
+    private func whiteButton(_ title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title).bold().frame(maxWidth: .infinity).padding(12)
+                .background(Color.white).foregroundStyle(.black).cornerRadius(12)
+        }
+    }
+
     var body: some View {
-        NavigationView {
-            Form {
-                Section("寒霜兑换码（2026-10-27 核对快照，不是实时抓取）") {
-                    Button("刷新码表") {
-                        Task { do { codes = try await APIClient.fetchWosCodes(); errorText = nil } catch { errorText = "码表失败：\(error.localizedDescription)" } }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("iOS 游戏内没有兑换按钮，只能走官方网页；官方只要 Player ID，不要密码。任何索要游戏登录密码的页面都不是官方页。")
+                    .font(.subheadline).foregroundStyle(Color(white: 0.70))
+
+                // 领主信息：你已给的，不用再填。
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("领主信息（已填好，不用再输）").font(.headline).foregroundStyle(.white)
+                    Text(playerName).font(.title3).bold().foregroundStyle(.white)
+                    Text("Player ID：\(playerId)").font(.headline).foregroundStyle(.white)
+                        .textSelection(.enabled)
+                    Text("王国 \(playerKingdom)（初始 \(playerInitialKingdom)）· 联盟 \(playerAlliance)")
+                        .font(.subheadline).foregroundStyle(Color(white: 0.70))
+                    HStack(spacing: 10) {
+                        Button("复制领主 ID") {
+                            if copyText(playerId) { lastAction = "领主 ID \(playerId) 已复制，官网打开后粘贴到 Player ID 框。" } else { lastAction = "复制在当前设备上不可用，请长按 ID 文字手动复制。" }
+                        }
+                        .padding(.horizontal, 12).padding(.vertical, 8)
+                        .background(Color(white: 0.20)).cornerRadius(10).foregroundStyle(.white)
+                        Spacer()
                     }
-                    if let e = errorText { Text(e).font(.footnote) }
-                    if let url = codes?.redeemUrl, let u = URL(string: url) { Link("官方兑换中心（iOS 只能走这里，游戏内没有兑换按钮）", destination: u) }
-                    Text("领主 [ONE]卡皮巴拉 · ID 726154631 · 王国 4124（初始 4186）· 联盟 ONE").font(.footnote)
-                    if let cs = codes?.codes {
-                        ForEach(cs.indices, id: \.self) { i in
-                            VStack(alignment: .leading) {
-                                Text(cs[i].code ?? "").bold()
-                                Text("\(cs[i].status ?? "") · \(cs[i].rewards ?? "")").font(.footnote)
-                                if let n = cs[i].note { Text(n).font(.caption) }
-                            }
+                    whiteButton("一键打开官方兑换中心") {
+                        openRedeemSite(copying: playerId, hint: "领主 ID 已复制并打开官网：粘贴到 Player ID 框点 Login，核对头像是你本人，再贴码点 Confirm。")
+                    }
+                }
+                .padding(16).background(Color(white: 0.11)).cornerRadius(16)
+
+                if let action = lastAction {
+                    Text(action).font(.subheadline).foregroundStyle(.white)
+                        .padding(12).background(Color(white: 0.16)).cornerRadius(12)
+                }
+
+                // WOS1025 今天截止，先领这个。
+                if let urgent = (codes?.codes ?? []).first(where: { $0.code == "WOS1025" }) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("先领 WOS1025：今天 07:59 香港时间截止").font(.headline).foregroundStyle(.red)
+                        Text(urgent.rewards ?? "").font(.subheadline).foregroundStyle(.white)
+                        if let n = urgent.note { Text(n).font(.subheadline).foregroundStyle(Color(white: 0.70)) }
+                        whiteButton("复制 WOS1025 并打开官网") {
+                            openRedeemSite(copying: "WOS1025", hint: "码 WOS1025 已复制并打开官网：先填领主 ID \(playerId) 点 Login 核对头像，再粘贴码点 Confirm；如有验证码请手动填。")
                         }
                     }
-                    if let n = codes?.note { Text(n).font(.footnote) }
+                    .padding(16).background(Color(white: 0.11)).cornerRadius(16)
+                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.red, lineWidth: 1))
                 }
-                Section("自动兑换（未接，不冒充）") {
-                    Text("官方兑换中心只要 Player ID，不要密码；任何索要游戏登录密码的页面都不是官方页。自动兑换要先验证官方兑换中心的请求格式与验证码流程，再决定是否接，登录密码绝不进聊天、不进反馈。").font(.footnote)
+
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Text("兑换码").font(.headline).foregroundStyle(.white)
+                        Spacer()
+                        Button("刷新码表") {
+                            Task { do { codes = try await APIClient.fetchWosCodes(); errorText = nil } catch { errorText = "码表失败：\(error.localizedDescription)" } }
+                        }.foregroundStyle(.white)
+                    }
+                    if let e = errorText { Text(e).font(.subheadline).foregroundStyle(.red) }
+                    if let source = codes?.source { Text(source).font(.caption).foregroundStyle(Color(white: 0.70)) }
+                    ForEach(sortedCodes().indices, id: \.self) { i in
+                        let c = sortedCodes()[i]
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(c.code ?? "").font(.headline).foregroundStyle(.white)
+                            Text("\(c.status ?? "") · \(c.rewards ?? "")").font(.subheadline).foregroundStyle(Color(white: 0.85))
+                            if let n = c.note { Text(n).font(.caption).foregroundStyle(Color(white: 0.70)) }
+                            Button("复制这个码并打开官网") {
+                                if let code = c.code { openRedeemSite(copying: code, hint: "码 \(code) 已复制并打开官网：先填领主 ID \(playerId) 点 Login 核对头像，再粘贴码点 Confirm；如有验证码请手动填。") }
+                            }
+                            .padding(.horizontal, 12).padding(.vertical, 8)
+                            .background(Color(white: 0.20)).cornerRadius(10).foregroundStyle(.white)
+                        }
+                        Divider().background(Color(white: 0.25))
+                    }
+                    if let n = codes?.note { Text(n).font(.caption).foregroundStyle(Color(white: 0.70)) }
                 }
+                .padding(16).background(Color(white: 0.11)).cornerRadius(16)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("自动兑换为什么没接").font(.headline).foregroundStyle(.white)
+                    Text("官网最后一步有验证码，App 在后台替你点不过去；市面上的第三方自动兑换要把你的 Player ID 交给别人、有的还要付费，没经你同意不接。现在这版是你点一次按钮，码和 ID 都给你备好，官网里你点一次 Confirm 就行；登录密码绝不进聊天、不进反馈。")
+                        .font(.subheadline).foregroundStyle(Color(white: 0.70))
+                }
+                .padding(16).background(Color(white: 0.11)).cornerRadius(16)
             }
-            .navigationTitle("寒霜")
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+            .padding(.bottom, 120)
+        }
+        .background(Color.black)
+        .navigationTitle("寒霜")
+        .navigationBarTitleDisplayMode(.inline)
+        .task {
+            if codes == nil {
+                do { codes = try await APIClient.fetchWosCodes() } catch { errorText = "码表失败：\(error.localizedDescription)" }
+            }
         }
     }
 }

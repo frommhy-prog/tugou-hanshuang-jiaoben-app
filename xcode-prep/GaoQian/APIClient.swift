@@ -670,7 +670,15 @@ enum APIClient {
         var note: String?
     }
 
+    struct WosPlayer: Codable {
+        var name: String?
+        var id: String?
+        var kingdom: String?
+        var initialKingdom: String?
+        var alliance: String?
+    }
     struct WosCodesResponse: Codable {
+        var player: WosPlayer?
         var redeemUrl: String?
         var source: String?
         var codes: [WosCode]?
