@@ -6,7 +6,7 @@ Worker 域名占位：`https://tugou-hanshuang-jiaoben-app.<你的 Cloudflare �
 ## GET /api/token?chain=&address=
 - chain：`bsc | eth | base | solana | robinhood`
 - 成功：价格、流动性、24h 量、涨跌 + `tradeLinks.ave / .gmgn / .dexscreener`
-- 风险字段第一版为 null，`riskSource: "pending"`，不编数。
+- 风险字段：EVM 链走 GoPlus（持仓人数、Top10 占比、买卖税、蜜罐、权限丢弃、增发、黑名单），Solana 走 RugCheck（风险分、风险项、增发权限、LP 锁定）；查不到的字段保持 null，`riskSource` 为 `goplus` / `rugcheck` / `pending`；池子年龄、创建者历史仍为 null，EVM 的 LP 锁定仍为 null，不编数。风险灯规则：蜜罐、买卖税 ≥50%、隐藏所有者、可改余额、可自毁为红；增发、黑名单、可暂停、代理、可改滑点为黄；其余有数据为绿，这只是扫描信号不是安全保证。
 
 ## POST /api/holdings
 请求：`{"wallets":[{"chain":"bsc","address":"0x…","label":"主钱包"}]}`

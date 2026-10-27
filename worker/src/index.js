@@ -3,10 +3,10 @@
 // 链适配器只做映射，不按链重做一套。
 
 const CHAINS = {
-  bsc: { dex: "bsc", gecko: "bsc", evm: true },
-  eth: { dex: "ethereum", gecko: "eth", evm: true },
-  base: { dex: "base", gecko: "base", evm: true },
-  solana: { dex: "solana", gecko: "solana", evm: false },
+  bsc: { dex: "bsc", gecko: "bsc", evm: true, chainId: 56 },
+  eth: { dex: "ethereum", gecko: "eth", evm: true, chainId: 1 },
+  base: { dex: "base", gecko: "base", evm: true, chainId: 8453 },
+  solana: { dex: "solana", gecko: "solana", evm: false, chainId: null },
   robinhood: { dex: "robinhood", gecko: "robinhood", evm: true, chainId: 4663 },
 };
 
@@ -17,6 +17,8 @@ const SOURCES = [
   { id: "gmgn", role: "行情/聪明钱/跳转", link: "https://gmgn.ai/" },
   { id: "x", role: "社媒信号/新币线索", link: "https://x.com/" },
   { id: "blockscout", role: "Robinhood 地址/交易/代币页", link: "https://robinhoodchain.blockscout.com/" },
+  { id: "goplus", role: "EVM 合约风险", link: "https://gopluslabs.io/" },
+  { id: "rugcheck", role: "Solana 风险", link: "https://rugcheck.xyz/" },
 ];
 
 function json(data, status = 200) {
@@ -77,6 +79,74 @@ async function geckoToken(chain, address) {
   };
 }
 
+// 风险字段说明：只返回上游原值或按原值算的汇总，不编数。
+// GoPlus 的 holders[].percent 在实测里是小数（如 0.1837 = 18.37%），
+// 所以 top10 汇总时：最大值 <= 1 按小数处理乘 100，否则按已是百分比处理。
+function flag(v) { return v === "1" || v === 1 || v === true ? true : v === "0" || v === 0 || v === false ? false : null; }
+function num(v) { const n = Number(v); return Number.isFinite(n) ? n : null; }
+function top10Pct(holders) {
+  if (!Array.isArray(holders) || holders.length === 0) return null;
+  const vals = holders.slice(0, 10).map((h) => Number(h.percent)).filter(Number.isFinite);
+  if (vals.length === 0) return null;
+  const sum = vals.reduce((a, b) => a + b, 0);
+  return Math.max(...vals) <= 1 ? sum * 100 : sum;
+}
+
+// EVM：GoPlus token_security，免费、无 Key。Robinhood（4663）若 GoPlus 不支持，
+// 接口会返回空结果，安全字段保持 null，riskSource 回到 pending，不假装已查。
+async function goplusSecurity(chain, address) {
+  const chainId = CHAINS[chain].chainId;
+  if (!chainId) return null;
+  const res = await fetch(`https://api.gopluslabs.io/api/v1/token_security/${chainId}?contract_addresses=${address}`, { headers: { accept: "application/json" } });
+  if (!res.ok) return null;
+  const body = await res.json();
+  if (body?.code !== 1) return null;
+  const r = body?.result?.[address.toLowerCase()];
+  if (!r) return null;
+  const buyTax = num(r.buy_tax);
+  const sellTax = num(r.sell_tax);
+  const honeypot = flag(r.is_honeypot);
+  const mintable = flag(r.is_mintable);
+  const blacklist = flag(r.is_blacklisted);
+  const owner = typeof r.owner_address === "string" ? r.owner_address.toLowerCase() : null;
+  const renounced = owner ? owner === "0x0000000000000000000000000000000000000000" : null;
+  let risk = "green";
+  if (honeypot === true || (buyTax !== null && buyTax >= 50) || (sellTax !== null && sellTax >= 50) || flag(r.hidden_owner) === true || flag(r.owner_change_balance) === true || flag(r.selfdestruct) === true) risk = "red";
+  else if (mintable === true || blacklist === true || flag(r.transfer_pausable) === true || flag(r.is_proxy) === true || flag(r.slippage_modifiable) === true) risk = "yellow";
+  return {
+    holders: num(r.holder_count), topHoldersPct: top10Pct(r.holders),
+    buyTax, sellTax, honeypot, renounced, mintable, blacklist,
+    lpLocked: null, risk, source: "goplus",
+    flags: { isProxy: flag(r.is_proxy), hiddenOwner: flag(r.hidden_owner), canTakeBackOwnership: flag(r.can_take_back_ownership), transferPausable: flag(r.transfer_pausable), isOpenSource: flag(r.is_open_source), creatorAddress: r.creator_address ?? null },
+  };
+}
+
+// Solana：RugCheck 报告，免费、无 Key。totalHolders 为 0 时是缺失数据，按 null 处理，不返回 0 人。
+async function rugcheckSecurity(address) {
+  const res = await fetch(`https://api.rugcheck.xyz/v1/tokens/${address}/report`, { headers: { accept: "application/json" } });
+  if (!res.ok) return null;
+  const r = await res.json();
+  if (!r || typeof r !== "object") return null;
+  const risks = Array.isArray(r.risks) ? r.risks : [];
+  const totalHolders = num(r.totalHolders);
+  const lockers = r.lockers && typeof r.lockers === "object" ? Object.keys(r.lockers) : [];
+  let risk = null;
+  if (r.rugged === true) risk = "red";
+  else if (risks.length > 0) risk = "yellow";
+  else if (r.score != null || r.score_normalised != null) risk = "green";
+  return {
+    holders: totalHolders && totalHolders > 0 ? totalHolders : null,
+    topHoldersPct: top10Pct(r.topHolders),
+    buyTax: null, sellTax: null, honeypot: null,
+    renounced: null,
+    mintable: r.token?.mintAuthority ? true : r.token?.mintAuthority === null ? false : null,
+    blacklist: null,
+    lpLocked: lockers.length > 0 ? true : null,
+    risk, source: "rugcheck",
+    flags: { score: num(r.score), scoreNormalised: num(r.score_normalised), risks, mintAuthority: r.token?.mintAuthority ?? null, freezeAuthority: r.token?.freezeAuthority ?? null, rugged: r.rugged ?? null },
+  };
+}
+
 async function cached(env, key, fn, ttlSeconds = 180) {
   // 有 KV 就缓存 3 分钟；没有 KV 就直接查，不假装缓存了。
   try {
@@ -106,14 +176,19 @@ export default {
       if (!isValidAddress(chain, address)) return json({ error: "invalid_address", chain }, 400);
       const dexPrice = await cached(env, `token:${chain}:${address.toLowerCase()}`, () => dexToken(chain, address));
       const price = dexPrice || (await geckoToken(chain, address));
+      let security = null;
+      try { security = chain === "solana" ? await rugcheckSecurity(address) : await goplusSecurity(chain, address); } catch (_) { security = null; }
       return json({
         chain, address,
         price,
         // 第二阶段再接，不编数据：
-        holders: null, topHoldersPct: null, buyTax: null, sellTax: null,
-        honeypot: null, renounced: null, mintable: null, blacklist: null,
-        lpLocked: null, poolAge: null, creatorHistory: null,
-        risk: null, riskSource: "pending",
+        holders: security?.holders ?? null, topHoldersPct: security?.topHoldersPct ?? null,
+        buyTax: security?.buyTax ?? null, sellTax: security?.sellTax ?? null,
+        honeypot: security?.honeypot ?? null, renounced: security?.renounced ?? null,
+        mintable: security?.mintable ?? null, blacklist: security?.blacklist ?? null,
+        lpLocked: security?.lpLocked ?? null, poolAge: null, creatorHistory: null,
+        risk: security?.risk ?? null, riskSource: security?.source ?? "pending",
+        security: security ? { source: security.source, flags: security.flags } : null,
         tradeLinks: {
           ave: `https://ave.ai/token/${address}-${chain}`,
           gmgn: `https://gmgn.ai/${chain}/token/${address}`,
