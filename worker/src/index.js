@@ -383,6 +383,62 @@ async function evmLogScan(env, chain, address, pairCreatedAtMs) {
     const MAX_LOGS = 10000;
     const balances = new Map();
     let totalLogs = 0, complete = false, firstLogBlock = null;
+    const alchUrl = env ? alchemyUrl(env, chain) : null;
+    if (alchUrl) {
+      try {
+        let pageKey = null, all = [];
+        for (let pg = 0; pg < 10; pg++) {
+          const params = [{ fromBlock: "0x" + startBlock.toString(16), toBlock: "0x" + latest.toString(16), contractAddresses: [address], category: ["erc20"], maxCount: "0x3e8", withMetadata: false, order: "asc" }];
+          if (pageKey) params[0].pageKey = pageKey;
+          const res = await rpcJson(alchUrl, "alchemy_getAssetTransfers", params);
+          const trs = res?.transfers || [];
+          all = all.concat(trs);
+          pageKey = res?.pageKey || null;
+          if (!pageKey || all.length > MAX_LOGS) break;
+        }
+        out.scannedLogs = all.length;
+        out.logScanComplete = !pageKey && all.length <= MAX_LOGS;
+        if (all.length > 0) {
+          const bals = new Map();
+          for (const tr of all) {
+            const v = Number(tr.value || 0);
+            if (!v) continue;
+            bals.set(String(tr.from).toLowerCase(), (bals.get(String(tr.from).toLowerCase()) || 0) - v);
+            bals.set(String(tr.to).toLowerCase(), (bals.get(String(tr.to).toLowerCase()) || 0) + v);
+          }
+          const vals = [...bals.values()].filter((v) => v > 0).sort((a, b) => b - a);
+          out.holders = vals.length;
+          try {
+            const totalHex = await rpcJson(alchUrl, "eth_call", [{ to: address, data: "0x18160ddd" }, "latest"]);
+            const decHex = await rpcJson(alchUrl, "eth_call", [{ to: address, data: "0x313ce567" }, "latest"]);
+            const dec = decHex ? parseInt(decHex, 16) : 18;
+            const total = Number(BigInt(totalHex || "0x0")) / (10 ** dec);
+            if (total > 0) out.topHoldersPct = Math.round((vals.slice(0, 10).reduce((a, b) => a + b, 0) / total) * 10000) / 100;
+          } catch (_) {}
+          const first = all[0];
+          if (first?.blockNum) {
+            try {
+              const fb = parseInt(first.blockNum, 16);
+              for (let b = fb; b < fb + 3; b++) {
+                const blk = await rpcJson(alchUrl, "eth_getBlockByNumber", ["0x" + b.toString(16), true]);
+                let found = false;
+                for (const tx of blk?.transactions || []) {
+                  if (tx.hash && String(tx.hash).toLowerCase() === String(first.hash).toLowerCase()) {
+                    const rc = await rpcJson(alchUrl, "eth_getTransactionReceipt", [tx.hash]);
+                    if (rc?.contractAddress && String(rc.contractAddress).toLowerCase() === address.toLowerCase()) {
+                      out.creatorHistory = { creatorAddress: tx.from, creationTxHash: tx.hash, creationTimestamp: blk?.timestamp ? parseInt(blk.timestamp, 16) : null };
+                      found = true; break;
+                    }
+                  }
+                }
+                if (found) break;
+              }
+            } catch (_) {}
+          }
+        }
+        return out;
+      } catch (e) { out.logScanError = String(e && e.message ? e.message : e); return out; }
+    }
     let from = startBlock, chunk = 50000, calls = 0;
     while (from <= latest && calls < 20) {
       const to = Math.min(latest, from + chunk - 1);

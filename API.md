@@ -42,3 +42,8 @@ Worker 域名占位：`https://tugou-hanshuang-jiaoben-app.<你的 Cloudflare �
 - 链上日志方案已写进 Worker（evmLogScan）：Transfer 日志聚合算 Top10，首笔 Transfer 所在区块找 to 为空且 receipt 合约地址等于本币的交易算创建者；大币（持仓人数 >500000）直接跳过，不编假 Top10；小币（土狗）才跑完整扫描，并带 complete/scannedLogs/error 诊断。
 - 公开 RPC 从 Worker 调日志不可靠（已实测）：BlastAPI 日志上限 10 个块，mainnet.base.org 日志 429，publicnode 在 rpc-test 单测通、但在 /api/token 多次调用后仍间歇 429，属共享出口 IP 限流；另有 Worker 单次 50 次子请求上限，已通过价格去重、Pro Key 在时跳过分站 v1、日志单 RPC、250ms 节流、起始窗口 6 小时等方式压到限额内，但共享 IP 429 仍无法靠代码根治。
 - 定案：Alchemy 免费 Key（$0、每月 3000 万 CU、约 116 万次调用、15 次/秒、不用绑卡、一个 Key 覆盖 100 多条链，eth_getLogs 一次 60 CU）走 Worker Secret ALCHEMY_API_KEY，Worker 有 Key 时日志扫描优先走 Alchemy 单 URL（base-mainnet、bnb-mainnet、polygon-mainnet、eth-mainnet、arb-mainnet、opt-mainnet），无 Key 时回退公开 RPC；Base 新币 CHUBBY（0x400fb523fbf8387f4be64bde85bcb1954e9c8200，池子 2026-10-27 11:07，24h 买卖 17/2）已用作日志扫描测试币，价格、持仓 18、增发 false、黑名单 false、风险绿已通，Top10 与创建者待 Alchemy Key 到位后重测。
+
+## 2026-10-27 19:28 Alchemy 修正：日志改走 getAssetTransfers
+- 前两轮 401 的根因不是 Key 值错，是 Muse 侧助手脚本 url_with_surrogate_path_segment 对 surrogate 做 URL 转义，转义后的 hsurr%3A... 无法被哨兵换回真 Key，Alchemy 返回 Must be authenticated；改用未转义 surrogate 直接放进 /v2/ 路径后，Base、ETH、BSC、Polygon、Arbitrum、Optimism 的 eth_blockNumber 全部通了。
+- Alchemy 免费档 eth_getLogs 上限 10 个块，扫土狗全量不可行；改走增强接口 alchemy_getAssetTransfers（按合约过滤、asc 排序、maxCount 1000、pageKey 分页），Base CHUBBY 实测 71 笔、pageKey 为空（已全量）、持仓 17 人、Top10 95.9253%、创建者 0xa7ce2a9642c43e92d324b303c871f77b24ffd83d、创建交易 0x89fcdd3d7e6de05804eb5ffe877478e1da75449d2b6f439257b590edb7e84e08、时间戳 1793099203。
+- Worker 已改为有 ALCHEMY_API_KEY 时日志扫描优先走 getAssetTransfers，无 Key 时回退 eth_getLogs；Worker 侧仍待 Jon 在 Cloudflare 控制台加 Secret ALCHEMY_API_KEY，加完无需重新部署再重测 CHUBBY。
