@@ -212,6 +212,60 @@ async function rpcLpBurn(chain, pairAddress) {
   return { lpLocked: pctX100 >= 50, lpBurnedPct: pctX100 };
 }
 
+// Etherscan V2（免费 Key）：源码扫描 + ETH 创建者。注意免费档限制：持仓列表/代币信息是 Pro 接口，
+// Base/BSC 的 getcontractcreation 在免费档返回 Free API access is not supported for this chain，
+// 所以 Top10 占比仍不能靠 Etherscan 免费 Key，creatorHistory 也只在 ETH 上能填。
+const ETHERSCAN_CHAINID = { eth: "1", bsc: "56", base: "8453" };
+function scanSource(src) {
+  const low = (src || "").toLowerCase();
+  if (!low || low.length < 50) return null;
+  return { verified: true, mintable: /function\s+(mint|issue)\s*\(/.test(low), blacklist: /blacklist|black_list|isblacklisted/.test(low) };
+}
+async function etherscanSecurity(env, chain, address) {
+  const key = env.ETHERSCAN_API_KEY;
+  if (!key) return { error: "missing_env_ETHERSCAN_API_KEY" };
+  const chainid = ETHERSCAN_CHAINID[chain];
+  if (!chainid) return { error: "etherscan_chain_not_supported" };
+  const base = `https://api.etherscan.io/v2/api?chainid=${chainid}&apikey=${encodeURIComponent(key)}`;
+  let sourceScan = null, creatorHistory = null, etherscanError = null;
+  try {
+    const sc = await fetchJson(`${base}&module=contract&action=getsourcecode&address=${address}`);
+    let r = Array.isArray(sc.result) ? sc.result[0] : null;
+    let src = r?.SourceCode || "";
+    let scannedFrom = "self";
+    if (r?.Implementation && r.Implementation.toLowerCase() !== address.toLowerCase()) {
+      try {
+        const impl = await fetchJson(`${base}&module=contract&action=getsourcecode&address=${r.Implementation}`);
+        const ri = Array.isArray(impl.result) ? impl.result[0] : null;
+        if (ri?.SourceCode) { src = ri.SourceCode; scannedFrom = "implementation"; }
+      } catch (_) {}
+    }
+    sourceScan = scanSource(src);
+    if (sourceScan) sourceScan.scannedFrom = scannedFrom;
+    if (sc.status !== "1") etherscanError = `source_${sc.message || sc.result || "unknown"}`;
+  } catch (e) { etherscanError = `source_${e && e.message ? e.message : e}`; }
+  try {
+    const cr = await fetchJson(`${base}&module=contract&action=getcontractcreation&contractaddresses=${address}`);
+    const c = Array.isArray(cr.result) ? cr.result[0] : null;
+    if (cr.status === "1" && c?.contractCreator) {
+      creatorHistory = { creatorAddress: c.contractCreator, creationTxHash: c.txHash ?? null, creationTimestamp: c.timestamp ? Number(c.timestamp) : null };
+    } else if (cr.status !== "1") {
+      etherscanError = (etherscanError ? etherscanError + ";" : "") + `creation_${cr.message || cr.result || "unknown"}`;
+    }
+  } catch (e) { etherscanError = (etherscanError ? etherscanError + ";" : "") + `creation_${e && e.message ? e.message : e}`; }
+  return { mintable: sourceScan ? sourceScan.mintable : null, blacklist: sourceScan ? sourceScan.blacklist : null, creatorHistory, sourceScan, error: etherscanError };
+}
+async function rpcOwner(chain, address) {
+  const rpcUrl = RPC[chain];
+  if (!rpcUrl) return null;
+  const res = await rpcCall(rpcUrl, address, "0x8da5cb5b");
+  if (res === null) return null;
+  const hex = res.toString(16).padStart(64, "0");
+  if (hex === "0".repeat(64)) return true;
+  if (/^[0-9a-f]{64}$/.test(hex) && hex.slice(24) !== "0".repeat(40)) return false;
+  return null;
+}
+
 async function blockscoutInfo(chain, address) {
   const host = BLOCKSCOUT[chain];
   if (!host) return null;
@@ -300,6 +354,28 @@ export default {
         try { lpBurn = await rpcLpBurn(chain, price?.pairAddress); } catch (_) { lpBurn = null; }
         if (lpBurn && security && security.lpLocked == null) { security.lpLocked = lpBurn.lpLocked; security.flags = { ...(security.flags || {}), lpBurnedPct: lpBurn.lpBurnedPct }; }
       }
+      let esCreator = null;
+      let etherscanError = null;
+      if (chain !== "solana") {
+        try {
+          const es = await etherscanSecurity(env, chain, address);
+          if (es.error) etherscanError = es.error;
+          if (es.mintable != null || es.blacklist != null || es.creatorHistory) {
+            if (!security) security = { holders: null, topHoldersPct: null, buyTax: null, sellTax: null, honeypot: null, renounced: null, mintable: null, blacklist: null, lpLocked: null, risk: null, source: "etherscan", flags: {} };
+            if (security.mintable == null && es.mintable != null) security.mintable = es.mintable;
+            if (security.blacklist == null && es.blacklist != null) security.blacklist = es.blacklist;
+            if (es.creatorHistory) esCreator = es.creatorHistory;
+            security.flags = { ...(security.flags || {}), etherscan: { mintable: es.mintable, blacklist: es.blacklist, sourceScan: es.sourceScan } };
+            if (security.risk == null && (es.mintable != null || es.blacklist != null)) security.risk = es.blacklist === true ? "yellow" : es.mintable === true ? "yellow" : "green";
+          }
+        } catch (e) { etherscanError = String(e && e.message ? e.message : e); }
+        try {
+          if (security && security.renounced == null) {
+            const own = await rpcOwner(chain, address);
+            if (own != null) security.renounced = own;
+          }
+        } catch (_) {}
+      }
       const poolAge = price?.pairCreatedAt ? Math.round(((Date.now() - Number(price.pairCreatedAt)) / 86400000) * 10) / 10 : null;
       return json({
         chain, address,
@@ -309,10 +385,10 @@ export default {
         buyTax: security?.buyTax ?? null, sellTax: security?.sellTax ?? null,
         honeypot: security?.honeypot ?? null, renounced: security?.renounced ?? null,
         mintable: security?.mintable ?? null, blacklist: security?.blacklist ?? null,
-        lpLocked: security?.lpLocked ?? null, poolAge, creatorHistory: bs?.creatorHistory ?? null,
+        lpLocked: security?.lpLocked ?? null, poolAge, creatorHistory: esCreator ?? bs?.creatorHistory ?? null,
         risk: security?.risk ?? null, riskSource: security?.source ?? "pending",
         security: security ? { source: security.source, flags: security.flags } : null,
-        securityError, bsError,
+        securityError, bsError, etherscanError,
         tradeLinks: {
           ave: `https://ave.ai/token/${address}-${chain}`,
           gmgn: `https://gmgn.ai/${chain}/token/${address}`,
