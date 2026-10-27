@@ -189,8 +189,8 @@ const BLOCKSCOUT = { eth: "eth.blockscout.com", base: "base.blockscout.com", rob
 const RPC = { eth: "https://eth.llamarpc.com", bsc: "https://bsc-dataseed.binance.org", base: "https://mainnet.base.org", arbitrum: "https://arb1.arbitrum.io/rpc", optimism: "https://mainnet.optimism.io", polygon: "https://polygon-rpc.com" };
 const RPC_URLS = {
   eth: ["https://cloudflare-eth.com", "https://ethereum.publicnode.com", "https://eth.llamarpc.com", "https://rpc.ankr.com/eth"],
-  bsc: ["https://bsc-dataseed.binance.org", "https://bsc.publicnode.com"],
-  base: ["https://mainnet.base.org", "https://base.publicnode.com"],
+  bsc: ["https://bsc-dataseed.binance.org", "https://bsc-dataseed1.bnbchain.org", "https://bsc-dataseed2.bnbchain.org", "https://bsc.publicnode.com"],
+  base: ["https://rpc.ankr.com/base", "https://base.llamarpc.com", "https://base-mainnet.public.blastapi.io", "https://1rpc.io/base", "https://mainnet.base.org", "https://base.publicnode.com"],
   arbitrum: ["https://arb1.arbitrum.io/rpc", "https://arbitrum.publicnode.com"],
   optimism: ["https://mainnet.optimism.io", "https://optimism.publicnode.com"],
   polygon: ["https://polygon-rpc.com", "https://polygon.publicnode.com"],
@@ -332,6 +332,131 @@ async function priceFor(chain, address) {
 }
 
 const BLOCKSCOUT_PRO_CHAINID = { eth: "1", arbitrum: "42161", optimism: "10", robinhood: "4663", base: "8453", polygon: "137", bsc: "56" };
+const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+function hexToInt(h) { try { return parseInt(h, 16); } catch (_) { return null; } }
+async function rpcJsonChain(chain, method, params) {
+  const urls = RPC_URLS[chain] || (RPC[chain] ? [RPC[chain]] : []);
+  return rpcJson(urls, method, params);
+}
+const BLOCK_TIME_SEC = { eth: 12, bsc: 3, base: 2, arbitrum: 1, optimism: 2, polygon: 2, robinhood: 2 };
+const LOG_RPC = { base: "https://base.publicnode.com", bsc: "https://bsc.publicnode.com", polygon: "https://polygon.publicnode.com", eth: "https://ethereum.publicnode.com", arbitrum: "https://arbitrum.publicnode.com", optimism: "https://optimism.publicnode.com" };
+const ALCHEMY_BASE = { eth: "https://eth-mainnet.g.alchemy.com/v2/", arbitrum: "https://arb-mainnet.g.alchemy.com/v2/", optimism: "https://opt-mainnet.g.alchemy.com/v2/", base: "https://base-mainnet.g.alchemy.com/v2/", polygon: "https://polygon-mainnet.g.alchemy.com/v2/", bsc: "https://bnb-mainnet.g.alchemy.com/v2/" };
+function alchemyUrl(env, chain) {
+  const key = env.ALCHEMY_API_KEY;
+  const base = ALCHEMY_BASE[chain];
+  return key && base ? base + key : null;
+}
+async function rpcJsonChainSlow(env, chain, method, params) {
+  await new Promise((r) => setTimeout(r, 250));
+  const alch = env ? alchemyUrl(env, chain) : null;
+  if (alch) return rpcJson(alch, method, params);
+  const single = LOG_RPC[chain];
+  if (single) return rpcJson(single, method, params);
+  return rpcJsonChain(chain, method, params);
+}
+async function blockNumberAtTime(env, chain, tsSec, latest) {
+  // 单次取最新块时间戳 + 出块时间估算，留 2000 块余量，不做多次微调，避免子请求超限
+  try {
+    const latestBlk = await rpcJsonChainSlow(env, chain, "eth_getBlockByNumber", ["0x" + latest.toString(16), false]);
+    const latestTs = latestBlk?.timestamp ? hexToInt(latestBlk.timestamp) : null;
+    if (latestTs == null) return null;
+    const bt = BLOCK_TIME_SEC[chain] || 2;
+    const est = latest - Math.floor((latestTs - tsSec) / bt);
+    return Math.max(0, est - 2000);
+  } catch (_) { return null; }
+}
+async function evmLogScan(env, chain, address, pairCreatedAtMs) {
+  // 链上 Transfer 日志聚合：只给土狗用。大币（转账数超上限）返回 partial，不编一个假 Top10。
+  // 返回：{ topHoldersPct, holders, logScanComplete, scannedLogs, creatorHistory, logScanError }
+  const out = { topHoldersPct: null, holders: null, logScanComplete: false, scannedLogs: 0, creatorHistory: null, logScanError: null };
+  try {
+    const latestHex = await rpcJsonChainSlow(env, chain, "eth_blockNumber", []);
+    const latest = hexToInt(latestHex);
+    if (latest == null) { out.logScanError = "rpc_no_latest_block"; return out; }
+    // 起始块：优先用池子创建时间前 7 天，否则用最新块前 200 万块（约 Base 46 天、BSC 23 天、Polygon 46 天）
+    let startBlock = null;
+    if (pairCreatedAtMs) {
+      const ts = Math.floor(Number(pairCreatedAtMs) / 1000) - 6 * 3600;
+      startBlock = await blockNumberAtTime(env, chain, ts, latest);
+    }
+    if (startBlock == null) startBlock = Math.max(0, latest - 2000000);
+    const MAX_LOGS = 10000;
+    const balances = new Map();
+    let totalLogs = 0, complete = false, firstLogBlock = null;
+    let from = startBlock, chunk = 50000, calls = 0;
+    while (from <= latest && calls < 20) {
+      const to = Math.min(latest, from + chunk - 1);
+      let logs;
+      try {
+        logs = await rpcJsonChainSlow(env, chain, "eth_getLogs", [{ address, fromBlock: "0x" + from.toString(16), toBlock: "0x" + to.toString(16), topics: [TRANSFER_TOPIC] }]);
+      } catch (e) {
+        const msg = String(e && e.message ? e.message : e);
+        if (/exceed|too many|max results/i.test(msg) && chunk > 100) { chunk = Math.max(100, Math.floor(chunk / 4)); continue; }
+        out.logScanError = msg; break;
+      }
+      calls++;
+      if (!Array.isArray(logs)) break;
+      totalLogs += logs.length;
+      if (firstLogBlock == null && logs.length > 0) firstLogBlock = hexToInt(logs[0].blockNumber);
+      for (const log of logs) {
+        try {
+          const fromA = "0x" + (log.topics?.[1] || "").slice(-40);
+          const toA = "0x" + (log.topics?.[2] || "").slice(-40);
+          const val = BigInt(log.data || "0x0");
+          if (val === 0n) continue;
+          balances.set(fromA, (balances.get(fromA) || 0n) - val);
+          balances.set(toA, (balances.get(toA) || 0n) + val);
+        } catch (_) {}
+      }
+      if (totalLogs > MAX_LOGS) { out.logScanError = "log_cap_exceeded"; break; }
+      from = to + 1;
+      if (to >= latest) { complete = true; break; }
+      if (chunk < 50000) chunk = Math.min(50000, chunk * 2);
+    }
+    if (!complete && !out.logScanError && calls >= 20) out.logScanError = "log_call_cap_exceeded";
+    out.scannedLogs = totalLogs;
+    out.logScanComplete = complete && !out.logScanError;
+    if (out.logScanComplete && balances.size > 0) {
+      // 总供应走 RPC，失败则 Top10 算不出，不编数
+      try {
+        const totalHex = await rpcJsonChainSlow(env, chain, "eth_call", [{ to: address, data: "0x18160ddd" }, "latest"]);
+        const total = totalHex ? BigInt(totalHex) : 0n;
+        if (total > 0n) {
+          const vals = [...balances.values()].filter((v) => v > 0n).sort((a, b) => (a > b ? -1 : a < b ? 1 : 0));
+          out.holders = vals.length;
+          let sum = 0n;
+          for (const v of vals.slice(0, 10)) sum += v;
+          out.topHoldersPct = Number((sum * 10000n) / total) / 100;
+        }
+      } catch (_) {}
+    }
+    // 创建者：取首笔 Transfer 所在区块，找 to 为空且 receipt 合约地址等于本币的交易
+    if (firstLogBlock != null) {
+      try {
+        for (let b = firstLogBlock; b < firstLogBlock + 3; b++) {
+          const blk = await rpcJsonChainSlow(env, chain, "eth_getBlockByNumber", ["0x" + b.toString(16), true]);
+          const txs = blk?.transactions || [];
+          let found = false;
+          for (const tx of txs) {
+            if (tx.to != null) continue;
+            try {
+              const rc = await rpcJsonChainSlow(env, chain, "eth_getTransactionReceipt", [tx.hash]);
+              if (rc?.contractAddress && String(rc.contractAddress).toLowerCase() === address.toLowerCase()) {
+                let ts = null;
+                try { ts = blk?.timestamp ? hexToInt(blk.timestamp) : null; } catch (_) {}
+                out.creatorHistory = { creatorAddress: tx.from, creationTxHash: tx.hash, creationTimestamp: ts };
+                found = true; break;
+              }
+            } catch (_) {}
+          }
+          if (found) break;
+        }
+      } catch (_) {}
+    }
+  } catch (e) { out.logScanError = String(e && e.message ? e.message : e); }
+  return out;
+}
+
 async function blockscoutProInfo(env, chain, address) {
   const key = env.BLOCKSCOUT_API_KEY;
   if (!key) return { error: "missing_env_BLOCKSCOUT_API_KEY" };
@@ -434,9 +559,7 @@ export default {
       const address = url.searchParams.get("address") || "";
       if (!CHAINS[chain]) return json({ error: "unknown_chain", chain }, 400);
       if (!isValidAddress(chain, address)) return json({ error: "invalid_address", chain }, 400);
-      let dexPrice = await cached(env, `token:${chain}:${address.toLowerCase()}`, () => dexToken(chain, address));
-      if (!dexPrice) dexPrice = await dexToken(chain, address);
-      let price = dexPrice || (await geckoToken(chain, address));
+      let price = await cached(env, `token:${chain}:${address.toLowerCase()}`, () => dexToken(chain, address));
       if (!price) price = await geckoToken(chain, address);
       let security = null;
       let securityError = null;
@@ -444,7 +567,7 @@ export default {
       let bs = null;
       let bsError = null;
       let lpBurn = null;
-      if (chain !== "solana") {
+      if (chain !== "solana" && !env.BLOCKSCOUT_API_KEY) {
         try { bs = await blockscoutInfo(chain, address); } catch (e) { bs = null; bsError = String(e && e.message ? e.message : e); }
         if (bs) {
           if (!security) security = { holders: null, topHoldersPct: null, buyTax: null, sellTax: null, honeypot: null, renounced: null, mintable: null, blacklist: null, lpLocked: null, risk: null, source: "blockscout", flags: {} };
@@ -492,6 +615,19 @@ export default {
           }
         } catch (_) {}
       }
+      let logScan = null;
+      const holdersNum = security?.holders != null ? Number(security.holders) : null;
+      const skipLogScan = holdersNum != null && holdersNum > 500000;
+      if (chain !== "solana" && !skipLogScan && (security?.topHoldersPct == null || (bsPro?.creatorHistory == null && esCreator == null && bs?.creatorHistory == null))) {
+        try {
+          logScan = await evmLogScan(env, chain, address, price?.pairCreatedAt);
+          if (logScan) {
+            if (security && security.topHoldersPct == null && logScan.topHoldersPct != null) security.topHoldersPct = logScan.topHoldersPct;
+            if (security && security.holders == null && logScan.holders != null) security.holders = logScan.holders;
+            if (security) security.flags = { ...(security.flags || {}), logScan: { complete: logScan.logScanComplete, scannedLogs: logScan.scannedLogs, error: logScan.logScanError } };
+          }
+        } catch (_) { logScan = null; }
+      }
       const poolAge = price?.pairCreatedAt ? Math.round(((Date.now() - Number(price.pairCreatedAt)) / 86400000) * 10) / 10 : null;
       return json({
         chain, address,
@@ -501,16 +637,38 @@ export default {
         buyTax: security?.buyTax ?? null, sellTax: security?.sellTax ?? null,
         honeypot: security?.honeypot ?? null, renounced: security?.renounced ?? null,
         mintable: security?.mintable ?? null, blacklist: security?.blacklist ?? null,
-        lpLocked: security?.lpLocked ?? null, poolAge, creatorHistory: bsPro?.creatorHistory ?? esCreator ?? bs?.creatorHistory ?? null,
+        lpLocked: security?.lpLocked ?? null, poolAge, creatorHistory: bsPro?.creatorHistory ?? esCreator ?? bs?.creatorHistory ?? logScan?.creatorHistory ?? null,
         risk: security?.risk ?? null, riskSource: security?.source ?? "pending",
         security: security ? { source: security.source, flags: security.flags } : null,
-        securityError, bsError, bsProError, etherscanError,
+        securityError, bsError, bsProError, etherscanError, logScan: logScan ? { complete: logScan.logScanComplete, scannedLogs: logScan.scannedLogs, error: logScan.logScanError } : null,
         tradeLinks: {
           ave: `https://ave.ai/token/${address}-${chain}`,
           gmgn: `https://gmgn.ai/${chain}/token/${address}`,
           dexscreener: price?.pairAddress ? `https://dexscreener.com/${CHAINS[chain].dex}/${price.pairAddress}` : null,
         },
       });
+    }
+
+
+    if (path === "/api/rpc-test" && request.method === "GET") {
+      const chain = (url.searchParams.get("chain") || "").toLowerCase();
+      const idx = Number(url.searchParams.get("rpc") || "0");
+      const method = url.searchParams.get("method") || "eth_blockNumber";
+      const urls = RPC_URLS[chain] || [];
+      const rpcUrl = urls[idx];
+      if (!rpcUrl) return json({ error: "no_rpc_url", chain, idx }, 400);
+      try {
+        let params = [];
+        if (method === "eth_getLogs") {
+          const address = url.searchParams.get("address") || "";
+          const from = url.searchParams.get("from") || "0x0";
+          const to = url.searchParams.get("to") || "latest";
+          params = [{ address, fromBlock: from, toBlock: to, topics: [TRANSFER_TOPIC] }];
+        }
+        const res = await fetch(rpcUrl, { method: "POST", headers: { "content-type": "application/json", accept: "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }) });
+        const body = await res.json().catch(() => ({}));
+        return json({ chain, rpcUrl, status: res.status, result: body.result ?? null, error: body.error ?? null, count: Array.isArray(body.result) ? body.result.length : null });
+      } catch (e) { return json({ chain, rpcUrl, error: String(e && e.message ? e.message : e) }); }
     }
 
     if (path === "/api/holdings" && request.method === "POST") {

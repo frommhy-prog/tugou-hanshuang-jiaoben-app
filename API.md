@@ -36,3 +36,9 @@ Worker 域名占位：`https://tugou-hanshuang-jiaoben-app.<你的 Cloudflare �
 - 实测：ETH WETH 总供应 2222010091493531624966045、持仓人数 3359464、Top10 占比 60.03%；Robinhood SEND 总供应 1e28（100 亿，纠正了之前浏览器页 10 亿的说法）、持仓人数 113、Top10 占比 98.98%；ETH 创建者与创建交易与 Etherscan 一致。
 - 链覆盖差异（实测）：ETH、Arbitrum、Optimism、Robinhood 的代币接口通；Base、Polygon 的代币接口 consistently 返回 402，Top10 仍未解；BSC 返回 404（BSC 无 Blockscout 实例，属预期）。
 - Worker 已接 blockscoutProInfo，读 env.BLOCKSCOUT_API_KEY，填 holders、topHoldersPct、creatorHistory（Pro 优先于 Etherscan 与分站），失败写入 bsProError；Worker 已部署 etag 6d714e7a，现报 missing_env_BLOCKSCOUT_API_KEY，须 Jon 在 Cloudflare 控制台 Workers & Pages > tugou-hanshuang-jiaoben-app > Settings > Variables 里加 Secret BLOCKSCOUT_API_KEY（同把 Key），加完无需重新部署、再重测。
+
+## 2026-10-27 19:08 必须解决 Base、Polygon、BSC：链上日志 + Alchemy 定案
+- 已证死：Routescan Etherscan 兼容接口对 8453、56、137 均返回 chain not supported；BscScan V1 无 Key 只返回欢迎页，Basescan V1 已停用、V2 免费档不支持 Base/BSC；Chainbase 无 Key 返回 401；OKLink 免费限额未公开，不作为免费定案。
+- 链上日志方案已写进 Worker（evmLogScan）：Transfer 日志聚合算 Top10，首笔 Transfer 所在区块找 to 为空且 receipt 合约地址等于本币的交易算创建者；大币（持仓人数 >500000）直接跳过，不编假 Top10；小币（土狗）才跑完整扫描，并带 complete/scannedLogs/error 诊断。
+- 公开 RPC 从 Worker 调日志不可靠（已实测）：BlastAPI 日志上限 10 个块，mainnet.base.org 日志 429，publicnode 在 rpc-test 单测通、但在 /api/token 多次调用后仍间歇 429，属共享出口 IP 限流；另有 Worker 单次 50 次子请求上限，已通过价格去重、Pro Key 在时跳过分站 v1、日志单 RPC、250ms 节流、起始窗口 6 小时等方式压到限额内，但共享 IP 429 仍无法靠代码根治。
+- 定案：Alchemy 免费 Key（$0、每月 3000 万 CU、约 116 万次调用、15 次/秒、不用绑卡、一个 Key 覆盖 100 多条链，eth_getLogs 一次 60 CU）走 Worker Secret ALCHEMY_API_KEY，Worker 有 Key 时日志扫描优先走 Alchemy 单 URL（base-mainnet、bnb-mainnet、polygon-mainnet、eth-mainnet、arb-mainnet、opt-mainnet），无 Key 时回退公开 RPC；Base 新币 CHUBBY（0x400fb523fbf8387f4be64bde85bcb1954e9c8200，池子 2026-10-27 11:07，24h 买卖 17/2）已用作日志扫描测试币，价格、持仓 18、增发 false、黑名单 false、风险绿已通，Top10 与创建者待 Alchemy Key 到位后重测。
