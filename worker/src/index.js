@@ -55,6 +55,28 @@ async function dexToken(chain, address) {
   };
 }
 
+// GeckoTerminal 兜底：Dexscreener 经 Worker 返回空时再查一次。
+// 只给价格和 24h 量，流动性/涨跌/池子地址该接口不直接给，就留空，不编数。
+async function geckoToken(chain, address) {
+  const url = `https://api.geckoterminal.com/api/v2/networks/${CHAINS[chain].gecko}/tokens/${address}`;
+  const res = await fetch(url, { headers: { accept: "application/json" } });
+  if (!res.ok) return null;
+  const body = await res.json();
+  const attr = body?.data?.attributes;
+  if (!attr || attr.price_usd == null) return null;
+  return {
+    name: attr.name ?? null,
+    symbol: attr.symbol ?? null,
+    priceUsd: Number(attr.price_usd),
+    liquidityUsd: null,
+    volume24hUsd: attr.volume_usd?.h24 ? Number(attr.volume_usd.h24) : null,
+    priceChange24hPct: null,
+    pairAddress: null,
+    dexId: null,
+    source: "geckoterminal",
+  };
+}
+
 async function cached(env, key, fn, ttlSeconds = 180) {
   // 有 KV 就缓存 3 分钟；没有 KV 就直接查，不假装缓存了。
   try {
@@ -82,7 +104,8 @@ export default {
       const address = url.searchParams.get("address") || "";
       if (!CHAINS[chain]) return json({ error: "unknown_chain", chain }, 400);
       if (!isValidAddress(chain, address)) return json({ error: "invalid_address", chain }, 400);
-      const price = await cached(env, `token:${chain}:${address.toLowerCase()}`, () => dexToken(chain, address));
+      const dexPrice = await cached(env, `token:${chain}:${address.toLowerCase()}`, () => dexToken(chain, address));
+      const price = dexPrice || (await geckoToken(chain, address));
       return json({
         chain, address,
         price,
