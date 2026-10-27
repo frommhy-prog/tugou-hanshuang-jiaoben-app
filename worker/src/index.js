@@ -398,7 +398,8 @@ async function evmLogScan(env, chain, address, pairCreatedAtMs) {
         }
         out.scannedLogs = all.length;
         out.logScanComplete = !pageKey && all.length <= MAX_LOGS;
-        if (all.length > 0) {
+        if (!out.logScanComplete) out.logScanError = "log_cap_exceeded";
+        if (out.logScanComplete && all.length > 0) {
           const bals = new Map();
           for (const tr of all) {
             const v = Number(tr.value || 0);
@@ -678,8 +679,10 @@ export default {
         try {
           logScan = await evmLogScan(env, chain, address, price?.pairCreatedAt);
           if (logScan) {
-            if (security && security.topHoldersPct == null && logScan.topHoldersPct != null) security.topHoldersPct = logScan.topHoldersPct;
-            if (security && security.holders == null && logScan.holders != null) security.holders = logScan.holders;
+            if (logScan.logScanComplete) {
+              if (security && security.topHoldersPct == null && logScan.topHoldersPct != null) security.topHoldersPct = logScan.topHoldersPct;
+              if (security && security.holders == null && logScan.holders != null) security.holders = logScan.holders;
+            }
             if (security) security.flags = { ...(security.flags || {}), logScan: { complete: logScan.logScanComplete, scannedLogs: logScan.scannedLogs, error: logScan.logScanError } };
           }
         } catch (_) { logScan = null; }
