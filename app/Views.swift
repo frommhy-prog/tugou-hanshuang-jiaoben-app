@@ -46,9 +46,15 @@ struct TokenCheckView: View {
                     Task {
                         loading = true; errorText = nil; result = nil
                         do {
+                            // 先快后全：快价 1 秒内先显示，全量体检到了再覆盖，不等全量才出数
+                            if let fast = try? await APIClient.fetchTokenFast(chain: chain, address: contract) {
+                                result = fast
+                            }
                             result = try await APIClient.fetchToken(chain: chain, address: contract)
                         } catch {
-                            errorText = "查不到或网络失败：\(error.localizedDescription)"
+                            if result == nil {
+                                errorText = "查不到或网络失败：\(error.localizedDescription)"
+                            }
                         }
                         loading = false
                     }
@@ -65,6 +71,10 @@ struct TokenCheckView: View {
                         if let v = price.liquidityUsd { Text("流动性：$\(v)") }
                         if let v = price.volume24hUsd { Text("24h 量：$\(v)") }
                         if let v = price.priceChange24hPct { Text("24h 涨跌：\(v)%") }
+                        if let v = result.marketCapUsd { Text("本链市值：$\(v)") }
+                        if let tx = result.txns24h, let b = tx.buys, let s = tx.sells { Text("24h 买卖笔数：买 \(b) / 卖 \(s)") }
+                        if let v = result.realHolders { Text("真实持仓人数：\(v)") }
+                        if let v = result.queryTimeMs { Text("查询耗时：\(v) 毫秒\(result.cached == true ? "（缓存）" : "")\(result.fast == true ? "（快价）" : "")") }
                     }
                     Section("风险") {
                         if let r = result.risk { Text("风险灯：\(r)（来源：\(result.riskSource ?? "")）") }

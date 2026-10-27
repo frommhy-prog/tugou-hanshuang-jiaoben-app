@@ -47,9 +47,20 @@ enum APIClient {
         var lpTopHolderPct: Double?
         var poolAge: Double?
         var creatorHistory: CreatorHistory?
+        var marketCapUsd: Double?
+        var realHolders: Int?
+        var txns24h: Txns?
+        var queryTimeMs: Int?
+        var cached: Bool?
+        var fast: Bool?
         var risk: String?
         var riskSource: String?
         var tradeLinks: TradeLinks?
+    }
+
+    struct Txns: Codable {
+        var buys: Int?
+        var sells: Int?
     }
 
     struct HoldingsResponse: Codable {
@@ -72,6 +83,16 @@ enum APIClient {
 
     static func fetchToken(chain: Chain, address: String) async throws -> TokenResponse {
         var components = URLComponents(url: baseURL.appendingPathComponent("api/token"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [
+            URLQueryItem(name: "chain", value: chain.rawValue),
+            URLQueryItem(name: "address", value: address.trimmingCharacters(in: .whitespacesAndNewlines)),
+        ]
+        let (data, _) = try await URLSession.shared.data(from: components.url!)
+        return try JSONDecoder().decode(TokenResponse.self, from: data)
+    }
+
+    static func fetchTokenFast(chain: Chain, address: String) async throws -> TokenResponse {
+        var components = URLComponents(url: baseURL.appendingPathComponent("api/token-fast"), resolvingAgainstBaseURL: false)!
         components.queryItems = [
             URLQueryItem(name: "chain", value: chain.rawValue),
             URLQueryItem(name: "address", value: address.trimmingCharacters(in: .whitespacesAndNewlines)),

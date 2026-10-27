@@ -279,6 +279,7 @@ async function etherscanSecurity(env, chain, address) {
   if (!chainid) return { error: "etherscan_chain_not_supported" };
   const base = `https://api.etherscan.io/v2/api?chainid=${chainid}&apikey=${encodeURIComponent(key)}`;
   let sourceScan = null, creatorHistory = null, etherscanError = null;
+  const crP = fetchJson(`${base}&module=contract&action=getcontractcreation&contractaddresses=${address}`).catch((e) => ({ __error: String(e && e.message ? e.message : e) }));
   try {
     const sc = await fetchJson(`${base}&module=contract&action=getsourcecode&address=${address}`);
     let r = Array.isArray(sc.result) ? sc.result[0] : null;
@@ -296,12 +297,15 @@ async function etherscanSecurity(env, chain, address) {
     if (sc.status !== "1") etherscanError = `source_${sc.message || sc.result || "unknown"}`;
   } catch (e) { etherscanError = `source_${e && e.message ? e.message : e}`; }
   try {
-    const cr = await fetchJson(`${base}&module=contract&action=getcontractcreation&contractaddresses=${address}`);
-    const c = Array.isArray(cr.result) ? cr.result[0] : null;
-    if (cr.status === "1" && c?.contractCreator) {
-      creatorHistory = { creatorAddress: c.contractCreator, creationTxHash: c.txHash ?? null, creationTimestamp: c.timestamp ? Number(c.timestamp) : null };
-    } else if (cr.status !== "1") {
-      etherscanError = (etherscanError ? etherscanError + ";" : "") + `creation_${cr.message || cr.result || "unknown"}`;
+    const cr = await crP;
+    if (cr && cr.__error) { etherscanError = (etherscanError ? etherscanError + ";" : "") + `creation_${cr.__error}`; }
+    else {
+      const c = Array.isArray(cr.result) ? cr.result[0] : null;
+      if (cr.status === "1" && c?.contractCreator) {
+        creatorHistory = { creatorAddress: c.contractCreator, creationTxHash: c.txHash ?? null, creationTimestamp: c.timestamp ? Number(c.timestamp) : null };
+      } else if (cr.status !== "1") {
+        etherscanError = (etherscanError ? etherscanError + ";" : "") + `creation_${cr.message || cr.result || "unknown"}`;
+      }
     }
   } catch (e) { etherscanError = (etherscanError ? etherscanError + ";" : "") + `creation_${e && e.message ? e.message : e}`; }
   return { mintable: sourceScan ? sourceScan.mintable : null, blacklist: sourceScan ? sourceScan.blacklist : null, creatorHistory, sourceScan, error: etherscanError };
@@ -404,16 +408,14 @@ async function lpInfoAlchemy(env, chain, pairAddress) {
   if (!alchUrl || !pairAddress) { out.lpError = alchUrl ? "no_pair" : "no_alchemy_key"; return out; }
   if (!/^0x[0-9a-fA-F]{40}$/.test(pairAddress)) { out.lpError = "v4_pool_id_no_lp_token"; return out; }
   try {
-    const totalHex = await rpcJson(alchUrl, "eth_call", [{ to: pairAddress, data: "0x18160ddd" }, "latest"]);
-    const total = totalHex ? BigInt(totalHex) : 0n;
-    if (total <= 0n) { out.lpError = "v3_or_not_erc20"; return out; }
     const balOf = async (holder) => {
       const h = holder.slice(2).padStart(64, "0");
       const b = await rpcJson(alchUrl, "eth_call", [{ to: pairAddress, data: "0x70a08231" + h }, "latest"]);
       return b ? BigInt(b) : 0n;
     };
-    const zeroBal = await balOf("0x0000000000000000000000000000000000000000");
-    const deadBal = await balOf("0x000000000000000000000000000000000000dEaD");
+    const [totalHex, zeroBal, deadBal] = await Promise.all([rpcJson(alchUrl, "eth_call", [{ to: pairAddress, data: "0x18160ddd" }, "latest"]).catch(() => null), balOf("0x0000000000000000000000000000000000000000").catch(() => 0n), balOf("0x000000000000000000000000000000000000dEaD").catch(() => 0n)]);
+    const total = totalHex ? BigInt(totalHex) : 0n;
+    if (total <= 0n) { out.lpError = "v3_or_not_erc20"; return out; }
     out.lpBurnPct = Math.round(Number(((zeroBal + deadBal) * 10000n) / total) / 100 * 100) / 100;
     out.lpLocked = out.lpBurnPct >= 50;
     // LP 持仓分布：getAssetTransfers 按 LP 合约过滤，V2 新币通常只有几笔到几百笔
@@ -619,9 +621,13 @@ async function blockscoutProInfo(env, chain, address) {
   const base = `https://api.blockscout.com/${cid}/api/v2`;
   const err = {};
   let token = null, holders = null, addr = null;
-  try { token = await fetchJson(`${base}/tokens/${address}?apikey=${key}`); } catch (e) { err.token = String(e && e.message ? e.message : e); }
-  try { holders = await fetchJson(`${base}/tokens/${address}/holders?apikey=${key}`); } catch (e) { err.holders = String(e && e.message ? e.message : e); }
-  try { addr = await fetchJson(`${base}/addresses/${address}?apikey=${key}`); } catch (e) { err.address = String(e && e.message ? e.message : e); }
+  const [tokenR, holdersR, addrR] = await Promise.allSettled([fetchJson(`${base}/tokens/${address}?apikey=${key}`), fetchJson(`${base}/tokens/${address}/holders?apikey=${key}`), fetchJson(`${base}/addresses/${address}?apikey=${key}`)]);
+  token = tokenR.status === "fulfilled" ? tokenR.value : null;
+  holders = holdersR.status === "fulfilled" ? holdersR.value : null;
+  addr = addrR.status === "fulfilled" ? addrR.value : null;
+  if (tokenR.status === "rejected") err.token = String(tokenR.reason && tokenR.reason.message ? tokenR.reason.message : tokenR.reason);
+  if (holdersR.status === "rejected") err.holders = String(holdersR.reason && holdersR.reason.message ? holdersR.reason.message : holdersR.reason);
+  if (addrR.status === "rejected") err.address = String(addrR.reason && addrR.reason.message ? addrR.reason.message : addrR.reason);
   if (!token && !holders && !addr) throw new Error(`blockscout_pro_token_${err.token}_holders_${err.holders}_address_${err.address}`);
   let topHoldersPct = null;
   try {
@@ -705,14 +711,45 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
 
+    if (path === "/api/cache-test") {
+      try {
+        if (!env.CACHE_KV) return json({ kv: false });
+        const hit = await env.CACHE_KV.get("cache-test");
+        if (hit) return json({ hit: true, body: hit });
+        await env.CACHE_KV.put("cache-test", "hello-cache", { expirationTtl: 60 });
+        return json({ hit: false, put: true });
+      } catch (e) { return json({ error: String(e && e.message ? e.message : e) }); }
+    }
+
     if (path === "/health") return json({ ok: true, service: "tugou-hanshuang-jiaoben-app" });
     if (path === "/api/sources") return json({ sources: SOURCES });
+
+    if (path === "/api/token-fast" && request.method === "GET") {
+      const chain = (url.searchParams.get("chain") || "").toLowerCase();
+      const address = url.searchParams.get("address") || "";
+      if (!CHAINS[chain]) return json({ error: "unknown_chain", chain }, 400);
+      if (!isValidAddress(chain, address)) return json({ error: "invalid_address", chain }, 400);
+      const t0 = Date.now();
+      const withTimeout = (pr, ms) => Promise.race([pr, new Promise((_, rej) => setTimeout(() => rej(new Error(`timeout_${ms}ms`)), ms))]);
+      const [dexR, geckoR] = await Promise.allSettled([withTimeout(dexToken(chain, address), 800), withTimeout(geckoToken(chain, address), 800)]);
+      const dexPrice = dexR.status === "fulfilled" ? dexR.value : null;
+      const geckoPrice = geckoR.status === "fulfilled" ? geckoR.value : null;
+      const price = dexPrice || geckoPrice;
+      const poolAge = price?.pairCreatedAt ? Math.round(((Date.now() - Number(price.pairCreatedAt)) / 86400000) * 10) / 10 : null;
+      return json({ chain, address, fast: true, price, poolAge, txns24h: price?.txns24h ?? null, totalVolume24hUsd: price?.totalVolume24hUsd ?? null, allPairs: price?.allPairs ?? null, priceDexUsd: dexPrice?.priceUsd ?? null, priceGeckoUsd: geckoPrice?.priceUsd ?? null, queryTimeMs: Date.now() - t0, note: "快价只含价格/流动性/量/买卖笔数/池龄，完整体检走 /api/token" });
+    }
 
     if (path === "/api/token" && request.method === "GET") {
       const chain = (url.searchParams.get("chain") || "").toLowerCase();
       const address = url.searchParams.get("address") || "";
       if (!CHAINS[chain]) return json({ error: "unknown_chain", chain }, 400);
       if (!isValidAddress(chain, address)) return json({ error: "invalid_address", chain }, 400);
+      try {
+        if (env.CACHE_KV) {
+          const hit = await env.CACHE_KV.get(`tokenfull:${chain}:${address.toLowerCase()}`);
+          if (hit) { const hb = JSON.parse(hit); hb.cached = true; hb.queryTimeMs = 0; return json(hb); }
+        }
+      } catch (_) {}
       const t0 = Date.now();
       // 第一波并行：同一链同一合约，价格、安全、Pro、Etherscan 同时查，秒级返回，不串行等、不只信单源
       const withTimeout = (pr, ms) => Promise.race([pr, new Promise((_, rej) => setTimeout(() => rej(new Error(`timeout_${ms}ms`)), ms))]);
@@ -768,9 +805,6 @@ export default {
           security.flags = { ...(security.flags || {}), etherscan: { mintable: es.mintable, blacklist: es.blacklist, sourceScan: es.sourceScan } };
           if (security.risk == null && (es.mintable != null || es.blacklist != null)) security.risk = es.blacklist === true ? "yellow" : es.mintable === true ? "yellow" : "green";
         }
-        if (security && security.renounced == null && chain !== "solana") {
-          try { const own = await rpcOwner(chain, address); if (own != null) security.renounced = own; } catch (_) {}
-        }
       } else if (chain !== "solana") { etherscanError = esR.error || null; }
       // 第二波并行：日志扫描、LP、总供应、gas 同时查，都依赖价格但彼此独立
       const holdersNum = security?.holders != null ? Number(security.holders) : null;
@@ -799,7 +833,9 @@ export default {
       const gasP = (async () => {
         try { if (chain === "solana") return null; const gasHex = await rpcJson(RPC_URLS[chain] || [], "eth_gasPrice", []); return gasHex ? Number(BigInt(gasHex)) / 1e9 : null; } catch (_) { return null; }
       })();
-      const [logScanRes, pairAddr, supplyRes, gasRes] = await Promise.all([logScanP, pairP, supplyP, gasP]);
+      const ownerP = (chain !== "solana" && security?.renounced == null) ? rpcOwner(chain, address).catch(() => null) : Promise.resolve(null);
+      const [logScanRes, pairAddr, supplyRes, gasRes, ownerRes] = await Promise.all([logScanP, pairP, supplyP, gasP, ownerP]);
+      if (security && security.renounced == null && ownerRes != null) security.renounced = ownerRes;
       let logScan = logScanRes;
       if (logScan) {
         if (logScan.logScanComplete) {
@@ -833,11 +869,11 @@ export default {
       if (finalRisk !== "red" && (security?.mintable === true || security?.blacklist === true)) finalRisk = "yellow";
       const volumePoolRatio = price?.volume24hUsd != null && price?.liquidityUsd ? Math.round((price.volume24hUsd / price.liquidityUsd) * 10000) / 10000 : null;
       const poolAge = price?.pairCreatedAt ? Math.round(((Date.now() - Number(price.pairCreatedAt)) / 86400000) * 10) / 10 : null;
-      return json({
+      const body = {
         chain, address,
         price,
         // 第二阶段再接，不编数据：
-        holders: security?.holders ?? null, topHoldersPct: security?.topHoldersPct ?? null,
+        holders: (security?.holders != null && Number(security.holders) > 0) ? security.holders : (logScan?.logScanComplete ? logScan.holders : null), topHoldersPct: security?.topHoldersPct ?? null,
         buyTax: security?.buyTax ?? null, sellTax: security?.sellTax ?? null,
         honeypot: security?.honeypot ?? null, renounced: security?.renounced ?? null,
         mintable: security?.mintable ?? null, blacklist: security?.blacklist ?? null,
@@ -860,7 +896,9 @@ export default {
           gmgn: `https://gmgn.ai/${chain}/token/${address}`,
           dexscreener: price?.pairAddress ? `https://dexscreener.com/${CHAINS[chain].dex}/${price.pairAddress}` : null,
         },
-      });
+      };
+      try { if (env.CACHE_KV) await env.CACHE_KV.put(`tokenfull:${chain}:${address.toLowerCase()}`, JSON.stringify(body), { expirationTtl: 60 }); } catch (_) {}
+      return json(body);
     }
 
 
