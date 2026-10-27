@@ -74,9 +74,19 @@ async function dexToken(chain, address) {
     pairCreatedAt: best.pairCreatedAt ?? null,
     dexId: best.dexId ?? null,
     labels: best.labels ?? null,
+    boostsActive: best.boosts?.active ?? null,
     source: "dexscreener",
     allPairs: sorted.slice(0, 5).map((q) => ({ pairAddress: q.pairAddress ?? null, dexId: q.dexId ?? null, labels: q.labels ?? null, priceUsd: q.priceUsd ? Number(q.priceUsd) : null, liquidityUsd: q.liquidity?.usd ?? null, volume24hUsd: q.volume?.h24 ?? null, pairCreatedAt: q.pairCreatedAt ?? null, baseTokenSymbol: q.baseToken?.symbol ?? null, quoteTokenSymbol: q.quoteToken?.symbol ?? null })),
   };
+}
+
+// Dexscreener 付费推广：orders（付费广告/增强信息订单）+ boosts（付费 Boost），免费公开接口，无 Key
+// 只能覆盖 Dexscreener 这一家；X/Telegram/KOL 付费、Ave/GMGN 付费置顶没有公开免费接口，不编
+async function dexOrders(chain, address) {
+  const url = `https://api.dexscreener.com/orders/v1/${CHAINS[chain].dex}/${address}`;
+  const res = await fetch(url, { headers: { accept: "application/json" } });
+  if (!res.ok) throw new Error(`dex_orders_status_${res.status}`);
+  return await res.json();
 }
 
 // GeckoTerminal 兜底：Dexscreener 经 Worker 返回空时再查一次。
@@ -761,7 +771,12 @@ export default {
       const rugP = chain === "solana" ? settled(rugcheckSecurity(address)) : Promise.resolve({ ok: false, error: "evm_no_rugcheck" });
       const proP = chain === "solana" ? Promise.resolve({ ok: false, error: "solana_no_pro" }) : settled(blockscoutProInfo(env, chain, address));
       const esP = chain === "solana" ? Promise.resolve({ ok: false, error: "solana_no_etherscan" }) : settled(etherscanSecurity(env, chain, address));
-      const [dexR, geckoR, goplusR, honeypotR, rugR, proR, esR] = await Promise.all([dexP, geckoP, goplusP, honeypotP, rugP, proP, esP]);
+      const ordersP = settled(dexOrders(chain, address));
+      const [dexR, geckoR, goplusR, honeypotR, rugR, proR, esR, ordersR] = await Promise.all([dexP, geckoP, goplusP, honeypotP, rugP, proP, esP, ordersP]);
+      const ordersData = ordersR.ok ? ordersR.v : null;
+      const ordersList = Array.isArray(ordersData?.orders) ? ordersData.orders : null;
+      const boostsList = Array.isArray(ordersData?.boosts) ? ordersData.boosts : null;
+      const paidPromotion = { orders: ordersList, boosts: boostsList, hasPaidPromotion: (ordersList && ordersList.length > 0) || (boostsList && boostsList.length > 0), orderTypes: ordersList ? [...new Set(ordersList.map((o) => o.type).filter(Boolean))] : null, orderStatuses: ordersList ? [...new Set(ordersList.map((o) => o.status).filter(Boolean))] : null, boostsActive: (dexR.ok && dexR.v ? dexR.v.boostsActive ?? null : null), source: "dexscreener_orders", error: ordersR.ok ? null : (ordersR.error || null), note: "只覆盖 Dexscreener 付费推广（Boost 与付费订单），X/Telegram/KOL 付费与 Ave/GMGN 付费置顶无公开免费接口，本字段不覆盖" };
       const dexPrice = dexR.ok ? dexR.v : null;
       const geckoPrice = geckoR.ok ? geckoR.v : null;
       let price = dexPrice || geckoPrice;
@@ -887,6 +902,7 @@ export default {
         allPairs: price?.allPairs ?? null,
         internalMarket: chain === "solana" ? { covered: false, note: "Solana 内盘（Pump.fun bonding curve）在 Dexscreener/Gecko 覆盖外，本版不编数；只有外盘池才有价格" } : { covered: false, note: "EVM 发射台内盘（Four.meme 等）在 Dexscreener/Gecko 覆盖外，本版只给外盘多池，不编内盘数" },
         multiSource: { priceDexUsd: dexPrice?.priceUsd ?? null, priceGeckoUsd: geckoPrice?.priceUsd ?? null, priceDiscrepancyPct, pricePrimary: dexPrice ? "dexscreener" : geckoPrice ? "geckoterminal" : null, holdersPro: bsPro?.holders ?? null, holdersSecurity: security?.holders ?? null, holdersLogScan: logScan?.holders ?? null, goplusError: goplusR.error ?? null, honeypotError: honeypotR.error ?? null, queryTimeMs: Date.now() - t0 },
+        paidPromotion,
         backupSources: { price: ["dexscreener", "geckoterminal"], security: ["goplus", "honeypot_is", "etherscan_source"], holdersTop10Creator: ["blockscout_pro", "alchemy_logscan", "public_rpc_logscan", "goplus_honeypot_holders"], lp: ["alchemy_lp", "public_rpc_lp_burn"] }, creatorHistory: bsPro?.creatorHistory ?? esCreator ?? bs?.creatorHistory ?? logScan?.creatorHistory ?? null,
         risk: finalRisk, riskSource: security?.source ?? "pending",
         security: security ? { source: security.source, flags: security.flags } : null,
