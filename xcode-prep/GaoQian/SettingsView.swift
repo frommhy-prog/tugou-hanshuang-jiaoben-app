@@ -1,6 +1,6 @@
 import Foundation
 import SwiftUI
-#if canImport(ActivityKit)
+#if os(iOS) && canImport(ActivityKit)
 import ActivityKit
 #endif
 
@@ -104,7 +104,7 @@ final class ReminderStore: ObservableObject {
 // 只做本地：App 里点“灵动岛盯盘”才启动，App 关了、后台刷新停了，岛上的价就停在最后一次，
 // 并标旧数据。远程更新需要付费开发者账号的 APNs，做不了，不写远程更新代码。
 enum LiveActivityManager {
-#if canImport(ActivityKit)
+#if os(iOS) && canImport(ActivityKit)
     static func start(chain: String, address: String, symbol: String, priceUsd: Double?, changePct: Double?, risk: String?, costUsd: Double?) {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
         let attrs = TokenLiveActivityAttributes(chain: chain, address: address)

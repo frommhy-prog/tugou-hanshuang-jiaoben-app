@@ -1,6 +1,6 @@
 import Foundation
 import SwiftUI
-#if canImport(ActivityKit)
+#if os(iOS) && canImport(ActivityKit)
 import ActivityKit
 #endif
 
@@ -77,7 +77,9 @@ struct WidgetSnapshot: Codable {
     }
 }
 
-#if canImport(ActivityKit)
+#if os(iOS) && canImport(ActivityKit)
+// 注意：只用 canImport 不够——macOS 上也能 import ActivityKit，但 ActivityAttributes 协议在 macOS 上不可用，
+// 截图里 Build Failed 就是这一行。所以必须再加 os(iOS) 限定；Mac 上编这段会被整个排除，LiveActivityManager 走无操作分支。
 // 灵动岛（本地 Live Activity）：只在 App 里手动启动盯盘，价格更新靠 App 前台 /
 // 后台刷新，不走远程 APNs。没有付费开发者账号，远程灵动岛更新本来就做不了，
 // 这里不冒充远程更新。成本与浮盈亏只有用户在盯盘时填了成本才显示，没填就不显示。

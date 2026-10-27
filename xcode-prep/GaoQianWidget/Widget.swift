@@ -1,6 +1,6 @@
 import WidgetKit
 import SwiftUI
-#if canImport(ActivityKit)
+#if os(iOS) && canImport(ActivityKit)
 import ActivityKit
 #endif
 
@@ -254,13 +254,13 @@ struct GaoQianWidget: Widget {
 struct GaoQianWidgetBundle: WidgetBundle {
     var body: some Widget {
         GaoQianWidget()
-#if canImport(ActivityKit)
+#if os(iOS) && canImport(ActivityKit)
         TokenLiveActivityWidget()
 #endif
     }
 }
 
-#if canImport(ActivityKit)
+#if os(iOS) && canImport(ActivityKit)
 // MARK: - 灵动岛（本地 Live Activity）
 // 紧凑：左币名，右涨跌；展开：价 + 风险；最小：只币名。远程更新做不了，更新只靠 App 自己推新状态。
 // 本版不显示浮盈亏（成本不在体检页填，不编成本）。
