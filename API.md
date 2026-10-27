@@ -24,3 +24,9 @@ Worker 域名占位：`https://tugou-hanshuang-jiaoben-app.<你的 Cloudflare �
 ## 安全
 - 请求里不带私钥、交易所 Key、游戏账号密码。
 - 交易所只读 Key、Blockscout Key 等只放 Cloudflare Secrets / GitHub Secrets，Worker 从 env 读。
+
+## 2026-10-27 16:04 全链扩展（Jon 定：Solana + 所有热门链）
+- 链列表（Worker 适配器，不按链重做）：BSC、ETH、Base、Solana、Robinhood、Arbitrum、Optimism、Polygon。现货信息统一走 /api/token：价格、流动性、24h 量、涨跌、池子年龄、Ave/GMGN/Dexscreener 跳转。
+- 钱包监控：POST /api/holdings，入参 wallets（链+公开地址+备注）与 tokens（自选代币列表），只读公开地址不碰私钥；原生与自选代币余额走公开 RPC（多地址轮询，ETH 主用 Cloudflare ETH 网关），现货价走 Dexscreener/GeckoTerminal；未定价余额不计入 totalUsd。实测：ETH WETH 合约原生余额 2221715.155948026 ETH，价 2313.88 美元，合计约 51.4 亿美元，balanceSource 为 rpc。
+- 自动分析未完成：胜率、盈亏、聪明钱画像、自己钱包复盘需要交易历史，属第二阶段；交易历史在部分链上仍受 Blockscout/Etherscan 免费档限制，不在这里编数。
+- Tron、Sui、Aptos 等非 EVM 链不在本轮适配器内，地址体系和数据源不同，需单独适配，不记为已接。

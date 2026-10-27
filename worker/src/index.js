@@ -8,6 +8,9 @@ const CHAINS = {
   base: { dex: "base", gecko: "base", evm: true, chainId: 8453 },
   solana: { dex: "solana", gecko: "solana", evm: false, chainId: null },
   robinhood: { dex: "robinhood", gecko: "robinhood", evm: true, chainId: 4663 },
+  arbitrum: { dex: "arbitrum", gecko: "arbitrum", evm: true, chainId: 42161 },
+  optimism: { dex: "optimism", gecko: "optimism", evm: true, chainId: 10 },
+  polygon: { dex: "polygon", gecko: "polygon", evm: true, chainId: 137 },
 };
 
 const SOURCES = [
@@ -182,8 +185,16 @@ async function rugcheckSecurity(address) {
 }
 
 // Blockscout：ETH / Base / Robinhood / BSC（BSC 实例若不存在会失败，届时走兜底，不报错）。
-const BLOCKSCOUT = { eth: "eth.blockscout.com", base: "base.blockscout.com", robinhood: "robinhoodchain.blockscout.com", bsc: "bsc.blockscout.com" };
-const RPC = { eth: "https://eth.llamarpc.com", bsc: "https://bsc-dataseed.binance.org", base: "https://mainnet.base.org" };
+const BLOCKSCOUT = { eth: "eth.blockscout.com", base: "base.blockscout.com", robinhood: "robinhoodchain.blockscout.com", bsc: "bsc.blockscout.com", arbitrum: "arb.blockscout.com", optimism: "optimism.blockscout.com", polygon: "polygon.blockscout.com" };
+const RPC = { eth: "https://eth.llamarpc.com", bsc: "https://bsc-dataseed.binance.org", base: "https://mainnet.base.org", arbitrum: "https://arb1.arbitrum.io/rpc", optimism: "https://mainnet.optimism.io", polygon: "https://polygon-rpc.com" };
+const RPC_URLS = {
+  eth: ["https://cloudflare-eth.com", "https://ethereum.publicnode.com", "https://eth.llamarpc.com", "https://rpc.ankr.com/eth"],
+  bsc: ["https://bsc-dataseed.binance.org", "https://bsc.publicnode.com"],
+  base: ["https://mainnet.base.org", "https://base.publicnode.com"],
+  arbitrum: ["https://arb1.arbitrum.io/rpc", "https://arbitrum.publicnode.com"],
+  optimism: ["https://mainnet.optimism.io", "https://optimism.publicnode.com"],
+  polygon: ["https://polygon-rpc.com", "https://polygon.publicnode.com"],
+};
 const DEAD = "0x000000000000000000000000000000000000dEaD";
 
 async function fetchJson(url) {
@@ -196,17 +207,24 @@ function hexToBigInt(hex) {
   try { return BigInt(hex); } catch (_) { return null; }
 }
 async function rpcCall(rpcUrl, to, data) {
-  const res = await fetch(rpcUrl, { method: "POST", headers: { "content-type": "application/json", accept: "application/json", "user-agent": "tugou-hanshuang-jiaoben-app/1.0" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to, data }, "latest"] }) });
-  if (!res.ok) return null;
-  const body = await res.json();
-  return hexToBigInt(body?.result);
+  const urls = Array.isArray(rpcUrl) ? rpcUrl : [rpcUrl];
+  for (const u of urls) {
+    try {
+      const res = await fetch(u, { method: "POST", headers: { "content-type": "application/json", accept: "application/json", "user-agent": "tugou-hanshuang-jiaoben-app/1.0" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to, data }, "latest"] }) });
+      if (!res.ok) continue;
+      const body = await res.json();
+      const v = hexToBigInt(body?.result);
+      if (v !== null) return v;
+    } catch (_) {}
+  }
+  return null;
 }
 // LP 销毁占比：只对 V2 式 LP 代币有意义。V3 池没有 LP 代币，totalSupply 调不出来就返回 null，不硬填。
 async function rpcLpBurn(chain, pairAddress) {
-  const rpcUrl = RPC[chain];
-  if (!rpcUrl || !pairAddress) return null;
-  const deadBal = await rpcCall(rpcUrl, pairAddress, "0x70a08231" + "000000000000000000000000" + DEAD.slice(2));
-  const total = await rpcCall(rpcUrl, pairAddress, "0x18160ddd");
+  const urls = RPC_URLS[chain] || (RPC[chain] ? [RPC[chain]] : []);
+  if (!urls.length || !pairAddress) return null;
+  const deadBal = await rpcCall(urls, pairAddress, "0x70a08231" + "000000000000000000000000" + DEAD.slice(2));
+  const total = await rpcCall(urls, pairAddress, "0x18160ddd");
   if (deadBal === null || total === null || total === 0n) return null;
   const pctX100 = Number((deadBal * 10000n) / total) / 100;
   return { lpLocked: pctX100 >= 50, lpBurnedPct: pctX100 };
@@ -215,7 +233,7 @@ async function rpcLpBurn(chain, pairAddress) {
 // Etherscan V2（免费 Key）：源码扫描 + ETH 创建者。注意免费档限制：持仓列表/代币信息是 Pro 接口，
 // Base/BSC 的 getcontractcreation 在免费档返回 Free API access is not supported for this chain，
 // 所以 Top10 占比仍不能靠 Etherscan 免费 Key，creatorHistory 也只在 ETH 上能填。
-const ETHERSCAN_CHAINID = { eth: "1", bsc: "56", base: "8453" };
+const ETHERSCAN_CHAINID = { eth: "1", bsc: "56", base: "8453", arbitrum: "42161", optimism: "10", polygon: "137" };
 function scanSource(src) {
   const low = (src || "").toLowerCase();
   if (!low || low.length < 50) return null;
@@ -256,14 +274,61 @@ async function etherscanSecurity(env, chain, address) {
   return { mintable: sourceScan ? sourceScan.mintable : null, blacklist: sourceScan ? sourceScan.blacklist : null, creatorHistory, sourceScan, error: etherscanError };
 }
 async function rpcOwner(chain, address) {
-  const rpcUrl = RPC[chain];
-  if (!rpcUrl) return null;
-  const res = await rpcCall(rpcUrl, address, "0x8da5cb5b");
+  const urls = RPC_URLS[chain] || (RPC[chain] ? [RPC[chain]] : []);
+  if (!urls.length) return null;
+  const res = await rpcCall(urls, address, "0x8da5cb5b");
   if (res === null) return null;
   const hex = res.toString(16).padStart(64, "0");
   if (hex === "0".repeat(64)) return true;
   if (/^[0-9a-f]{64}$/.test(hex) && hex.slice(24) !== "0".repeat(40)) return false;
   return null;
+}
+
+const NATIVE_SYMBOL = { eth: "ETH", bsc: "BNB", base: "ETH", arbitrum: "ETH", optimism: "ETH", polygon: "MATIC", robinhood: "ETH", solana: "SOL" };
+const NATIVE_WRAPPED = { eth: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", bsc: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c", base: "0x4200000000000000000000000000000000000006", arbitrum: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1", optimism: "0x4200000000000000000000000000000000000006", polygon: "0x0d500B1d8E8eF5fE704DF2C2B8d8c9e8F1e5e5" };
+async function rpcJson(rpcUrl, method, params) {
+  const urls = Array.isArray(rpcUrl) ? rpcUrl : [rpcUrl];
+  let lastErr = null;
+  for (const u of urls) {
+    try {
+      const res = await fetch(u, { method: "POST", headers: { "content-type": "application/json", accept: "application/json", "user-agent": "tugou-hanshuang-jiaoben-app/1.0" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }) });
+      if (!res.ok) { lastErr = new Error(`rpc_status_${res.status}`); continue; }
+      const body = await res.json();
+      if (body.error) { lastErr = new Error(`rpc_${body.error.message || "error"}`); continue; }
+      return body.result;
+    } catch (e) { lastErr = e; }
+  }
+  throw lastErr || new Error("rpc_no_url");
+}
+async function evmNativeAmount(chain, address) {
+  const urls = RPC_URLS[chain] || (RPC[chain] ? [RPC[chain]] : []);
+  if (!urls.length) return null;
+  const hex = await rpcJson(urls, "eth_getBalance", [address, "latest"]);
+  const v = hexToBigInt(hex);
+  return v === null ? null : Number(v) / 1e18;
+}
+async function evmTokenAmount(chain, tokenAddress, walletAddress) {
+  const dec = await rpcCall(RPC_URLS[chain] || RPC[chain], tokenAddress, "0x313ce567");
+  const bal = await rpcCall(RPC_URLS[chain] || RPC[chain], tokenAddress, "0x70a08231" + "000000000000000000000000" + walletAddress.slice(2));
+  if (bal === null || dec === null) return null;
+  return Number(bal) / (10 ** Number(dec));
+}
+async function solNativeAmount(address) {
+  const v = await rpcJson("https://api.mainnet-beta.solana.com", "getBalance", [address]);
+  return v && typeof v.value === "number" ? v.value / 1e9 : null;
+}
+async function solTokenAmount(walletAddress, mint) {
+  const res = await rpcJson("https://api.mainnet-beta.solana.com", "getTokenAccountsByOwner", [walletAddress, { mint }, { encoding: "jsonParsed" }]);
+  const accounts = res?.value || [];
+  let sum = 0;
+  for (const a of accounts) { const u = a?.account?.data?.parsed?.info?.tokenAmount?.uiAmount; if (typeof u === "number") sum += u; }
+  return accounts.length ? sum : null;
+}
+async function priceFor(chain, address) {
+  let pr = null;
+  try { pr = await dexToken(chain, address); } catch (_) {}
+  if (!pr) { try { pr = await geckoToken(chain, address); } catch (_) {} }
+  return pr;
 }
 
 async function blockscoutInfo(chain, address) {
@@ -400,25 +465,67 @@ export default {
     if (path === "/api/holdings" && request.method === "POST") {
       let body = {};
       try { body = await request.json(); } catch (_) { return json({ error: "bad_json" }, 400); }
-      const wallets = Array.isArray(body.wallets) ? body.wallets : [];
+      const wallets = Array.isArray(body.wallets) ? body.wallets.slice(0, 20) : [];
+      const tokens = Array.isArray(body.tokens) ? body.tokens.slice(0, 20) : [];
       const valid = [];
       const invalid = [];
       for (const w of wallets) {
         const chain = String(w.chain || "").toLowerCase();
-        if (CHAINS[chain] && isValidAddress(chain, w.address)) {
-          valid.push({ chain, address: w.address, label: w.label || "" });
-        } else {
-          invalid.push({ chain: w.chain || null, address: w.address || null, reason: "invalid_chain_or_address" });
-        }
+        if (CHAINS[chain] && isValidAddress(chain, w.address)) valid.push({ chain, address: w.address, label: w.label || "" });
+        else invalid.push({ chain: w.chain || null, address: w.address || null, reason: "invalid_chain_or_address" });
       }
-      // 第一版：钱包列表校验 + 聚合骨架。链上余额接口（Blockscout / RPC）
-      // 需 Secrets 到位后在第二步接通，这里不返回假余额。
+      const results = [];
+      const byChain = {};
+      let totalUsd = 0;
+      let pricedAny = false;
+      for (const w of valid) {
+        const balances = [];
+        let walletUsd = 0;
+        try {
+          if (w.chain === "solana") {
+            const amt = await solNativeAmount(w.address);
+            let priceUsd = null;
+            try { const pr = await priceFor("solana", "So11111111111111111111111111111111111111112"); priceUsd = pr?.priceUsd ?? null; } catch (_) {}
+            const usd = amt != null && priceUsd != null ? amt * priceUsd : null;
+            if (usd != null) { walletUsd += usd; pricedAny = true; }
+            balances.push({ kind: "native", symbol: "SOL", amount: amt, priceUsd, usd });
+            for (const tk of tokens.filter((x) => String(x.chain || "").toLowerCase() === "solana" && isValidAddress("solana", x.address))) {
+              const amt2 = await solTokenAmount(w.address, tk.address);
+              if (amt2 == null) continue;
+              const pr = await priceFor("solana", tk.address);
+              const usd2 = pr?.priceUsd != null ? amt2 * pr.priceUsd : null;
+              if (usd2 != null) { walletUsd += usd2; pricedAny = true; }
+              balances.push({ kind: "token", address: tk.address, symbol: pr?.symbol ?? tk.symbol ?? null, amount: amt2, priceUsd: pr?.priceUsd ?? null, usd: usd2 });
+            }
+          } else {
+            const amt = await evmNativeAmount(w.chain, w.address);
+            let priceUsd = null;
+            const wrapped = NATIVE_WRAPPED[w.chain];
+            if (wrapped) { try { const pr = await priceFor(w.chain, wrapped); priceUsd = pr?.priceUsd ?? null; } catch (_) {} }
+            const usd = amt != null && priceUsd != null ? amt * priceUsd : null;
+            if (usd != null) { walletUsd += usd; pricedAny = true; }
+            balances.push({ kind: "native", symbol: NATIVE_SYMBOL[w.chain] || null, amount: amt, priceUsd, usd });
+            for (const tk of tokens.filter((x) => String(x.chain || "").toLowerCase() === w.chain && isValidAddress(w.chain, x.address))) {
+              const amt2 = await evmTokenAmount(w.chain, tk.address, w.address);
+              if (amt2 == null) continue;
+              const pr = await priceFor(w.chain, tk.address);
+              const usd2 = pr?.priceUsd != null ? amt2 * pr.priceUsd : null;
+              if (usd2 != null) { walletUsd += usd2; pricedAny = true; }
+              balances.push({ kind: "token", address: tk.address, symbol: pr?.symbol ?? tk.symbol ?? null, amount: amt2, priceUsd: pr?.priceUsd ?? null, usd: usd2 });
+            }
+          }
+        } catch (e) {
+          balances.push({ kind: "error", error: String(e && e.message ? e.message : e) });
+        }
+        results.push({ ...w, balances, totalUsd: walletUsd });
+        byChain[w.chain] = (byChain[w.chain] || 0) + walletUsd;
+        totalUsd += walletUsd;
+      }
       return json({
-        wallets: valid, invalid,
-        byChain: {},
-        totalUsd: null,
-        balanceSource: "pending",
-        note: "钱包可随时在 App 内增删改，Worker 按当前列表聚合；余额源接通前不估算。",
+        wallets: results, invalid,
+        byChain, totalUsd: pricedAny ? totalUsd : null,
+        balanceSource: pricedAny ? "rpc" : "rpc_partial",
+        note: "钱包监控：只读公开地址，不碰私钥；原生与自选代币余额走公开 RPC，现货价走 Dexscreener/GeckoTerminal；未定价的余额不计入 totalUsd；自动分析（胜率、盈亏、聪明钱画像）是第二阶段，在交易历史接通后做，不在这里编数。",
       });
     }
 
