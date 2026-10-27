@@ -45,6 +45,10 @@ struct TokenCheckView: View {
     @State private var analysisCostText: String?
     @State private var analysisLoading = false
     @State private var analysisErrorText: String?
+    @State private var aiResult: APIClient.AiSummaryResponse?
+    @State private var aiLoading = false
+    @State private var aiErrorText: String?
+    @State private var chartScale: Double = 0
     @State private var screenerResult: APIClient.ScreenerResponse?
     @State private var screenerLoading = false
     @State private var screenerErrorText: String?
@@ -175,9 +179,9 @@ struct TokenCheckView: View {
                             Text("24h 买卖笔数：买 \(b) / 卖 \(se)").font(.footnote)
                             if let share = h24.buySharePct { Text("24h 买盘占比：\(share)%").font(.footnote) }
                             Chart {
-                                BarMark(x: .value("类型", "买盘"), y: .value("笔数", b)).foregroundStyle(.green)
-                                BarMark(x: .value("类型", "卖盘"), y: .value("笔数", se)).foregroundStyle(.red)
-                            }.frame(height: 120)
+                                BarMark(x: .value("类型", "买盘"), y: .value("笔数", Double(b) * chartScale)).foregroundStyle(.green)
+                                BarMark(x: .value("类型", "卖盘"), y: .value("笔数", Double(se) * chartScale)).foregroundStyle(.red)
+                            }.frame(height: 120).animation(.easeOut(duration: 0.9), value: chartScale).onAppear { chartScale = 1 }
                             if let note = flow.moneyFlowNote { Text(note).font(.footnote) }
                         } else {
                             Text("买卖盘笔数这一轮没出，不编买盘占优结论。").font(.footnote)
@@ -187,7 +191,7 @@ struct TokenCheckView: View {
                             Chart {
                                 ForEach(holders.indices, id: \.self) { i in
                                     if let share = holders[i].sharePct {
-                                        BarMark(x: .value("占比", share), y: .value("地址", String((holders[i].address ?? "").prefix(6)))).foregroundStyle(.yellow)
+                                        BarMark(x: .value("占比", share * chartScale), y: .value("地址", String((holders[i].address ?? "").prefix(6)))).foregroundStyle(.yellow)
                                     }
                                 }
                             }.frame(height: 160)
@@ -247,6 +251,18 @@ struct TokenCheckView: View {
                                     Text("持有人 \(hs[i].wallet ?? "")：\(hs[i].style ?? "")").font(.footnote)
                                 }
                             }
+                        Text("AI 文字分析（Workers AI，手动点）：图在上面买卖盘/持仓图里，AI 只写文字，只复述 Worker 总结的数字，不产生新数字，不给买卖建议。").font(.footnote)
+                        Button(aiLoading ? "AI 分析中…" : "AI 文字分析") {
+                            Task { aiLoading = true; aiErrorText = nil; aiResult = nil; do { aiResult = try await APIClient.fetchAiSummary(chain: chain, address: contract) } catch { aiErrorText = "AI 分析失败：\(error.localizedDescription)" }; aiLoading = false }
+                        }.disabled(aiLoading || contract.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        if let e = aiErrorText { Text(e).font(.footnote) }
+                        if let a = aiResult {
+                            if a.aiAvailable == true {
+                                if let t = a.analysis { Text(t).font(.footnote) }
+                                if let m = a.model { Text("模型：\(m)").font(.caption) }
+                                if let d = a.disclaimer { Text(d).font(.footnote) }
+                            } else { Text("AI 这次没出结果：\(a.error ?? a.aiError ?? "未知")，回落到上面的原总结，不编一段分析顶上。").font(.footnote) }
+                        }
                         } else if chain == .solana {
                             Text("深层：Solana 深层不支持，只看上面的结论与分析，不编持有人风格。").font(.footnote)
                         }
@@ -474,6 +490,14 @@ struct WalletListView: View {
                             Text("逐币查了 \(b.analyzedCount ?? 0) 个，上限 \(b.analyzedLimit ?? 0) 个，未逐个查 \(b.unanalyzedCount ?? 0) 个，非原生共 \(b.totalNonNative ?? 0) 个。").font(.footnote)
                         }
                         if let t = p.merged?.totalUsd { Text("合并总价：\(fmtUsd(t))").font(.footnote) }
+                        if let hs = p.merged?.holdings, !hs.isEmpty {
+                            Text("持仓分布图（App 本地画，不外发给画图服务）：").font(.footnote)
+                            Chart {
+                                ForEach(hs.prefix(5).indices, id: \.self) { i in
+                                    if let v = hs[i].usd { BarMark(x: .value("币", hs[i].symbol ?? "?"), y: .value("美元", v)).foregroundStyle(.yellow) }
+                                }
+                            }.frame(height: 140)
+                        }
                     }
                 }
             }

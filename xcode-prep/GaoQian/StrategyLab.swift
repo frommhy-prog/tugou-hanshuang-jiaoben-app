@@ -1,4 +1,5 @@
 import SwiftUI
+import Charts
 
 // 策略实验室（Freqtrade / Hummingbot / OctoBot / Jesse / CCXT / ai-hedge-fund / TradingAgents / FinRL-FinGPT 的只读能力等价）。
 // 不交易、不下单、不控任何 Bot 的启停、不碰私钥、不给买卖建议；大模型意见待 Groq Key 验证后另接，这里恒为空。
@@ -47,6 +48,14 @@ struct StrategyLabView: View {
                 Section("比价") {
                     Text("模式 \(a.mode ?? "") · 价差 \(a.spreadPct ?? 0)%（价差 ≠ 利润，手续费/滑点/Gas 未计）").font(.footnote)
                     if let ps = a.prices { ForEach(Array(ps.keys.sorted()), id: \.self) { k in Text("\(k)：\(fmtPrice(ps[k] ?? 0))").font(.caption) } }
+                    if let ps = a.prices, !ps.isEmpty {
+                        Text("比价图（各源价对比，价差 ≠ 利润）：").font(.footnote)
+                        Chart {
+                            ForEach(Array(ps.keys.sorted()), id: \.self) { k in
+                                BarMark(x: .value("源", k), y: .value("价", ps[k] ?? 0)).foregroundStyle(.blue)
+                            }
+                        }.frame(height: 140)
+                    }
                     if let n = a.note { Text(n).font(.footnote) }
                 }
             }

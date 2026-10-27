@@ -737,4 +737,11 @@ enum APIClient {
         c.queryItems = [URLQueryItem(name: "chain", value: chain.rawValue), URLQueryItem(name: "address", value: address.trimmingCharacters(in: .whitespacesAndNewlines))]
         let (d, _) = try await URLSession.shared.data(from: c.url!); return try JSONDecoder().decode(AgentsResponse.self, from: d)
     }
+
+    struct AiSummaryResponse: Codable { var chain: String?; var address: String?; var aiAvailable: Bool?; var model: String?; var analysis: String?; var verdict: String?; var risks: [String]?; var unknowns: [String]?; var disclaimer: String?; var error: String?; var aiError: String? }
+    static func fetchAiSummary(chain: Chain, address: String) async throws -> AiSummaryResponse {
+        var c = URLComponents(url: baseURL.appendingPathComponent("api/ai-summary"), resolvingAgainstBaseURL: false)!
+        c.queryItems = [URLQueryItem(name: "chain", value: chain.rawValue), URLQueryItem(name: "address", value: address.trimmingCharacters(in: .whitespacesAndNewlines))]
+        let (d, _) = try await URLSession.shared.data(from: c.url!); return try JSONDecoder().decode(AiSummaryResponse.self, from: d)
+    }
 }
