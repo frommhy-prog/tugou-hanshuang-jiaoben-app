@@ -100,7 +100,7 @@ struct HomeWidgetView: View {
             content
                 .padding(family == .systemSmall ? 16 : 20)
         }
-        .containerBackground(WallpaperStyle.background, for: .widget)
+        .widgetBackground()
     }
 
     @ViewBuilder var content: some View {
@@ -307,3 +307,15 @@ struct TokenLiveActivityWidget: Widget {
     }
 }
 #endif
+
+// iOS 17 才有的 containerBackground：部署目标是 16.2，直接写会在 16.2 上编不过，
+// 所以用 #available 包一层；16.x 上小组件本来就有 ZStack 黑底，不缺这一层。
+extension View {
+    @ViewBuilder func widgetBackground() -> some View {
+        if #available(iOS 17.0, *) {
+            self.containerBackground(WallpaperStyle.background, for: .widget)
+        } else {
+            self
+        }
+    }
+}
