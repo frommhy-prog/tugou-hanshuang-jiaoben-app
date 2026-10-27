@@ -301,7 +301,10 @@ struct SettingsView: View {
                 }
                 Section("数据与用量") {
                     Text("缓存会给旧数据：单币/组合 60 秒，组合价格 300 秒内新鲜、300 秒后上游失败回旧价标 stale，缓存命中带 cached 与原始 fetchedAt，App 据此算年龄。").font(.footnote)
-                    Text("剩余量标未知：Dex/Gecko/GoPlus 按共享 IP 限流不返回剩余量，Alchemy/Pro/Etherscan 剩余额度只在各自后台，Worker 读不到，不编数，限流以 429 为准。钱包页“我的钱包全量分析”里能看到当日端点次数。").font(.footnote)
+                    Text("每 Key 额度在下面一节按 Key 分家：能算剩余的给数，不能算的标未知，不编数。钱包页“我的钱包全量分析”里仍能看到当日端点次数。").font(.footnote)
+                }
+                Section("每 Key 额度（已绑 Key，手动刷新）") {
+                    QuotasSectionView()
                 }
                 Section("分享与反馈") {
                     Button("分享（系统面板）") { sheet = .share }
@@ -313,6 +316,73 @@ struct SettingsView: View {
             .sheet(item: $sheet) { kind in
                 if kind == .share { ShareView() } else { FeedbackView() }
             }
+        }
+    }
+}
+
+// 每 Key 额度：手动点刷新，不自动轮询（刷新本身不调上游、不扣额度）。
+// 倒计时只在本地走：拿到 resetsInSec 后每秒减 1，减到 0 就停在“窗口已过，重查为准”，不再自己去刷接口。
+struct QuotasSectionView: View {
+    @State private var quotas: APIClient.QuotasResponse?
+    @State private var loading = false
+    @State private var errorText: String?
+    @State private var countdown: [String: Int] = [:]
+    private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    var body: some View {
+        Button(loading ? "额度刷新中…" : "刷新每 Key 额度") {
+            Task {
+                loading = true; errorText = nil
+                do {
+                    let q = try await APIClient.fetchQuotas()
+                    quotas = q
+                    var cd: [String: Int] = [:]
+                    for it in q.items ?? [] { if let s = it.resetsInSec { cd[it.id] = s } }
+                    countdown = cd
+                } catch { errorText = "额度刷新失败：\(error.localizedDescription)" }
+                loading = false
+            }
+        }
+        .disabled(loading)
+        if let e = errorText { Text(e).font(.footnote) }
+        if let q = quotas {
+            if let d = q.dateNote { Text(d).font(.footnote) }
+            if let n = q.note { Text(n).font(.footnote) }
+            ForEach(q.items ?? []) { it in
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(it.name ?? it.id).bold()
+                        Spacer()
+                        Text(it.keyPresent == true ? "已绑" : "免 Key/未绑").font(.caption)
+                    }
+                    Text("今日已用：\(it.usedToday ?? "未知")").font(.footnote)
+                    if let m = it.usedThisMonth { Text("本月已用：\(m)").font(.footnote) }
+                    if let lim = it.limit, let unit = it.limitUnit {
+                        Text("额度：\(lim) \(unit)").font(.footnote)
+                    }
+                    if let rem = it.remaining {
+                        Text("剩余：约 \(rem) 次").font(.footnote)
+                    } else if let rt = it.remainingText {
+                        Text("剩余：\(rt)").font(.footnote)
+                    }
+                    if it.limited == true {
+                        if let left = countdown[it.id], left > 0 {
+                            Text("已限额，约 \(left) 秒后恢复").font(.footnote).foregroundStyle(.red)
+                        } else if let rt = it.resetsText {
+                            Text("已限额：\(rt)").font(.footnote).foregroundStyle(.red)
+                        } else {
+                            Text("已限额").font(.footnote).foregroundStyle(.red)
+                        }
+                    }
+                    if let note = it.note { Text(note).font(.caption) }
+                }
+            }
+            .onReceive(timer) { _ in
+                for k in countdown.keys {
+                    if let v = countdown[k], v > 0 { countdown[k] = v - 1 }
+                }
+            }
+        } else {
+            Text("点上面按钮看每把 Key 今天用了多少、还剩多少；限额时这里会给恢复倒计时。没点之前不显示旧数。").font(.footnote)
         }
     }
 }

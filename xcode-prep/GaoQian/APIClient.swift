@@ -295,6 +295,40 @@ enum APIClient {
         return try JSONDecoder().decode(UsageResponse.self, from: data)
     }
 
+    // 每 Key 额度：只读 KV，不调上游，点它本身不扣额度。remaining 为 nil 就是剩余未知，不编数；
+    // limited 为真时 resetsInSec 是本地倒计时起点，App 本地每秒减 1，不靠反复调接口刷新。
+    struct QuotaItem: Codable, Identifiable {
+        var id: String
+        var name: String?
+        var keyPresent: Bool?
+        var window: String?
+        var limit: Int?
+        var limitUnit: String?
+        var usedToday: String?
+        var usedTodayMin: Int?
+        var usedTodayMax: Int?
+        var usedThisMonth: String?
+        var usedThisMonthMin: Int?
+        var usedThisMonthMax: Int?
+        var remaining: Int?
+        var remainingText: String?
+        var limited: Bool?
+        var resetsInSec: Int?
+        var resetsText: String?
+        var note: String?
+    }
+    struct QuotasResponse: Codable {
+        var date: String?
+        var month: String?
+        var dateNote: String?
+        var items: [QuotaItem]?
+        var note: String?
+    }
+    static func fetchQuotas() async throws -> QuotasResponse {
+        let (data, _) = try await URLSession.shared.data(from: baseURL.appendingPathComponent("api/quotas"))
+        return try JSONDecoder().decode(QuotasResponse.self, from: data)
+    }
+
     struct FxResponse: Codable {
         var base: String?
         var rates: [String: Double]?
@@ -747,6 +781,14 @@ enum APIClient {
     }
 
     struct AiSummaryResponse: Codable { var chain: String?; var address: String?; var aiAvailable: Bool?; var model: String?; var analysis: String?; var verdict: String?; var risks: [String]?; var unknowns: [String]?; var disclaimer: String?; var error: String?; var aiError: String? }
+    // Groq 文字分析：Worker 侧需 GROQ_API_KEY，未设时 groqAvailable=false，不编分析。
+    // Muse 侧的 Groq Key 不自动进 Worker，这是两把不同的接入，不要把聊天里的 Groq 当成 App 里已通。
+    struct GroqSummaryResponse: Codable { var chain: String?; var address: String?; var groqAvailable: Bool?; var model: String?; var analysis: String?; var verdict: String?; var risks: [String]?; var unknowns: [String]?; var disclaimer: String?; var error: String?; var groqError: String?; var note: String? }
+    static func fetchGroqSummary(chain: Chain, address: String) async throws -> GroqSummaryResponse {
+        var c = URLComponents(url: baseURL.appendingPathComponent("api/groq-summary"), resolvingAgainstBaseURL: false)!
+        c.queryItems = [URLQueryItem(name: "chain", value: chain.rawValue), URLQueryItem(name: "address", value: address.trimmingCharacters(in: .whitespacesAndNewlines))]
+        let (d, _) = try await URLSession.shared.data(from: c.url!); return try JSONDecoder().decode(GroqSummaryResponse.self, from: d)
+    }
     static func fetchAiSummary(chain: Chain, address: String) async throws -> AiSummaryResponse {
         var c = URLComponents(url: baseURL.appendingPathComponent("api/ai-summary"), resolvingAgainstBaseURL: false)!
         c.queryItems = [URLQueryItem(name: "chain", value: chain.rawValue), URLQueryItem(name: "address", value: address.trimmingCharacters(in: .whitespacesAndNewlines))]

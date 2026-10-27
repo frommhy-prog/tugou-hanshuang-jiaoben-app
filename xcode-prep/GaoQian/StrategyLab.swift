@@ -2,7 +2,7 @@ import SwiftUI
 import Charts
 
 // 策略实验室（Freqtrade / Hummingbot / OctoBot / Jesse / CCXT / ai-hedge-fund / TradingAgents / FinRL-FinGPT 的只读能力等价）。
-// 不交易、不下单、不控任何 Bot 的启停、不碰私钥、不给买卖建议；大模型意见待 Groq Key 验证后另接，这里恒为空。
+// 不交易、不下单、不控任何 Bot 的启停、不碰私钥、不给买卖建议；agents 页大模型意见恒为空，Groq 文字分析在体检页单独按钮。
 struct StrategyLabView: View {
     @ObservedObject private var fx = CurrencyStore.shared
     @State private var chain: Chain = .base
@@ -65,18 +65,18 @@ struct StrategyLabView: View {
                     Text("基本面：\(ag.roles?.fundamental?.conclusion ?? "")").font(.footnote)
                     Text("情绪：无（情绪分 null，不编，另走社媒/快讯）").font(.footnote)
                     Text("风控：\(ag.roles?.risk?.conclusion ?? "")").font(.footnote)
-                    Text("大模型意见：无（Groq Key 未验证前恒为空）").font(.footnote)
+                    Text("大模型意见：本页仍为空（agents 接口不编大模型意见）；Groq 文字分析在体检页有单独按钮，Worker 加 GROQ_API_KEY 后才通").font(.footnote)
                     if let c = ag.consensus { Text(c).font(.footnote) }
                 }
             }
             Section("8 个仓库怎么落的（没落的也写清楚）") {
                 Text("Freqtrade：落了规则检查与筛选，没有真回测、没有超参优化、没有启停控制（那是交易执行，App 不做）。").font(.footnote)
                 Text("Hummingbot：落了多源比价，没有做市、没有套利执行。").font(.footnote)
-                Text("OctoBot：落了网格/DCA 计算器，AI 模式待 Groq Key，不假装有 AI。").font(.footnote)
+                Text("OctoBot：落了网格/DCA 计算器；Groq 文字分析不在本页，在体检页单独按钮。").font(.footnote)
                 Text("Jesse：落了零前视原则（只用已发生数据），没有历史 K 线回测。").font(.footnote)
                 Text("CCXT：落了 Gate/Kraken/Coinbase 统一价表，土狗不在 CEX 上所以只覆盖主流币。").font(.footnote)
                 Text("ai-hedge-fund / TradingAgents：落了四角色分工展示，交易员下单与交易决策不落地。").font(.footnote)
-                Text("FinRL：落了状态快照，没有训练模型、没有动作、没有奖励。FinGPT：大模型意见待 Groq Key 验证后另接。").font(.footnote)
+                Text("FinRL：落了状态快照，没有训练模型、没有动作、没有奖励。FinGPT：大模型意见不在本页，在体检页 Groq 按钮。").font(.footnote)
                 Text("以上全部不跑 Python、不需常驻服务器、不碰交易所 Key，免费 Worker 就能跑；原仓库本身（Python、数据库、常驻进程、交易连接）在免费 Worker 上跑不了，硬搬就是假的。").font(.footnote)
             }
         }

@@ -110,6 +110,9 @@ struct TokenCheckView: View {
     @State private var aiResult: APIClient.AiSummaryResponse?
     @State private var aiLoading = false
     @State private var aiErrorText: String?
+    @State private var groqResult: APIClient.GroqSummaryResponse?
+    @State private var groqLoading = false
+    @State private var groqErrorText: String?
     @State private var chartScale: Double = 0
     @State private var screenerResult: APIClient.ScreenerResponse?
     @State private var screenerLoading = false
@@ -324,6 +327,18 @@ struct TokenCheckView: View {
                                 if let m = a.model { Text("模型：\(m)").font(.caption) }
                                 if let d = a.disclaimer { Text(d).font(.footnote) }
                             } else { Text("AI 这次没出结果：\(a.error ?? a.aiError ?? "未知")，回落到上面的原总结，不编一段分析顶上。").font(.footnote) }
+                        }
+                        Text("Groq 文字分析（手动点，与上面 Workers AI 并列）：Groq 以前只在 Muse 聊天里通，Worker 里没有它的 Key，所以 App 里一直没出现；本版 Worker 已接 /api/groq-summary，未在 Cloudflare 加 GROQ_API_KEY 前点它会直接说明未配置，不编分析。").font(.footnote)
+                        Button(groqLoading ? "Groq 分析中…" : "Groq 文字分析") {
+                            Task { groqLoading = true; groqErrorText = nil; groqResult = nil; do { groqResult = try await APIClient.fetchGroqSummary(chain: chain, address: contract) } catch { groqErrorText = "Groq 分析失败：\(error.localizedDescription)" }; groqLoading = false }
+                        }.disabled(groqLoading || contract.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        if let e = groqErrorText { Text(e).font(.footnote) }
+                        if let g = groqResult {
+                            if g.groqAvailable == true {
+                                if let t = g.analysis { Text(t).font(.footnote) }
+                                if let m = g.model { Text("模型：\(m)").font(.caption) }
+                                if let d = g.disclaimer { Text(d).font(.footnote) }
+                            } else { Text("Groq 这次没出结果：\(g.error ?? g.groqError ?? "未知")。\(g.note ?? "回落到上面的原总结，不编一段分析顶上。")").font(.footnote) }
                         }
                         } else if chain == .solana {
                             Text("深层：Solana 深层不支持，只看上面的结论与分析，不编持有人风格。").font(.footnote)
