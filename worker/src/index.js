@@ -412,6 +412,25 @@ async function blockNumberAtTime(env, chain, tsSec, latest) {
     return Math.max(0, est - 2000);
   } catch (_) { return null; }
 }
+// BSC Four.meme 内盘：代理合约 0x5c952063c7fc8610FFDB798152D69F0B9550762b 的持仓即内盘剩余量
+// 总量 1B，进度 = 100 - ((余额 - 200M) * 100 / 800M)；余额 0 = 非 Four.meme 或已毕业（看外盘对是否存在区分）
+async function fourInternal(chain, address) {
+  if (chain !== "bsc") return null;
+  try {
+    const proxy = "0x5c952063c7fc8610FFDB798152D69F0B9550762b";
+    const balHex = await rpcCall(RPC_URLS[chain] || [], address, "0x70a08231" + "000000000000000000000000" + proxy.slice(2));
+    const decHex = await rpcCall(RPC_URLS[chain] || [], address, "0x313ce567");
+    if (balHex === null) return { platform: "four.meme", status: "unknown", error: "rpc_no_balance" };
+    const dec = decHex !== null ? Number(decHex) : 18;
+    const balTokens = Number(balHex) / (10 ** dec);
+    if (balTokens > 200000000 && balTokens <= 1050000000) {
+      const progress = Math.round((100 - ((balTokens - 200000000) * 100 / 800000000)) * 100) / 100;
+      return { platform: "four.meme", status: "internal", balanceTokens: balTokens, progressPct: progress };
+    }
+    return { platform: "four.meme", status: "external_or_not_four", balanceTokens: balTokens, progressPct: null };
+  } catch (e) { return { platform: "four.meme", status: "unknown", error: String(e && e.message ? e.message : e) }; }
+}
+
 async function lpInfoAlchemy(env, chain, pairAddress) {
   const out = { lpLocked: null, lpBurnPct: null, lpTopHolder: null, lpTopHolderPct: null, lpTopHolderIsContract: null, lpError: null };
   const alchUrl = env ? alchemyUrl(env, chain) : null;
@@ -849,7 +868,8 @@ export default {
         try { if (chain === "solana") return null; const gasHex = await rpcJson(RPC_URLS[chain] || [], "eth_gasPrice", []); return gasHex ? Number(BigInt(gasHex)) / 1e9 : null; } catch (_) { return null; }
       })();
       const ownerP = (chain !== "solana" && security?.renounced == null) ? rpcOwner(chain, address).catch(() => null) : Promise.resolve(null);
-      const [logScanRes, pairAddr, supplyRes, gasRes, ownerRes] = await Promise.all([logScanP, pairP, supplyP, gasP, ownerP]);
+      const fourP = fourInternal(chain, address).catch(() => null);
+      const [logScanRes, pairAddr, supplyRes, gasRes, ownerRes, fourRes] = await Promise.all([logScanP, pairP, supplyP, gasP, ownerP, fourP]);
       if (security && security.renounced == null && ownerRes != null) security.renounced = ownerRes;
       let logScan = logScanRes;
       if (logScan) {
@@ -900,7 +920,7 @@ export default {
         priceChange5mPct: price?.priceChange5mPct ?? null, priceChange1hPct: price?.priceChange1hPct ?? null,
         swapFeePct, swapFeeError, gasPriceGwei, realHolders: logScan?.realHolders ?? null,
         allPairs: price?.allPairs ?? null,
-        internalMarket: chain === "solana" ? { covered: false, note: "Solana 内盘（Pump.fun bonding curve）在 Dexscreener/Gecko 覆盖外，本版不编数；只有外盘池才有价格" } : { covered: false, note: "EVM 发射台内盘（Four.meme 等）在 Dexscreener/Gecko 覆盖外，本版只给外盘多池，不编内盘数" },
+        internalMarket: chain === "solana" ? { platform: "pump.fun", status: (price?.allPairs || []).some((q) => q.dexId === "pump") ? "internal" : (price?.allPairs || []).some((q) => ["pumpswap", "raydium", "orca"].includes(q.dexId)) ? "graduated_external" : (price ? "external_or_unknown" : "unknown_no_dex_pair"), dexIds: (price?.allPairs || []).map((q) => q.dexId), note: "Pump.fun 前端 API 自 2026-09-24 起 404，Worker 内盘只按 Dex 池 dexId 判定（pump=内盘，pumpswap/raydium=已毕业外盘），链上曲线 PDA 需 Solana ed25519 数学、本版未内置，不编曲线储备数；无 Dex 对的 pump 币可能是未索引的内盘，标 unknown_no_dex_pair" } : chain === "bsc" ? { ...(fourRes || {}), externalPools: price?.allPairs ?? null, note: "BSC 内盘走 Four.meme 代理余额法，余额 200M-1B 为内盘，余额 0 且有 PancakeSwap 外盘对为已毕业，余额 0 且无外盘对为非 Four.meme" } : { platform: null, status: "external_only", externalPools: price?.allPairs ?? null, note: "本链无统一免费内盘接口（Base/ETH 等发射台各异、无统一代理余额法），本版只给外盘多池，内盘不编数" },
         multiSource: { priceDexUsd: dexPrice?.priceUsd ?? null, priceGeckoUsd: geckoPrice?.priceUsd ?? null, priceDiscrepancyPct, pricePrimary: dexPrice ? "dexscreener" : geckoPrice ? "geckoterminal" : null, holdersPro: bsPro?.holders ?? null, holdersSecurity: security?.holders ?? null, holdersLogScan: logScan?.holders ?? null, goplusError: goplusR.error ?? null, honeypotError: honeypotR.error ?? null, queryTimeMs: Date.now() - t0 },
         paidPromotion,
         backupSources: { price: ["dexscreener", "geckoterminal"], security: ["goplus", "honeypot_is", "etherscan_source"], holdersTop10Creator: ["blockscout_pro", "alchemy_logscan", "public_rpc_logscan", "goplus_honeypot_holders"], lp: ["alchemy_lp", "public_rpc_lp_burn"] }, creatorHistory: bsPro?.creatorHistory ?? esCreator ?? bs?.creatorHistory ?? logScan?.creatorHistory ?? null,
