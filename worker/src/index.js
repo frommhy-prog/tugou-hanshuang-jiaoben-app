@@ -83,6 +83,19 @@ async function geckoToken(chain, address) {
   };
 }
 
+async function geckoPair(chain, address) {
+  try {
+    const url = `https://api.geckoterminal.com/api/v2/networks/${CHAINS[chain].gecko}/tokens/${address}`;
+    const res = await fetch(url, { headers: { accept: "application/json" } });
+    if (!res.ok) return null;
+    const body = await res.json();
+    const id = body?.data?.relationships?.top_pools?.data?.[0]?.id;
+    if (!id) return null;
+    const addr = String(id).split("_").pop();
+    return /^0x[0-9a-fA-F]{40}$/.test(addr) ? addr : null;
+  } catch (_) { return null; }
+}
+
 // 风险字段说明：只返回上游原值或按原值算的汇总，不编数。
 // GoPlus 的 holders[].percent 在实测里是小数（如 0.1837 = 18.37%），
 // 所以 top10 汇总时：最大值 <= 1 按小数处理乘 100，否则按已是百分比处理。
@@ -365,6 +378,67 @@ async function blockNumberAtTime(env, chain, tsSec, latest) {
     return Math.max(0, est - 2000);
   } catch (_) { return null; }
 }
+async function lpInfoAlchemy(env, chain, pairAddress) {
+  const out = { lpLocked: null, lpBurnPct: null, lpTopHolder: null, lpTopHolderPct: null, lpTopHolderIsContract: null, lpError: null };
+  const alchUrl = env ? alchemyUrl(env, chain) : null;
+  if (!alchUrl || !pairAddress) { out.lpError = alchUrl ? "no_pair" : "no_alchemy_key"; return out; }
+  try {
+    const totalHex = await rpcJson(alchUrl, "eth_call", [{ to: pairAddress, data: "0x18160ddd" }, "latest"]);
+    const total = totalHex ? BigInt(totalHex) : 0n;
+    if (total <= 0n) { out.lpError = "v3_or_not_erc20"; return out; }
+    const balOf = async (holder) => {
+      const h = holder.slice(2).padStart(64, "0");
+      const b = await rpcJson(alchUrl, "eth_call", [{ to: pairAddress, data: "0x70a08231" + h }, "latest"]);
+      return b ? BigInt(b) : 0n;
+    };
+    const zeroBal = await balOf("0x0000000000000000000000000000000000000000");
+    const deadBal = await balOf("0x000000000000000000000000000000000000dEaD");
+    out.lpBurnPct = Math.round(Number(((zeroBal + deadBal) * 10000n) / total) / 100 * 100) / 100;
+    out.lpLocked = out.lpBurnPct >= 50;
+    // LP 持仓分布：getAssetTransfers 按 LP 合约过滤，V2 新币通常只有几笔到几百笔
+    let pageKey = null, all = [], complete = true;
+    for (let pg = 0; pg < 10; pg++) {
+      const params = [{ fromBlock: "0x0", toBlock: "latest", contractAddresses: [pairAddress], category: ["erc20"], maxCount: "0x3e8", withMetadata: false, order: "asc" }];
+      if (pageKey) params[0].pageKey = pageKey;
+      const res = await rpcJson(alchUrl, "alchemy_getAssetTransfers", params);
+      const trs = res?.transfers || [];
+      all = all.concat(trs);
+      pageKey = res?.pageKey || null;
+      if (!pageKey) break;
+      if (all.length > 10000) { complete = false; break; }
+    }
+    if (!complete) { out.lpError = "lp_transfers_cap"; return out; }
+    const bals = new Map();
+    for (const tr of all) {
+      const v = Number(tr.value || 0);
+      if (!v) continue;
+      const f = String(tr.from).toLowerCase(), to = String(tr.to).toLowerCase();
+      bals.set(f, (bals.get(f) || 0) - v);
+      bals.set(to, (bals.get(to) || 0) + v);
+    }
+    const vals = [...bals.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+    if (vals.length > 0) {
+      const [topAddr, topVal] = vals[0];
+      let dec = 18;
+      try {
+        const decHex = await rpcJson(alchUrl, "eth_call", [{ to: pairAddress, data: "0x313ce567" }, "latest"]);
+        if (decHex) dec = parseInt(decHex, 16);
+      } catch (_) {}
+      const totalFloat = Number(total) / (10 ** dec);
+      out.lpTopHolder = topAddr;
+      out.lpTopHolderPct = totalFloat > 0 ? Math.round((topVal / totalFloat) * 10000) / 100 : null;
+      try {
+        const code = await rpcJson(alchUrl, "eth_getCode", [topAddr, "latest"]);
+        out.lpTopHolderIsContract = !!(code && code !== "0x");
+      } catch (_) {}
+    }
+  } catch (e) {
+    const msg = String(e && e.message ? e.message : e);
+    out.lpError = /revert|execution reverted|invalid opcode/i.test(msg) ? "v3_or_not_erc20" : msg;
+  }
+  return out;
+}
+
 async function evmLogScan(env, chain, address, pairCreatedAtMs) {
   // 链上 Transfer 日志聚合：只给土狗用。大币（转账数超上限）返回 partial，不编一个假 Top10。
   // 返回：{ topHoldersPct, holders, logScanComplete, scannedLogs, creatorHistory, logScanError }
@@ -687,6 +761,24 @@ export default {
           }
         } catch (_) { logScan = null; }
       }
+      let lpInfo = null;
+      if (chain !== "solana") {
+        try {
+          if (!price) {
+            const retry = await dexToken(chain, address);
+            if (retry) price = retry;
+          }
+          let pairAddr = price?.pairAddress || null;
+          if (!pairAddr) pairAddr = await geckoPair(chain, address);
+          if (pairAddr) {
+            lpInfo = await lpInfoAlchemy(env, chain, pairAddr);
+            if (lpInfo && lpInfo.lpBurnPct != null && security) {
+              security.lpLocked = lpInfo.lpLocked;
+              security.flags = { ...(security.flags || {}), lpAlchemy: { burnPct: lpInfo.lpBurnPct, topHolder: lpInfo.lpTopHolder, topHolderPct: lpInfo.lpTopHolderPct, topHolderIsContract: lpInfo.lpTopHolderIsContract, error: lpInfo.lpError } };
+            }
+          }
+        } catch (_) { lpInfo = null; }
+      }
       const poolAge = price?.pairCreatedAt ? Math.round(((Date.now() - Number(price.pairCreatedAt)) / 86400000) * 10) / 10 : null;
       return json({
         chain, address,
@@ -696,7 +788,7 @@ export default {
         buyTax: security?.buyTax ?? null, sellTax: security?.sellTax ?? null,
         honeypot: security?.honeypot ?? null, renounced: security?.renounced ?? null,
         mintable: security?.mintable ?? null, blacklist: security?.blacklist ?? null,
-        lpLocked: security?.lpLocked ?? null, poolAge, creatorHistory: bsPro?.creatorHistory ?? esCreator ?? bs?.creatorHistory ?? logScan?.creatorHistory ?? null,
+        lpLocked: security?.lpLocked ?? null, lpBurnPct: lpInfo?.lpBurnPct ?? null, lpTopHolder: lpInfo?.lpTopHolder ?? null, lpTopHolderPct: lpInfo?.lpTopHolderPct ?? null, lpTopHolderIsContract: lpInfo?.lpTopHolderIsContract ?? null, lpError: lpInfo?.lpError ?? null, poolAge, creatorHistory: bsPro?.creatorHistory ?? esCreator ?? bs?.creatorHistory ?? logScan?.creatorHistory ?? null,
         risk: security?.risk ?? null, riskSource: security?.source ?? "pending",
         security: security ? { source: security.source, flags: security.flags } : null,
         securityError, bsError, bsProError, etherscanError, logScan: logScan ? { complete: logScan.logScanComplete, scannedLogs: logScan.scannedLogs, error: logScan.logScanError } : null,
