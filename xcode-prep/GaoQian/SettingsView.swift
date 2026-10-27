@@ -132,14 +132,15 @@ enum LiveActivityManager {
 // 体检 / 持仓（含钱包管理）/ 发现（含监控）/ 寒霜 / 设置（含分享、反馈、提醒、用量）。
 // 原来的钱包、监控、分享、反馈不是删了，是收到父 Tab 里一层点进去。
 struct HoldingsTabView: View {
+    @AppStorage("appTheme") private var theme = AppTheme.hardcore
     @ObservedObject var wallets: WalletStore
     @State private var segment = 0
 
     private func segmentButton(_ title: String, _ tag: Int) -> some View {
         Button { segment = tag } label: {
             Text(title).font(.subheadline).bold().frame(maxWidth: .infinity).padding(.vertical, 9)
-                .background(segment == tag ? Color.white : Color.clear)
-                .foregroundStyle(segment == tag ? Color.black : Color(white: 0.75))
+                .background(segment == tag ? ThemeColors.text(for: theme) : Color.clear)
+                .foregroundStyle(segment == tag ? ThemeColors.background(for: theme) : ThemeColors.secondary(for: theme))
                 .cornerRadius(10)
         }
     }
@@ -152,14 +153,14 @@ struct HoldingsTabView: View {
                     segmentButton("钱包管理", 1)
                 }
                 .padding(4)
-                .background(Color(white: 0.12))
+                .background(ThemeColors.card(for: theme))
                 .cornerRadius(14)
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
                 .padding(.bottom, 8)
                 if segment == 0 { HoldingsView(wallets: wallets) } else { WalletListView(store: wallets) }
             }
-            .background(Color.black)
+            .background(ThemeColors.background(for: theme))
             .navigationTitle("持仓")
             .navigationBarTitleDisplayMode(.inline)
         }
@@ -217,6 +218,7 @@ struct CurrencyPickerView: View {
 
 // MARK: - 设置页
 struct SettingsView: View {
+    @AppStorage("appTheme") private var theme = AppTheme.hardcore
     @StateObject private var reminders = ReminderStore()
     @State private var sheet: SheetKind?
     enum SheetKind: Identifiable {
@@ -230,9 +232,16 @@ struct SettingsView: View {
                 Section("App") {
                     HStack { Text("名字"); Spacer(); Text("搞钱").bold() }
                     Text("仓库与 Worker 名不动：frommhy-prog/tugou-hanshuang-jiaoben-app、tugou-hanshuang-jiaoben-app，只改手机上显示的名字。").font(.footnote)
-                    Text("主题：黑色硬核（锁定，跟锁屏壁纸走，不设浅色）。").font(.footnote)
+                    Text("主题：在下面“主题切换”里选；默认黑核，不选外观不变。").font(.footnote)
                     Text("Worker：https://tugou-hanshuang-jiaoben-app.from-mhy.workers.dev").font(.footnote)
                     Text("小组件刷新约 15 分钟一次，单币轮询最短 10 秒，组合 60 秒，免费档没有秒级实时。").font(.footnote)
+                }
+                Section("主题切换") {
+                    Picker("主题", selection: $theme) {
+                        ForEach(AppTheme.allCases) { th in Text(th.title).tag(th) }
+                    }
+                    Text(theme.detail).font(.footnote)
+                    Text("跟随系统 = 跟 iPhone 系统外观走（当前主题）；日间/夜间 = 苹果原生浅色/深色；黑核氛围 = 现在的纯黑硬核。小组件仍保持黑核，不跟主题变。").font(.footnote)
                 }
                 Section("计价货币") {
                     CurrencyPickerView()

@@ -15,7 +15,64 @@ struct Hardcore {
     static let ok = Color.green
 }
 
+
+// 主题切换：跟随系统（当前主题）/ 日间（苹果原生浅色）/ 夜间（苹果原生深色）/ 黑核氛围（现在这套纯黑硬核）。
+// 默认黑核，所以不选的话外观跟以前一模一样；选日间/夜间/跟随系统时，系统 Form/List 自动跟苹果原生浅深色走，
+// 下面重做过的持仓/钱包/寒霜卡片用 ThemeColors 跟着变；小组件仍保持黑核，不跟主题变。
+enum AppTheme: String, CaseIterable, Identifiable {
+    case system, light, dark, hardcore
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .system: return "跟随系统"
+        case .light: return "日间"
+        case .dark: return "夜间"
+        case .hardcore: return "黑核氛围"
+        }
+    }
+    var detail: String {
+        switch self {
+        case .system: return "跟 iPhone 系统外观走，系统浅色就浅色、深色就深色。"
+        case .light: return "苹果原生浅色：白底黑字。"
+        case .dark: return "苹果原生深色：系统深灰底白字。"
+        case .hardcore: return "现在这套：纯黑底、白字、黄点缀，跟锁屏壁纸走。"
+        }
+    }
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .system: return nil
+        case .light: return .light
+        case .dark: return .dark
+        case .hardcore: return .dark
+        }
+    }
+}
+
+struct ThemeColors {
+    static func background(for theme: AppTheme) -> Color {
+        theme == .hardcore ? Color.black : Color(.systemBackground)
+    }
+    static func card(for theme: AppTheme) -> Color {
+        theme == .hardcore ? Color(white: 0.11) : Color(.secondarySystemBackground)
+    }
+    static func input(for theme: AppTheme) -> Color {
+        switch theme {
+        case .hardcore: return Color(white: 0.18)
+        case .light: return Color(white: 0.92)
+        case .dark: return Color(white: 0.22)
+        case .system: return Color(.secondarySystemBackground)
+        }
+    }
+    static func text(for theme: AppTheme) -> Color {
+        theme == .light ? Color.black : Color.white
+    }
+    static func secondary(for theme: AppTheme) -> Color {
+        theme == .light ? Color(white: 0.35) : Color(white: 0.70)
+    }
+}
+
 struct ContentView: View {
+    @AppStorage("appTheme") private var theme = AppTheme.hardcore
     @StateObject private var wallets = WalletStore()
     @ObservedObject private var fx = CurrencyStore.shared
 
@@ -36,7 +93,7 @@ struct ContentView: View {
         }
         .toolbarBackground(.visible, for: .tabBar)
         .toolbarBackground(Color.black, for: .tabBar)
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(theme.colorScheme)
     }
 }
 
@@ -384,10 +441,10 @@ struct HoldingsView: View {
 
 struct WalletListView: View {
     @ObservedObject var store: WalletStore
-    @State private var chain: Chain = .bsc
+    @AppStorage("appTheme") private var theme = AppTheme.hardcore
     @State private var address: String = ""
-    @State private var label: String = ""
     @State private var addErrorText: String?
+    @State private var addInfoText: String?
     @State private var minePortfolio: APIClient.PortfolioResponse?
     @State private var mineCostText: String?
     @State private var usageText: String?
@@ -397,7 +454,7 @@ struct WalletListView: View {
     @State private var autoWalletLoading = false
 
     private func fieldLabel(_ text: String) -> some View {
-        Text(text).font(.subheadline).bold().foregroundStyle(.white)
+        Text(text).font(.subheadline).bold().foregroundStyle(ThemeColors.text(for: theme))
     }
 
     private func inputField(_ placeholder: String, text: Binding<String>) -> some View {
@@ -405,9 +462,9 @@ struct WalletListView: View {
             .autocapitalization(.none)
             .disableAutocorrection(true)
             .padding(12)
-            .background(Color(white: 0.18))
+            .background(ThemeColors.input(for: theme))
             .cornerRadius(10)
-            .foregroundStyle(.white)
+            .foregroundStyle(ThemeColors.text(for: theme))
     }
 
     private func whiteButton(_ title: String, action: @escaping () -> Void) -> some View {
@@ -420,79 +477,81 @@ struct WalletListView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                Text("只填公开地址，绝不填私钥。多钱包、多链混加，随时可换。")
-                    .font(.subheadline).foregroundStyle(Color(white: 0.70))
+                Text("只填公开地址，绝不填私钥。粘贴地址直接加，不用选链；EVM 地址一次加进所有 EVM 链，Solana 只加 Solana；随时可删。")
+                    .font(.subheadline).foregroundStyle(ThemeColors.secondary(for: theme))
 
-                // 添加钱包：一张卡，标签在输入框上面，输入框有底色，一眼就知道往哪填。
+                // 添加钱包：只有一个输入框，不用选链。Solana 地址只加 Solana；
+                // EVM 地址（0x 开头）在所有 EVM 链上是同一个地址，一次加进所有 EVM 链，
+                // 免得一个个选；已有的链自动跳过，不重复。删某条链只点那行的删除。
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("添加钱包").font(.headline).foregroundStyle(.white)
-                    fieldLabel("链")
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 88), spacing: 8)], spacing: 8) {
-                        ForEach(Chain.allCases) { c in
-                            Button { chain = c } label: {
-                                Text(c.displayName).font(.subheadline).bold()
-                                    .padding(.vertical, 8).frame(maxWidth: .infinity)
-                                    .background(chain == c ? Color.white : Color(white: 0.16))
-                                    .foregroundStyle(chain == c ? Color.black : Color.white)
-                                    .cornerRadius(999)
-                            }
-                        }
-                    }
-                    fieldLabel("备注名（可选）")
-                    inputField("比如：主钱包、测试钱包", text: $label)
-                    fieldLabel("公开钱包地址")
-                    inputField("粘贴公开地址，不要私钥", text: $address)
+                    Text("添加钱包").font(.headline).foregroundStyle(ThemeColors.text(for: theme))
+                    fieldLabel("钱包地址")
+                    inputField("粘贴钱包地址，不要私钥", text: $address)
                     whiteButton("添加") {
-                        // 自动识别：贴 Solana 地址自动切到 Solana 链；EVM 地址靠钱包框上下文定为钱包，格式不对或重复时不清空输入，提示原因。
-                        chain = RefreshInfo.autoChain(for: address, current: chain)
-                        if store.add(chain: chain, address: address, label: label) {
-                            addErrorText = nil
-                            address = ""; label = ""
+                        let trimmed = address.trimmingCharacters(in: .whitespacesAndNewlines)
+                        addErrorText = nil; addInfoText = nil
+                        if WalletStore.isValidAddress(chain: .solana, address: trimmed) {
+                            if store.add(chain: .solana, address: trimmed, label: "") {
+                                address = ""; addInfoText = "已加入 Solana。"
+                            } else {
+                                addErrorText = "这个 Solana 地址已经加过了。"
+                            }
+                        } else if WalletStore.isValidAddress(chain: .eth, address: trimmed) {
+                            var added: [String] = []
+                            for c in Chain.allCases where c.isEVM {
+                                if store.add(chain: c, address: trimmed, label: "") { added.append(c.displayName) }
+                            }
+                            if added.isEmpty {
+                                addErrorText = "这个 EVM 地址在所有 EVM 链上都已经加过了。"
+                            } else {
+                                address = ""; addInfoText = "已加入：\(added.joined(separator: "、"))。"
+                            }
                         } else {
-                            addErrorText = "没加上：地址格式不对（EVM 要 0x + 40 位，Solana 要 Base58 32–44 位），或同链同地址已存在。"
+                            addErrorText = "没加上：地址格式不对（EVM 要 0x + 40 位，Solana 要 Base58 32–44 位）。"
                         }
                     }
                     if let addErrorText { Text(addErrorText).font(.subheadline).foregroundStyle(.red) }
+                    if let addInfoText { Text(addInfoText).font(.subheadline).foregroundStyle(ThemeColors.text(for: theme)) }
                 }
                 .padding(16)
-                .background(Color(white: 0.11))
+                .background(ThemeColors.card(for: theme))
                 .cornerRadius(16)
 
                 // 已添加：没钱包时不再只剩一个光秃秃的标题，给出空状态；有钱包时每行都有看得见的删除钮，不靠猜左滑。
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("已添加").font(.headline).foregroundStyle(.white)
+                    Text("已添加").font(.headline).foregroundStyle(ThemeColors.text(for: theme))
                     if store.wallets.isEmpty {
-                        Text("还没加钱包。上面选链、贴公开地址、点添加，就会出现在这里。")
-                            .font(.subheadline).foregroundStyle(Color(white: 0.70))
+                        Text("还没加钱包。上面贴地址、点添加，就会出现在这里。")
+                            .font(.subheadline).foregroundStyle(ThemeColors.secondary(for: theme))
                     } else {
                         ForEach(store.wallets) { w in
                             HStack(alignment: .top, spacing: 10) {
                                 Text(w.chain.displayName).font(.caption).bold()
                                     .padding(.horizontal, 8).padding(.vertical, 4)
-                                    .background(Color(white: 0.20)).cornerRadius(8)
+                                    .background(ThemeColors.input(for: theme)).cornerRadius(8)
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text(w.label).bold().foregroundStyle(.white)
-                                    Text(w.address).font(.caption).foregroundStyle(Color(white: 0.70))
+                                    Text(w.label).bold().foregroundStyle(ThemeColors.text(for: theme))
+                                    Text(w.address).font(.caption).foregroundStyle(ThemeColors.secondary(for: theme))
                                         .lineLimit(1).truncationMode(.middle)
                                 }
                                 Spacer()
                                 Button("删除") { store.remove(w) }.foregroundStyle(.red)
                             }
-                            Divider().background(Color(white: 0.25))
+                            Divider()
                         }
                     }
                 }
                 .padding(16)
-                .background(Color(white: 0.11))
+                .background(ThemeColors.card(for: theme))
                 .cornerRadius(16)
 
                 // 全量分析：原来这段文字被悬浮 Tab 栏压住一半，现在整段在卡片里，底部留空，Tab 栏再也盖不住。
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("我的钱包全量分析").font(.headline).foregroundStyle(.white)
+                    Text("我的钱包全量分析").font(.headline).foregroundStyle(ThemeColors.text(for: theme))
                     Text("全量 = 本次不读结果缓存、不读价格 KV、不回旧价，直接打上游；大脑逐币从 5 个放宽到 20 个/钱包，超 20 的币用体检页的分析按钮逐个查。代价是更容易撞 Dex/Gecko 限流，只手动点，不要自动轮询。")
-                        .font(.subheadline).foregroundStyle(Color(white: 0.70))
-                    if let mineCostText { Text("预计消耗：\(mineCostText)").font(.subheadline).foregroundStyle(Color(white: 0.85)) }
-                    if let usageText { Text(usageText).font(.subheadline).foregroundStyle(Color(white: 0.85)) }
+                        .font(.subheadline).foregroundStyle(ThemeColors.secondary(for: theme))
+                    if let mineCostText { Text("预计消耗：\(mineCostText)").font(.subheadline).foregroundStyle(ThemeColors.text(for: theme)) }
+                    if let usageText { Text(usageText).font(.subheadline).foregroundStyle(ThemeColors.text(for: theme)) }
                     whiteButton(mineLoading ? "全量分析中…" : "我的钱包全量分析") {
                         Task {
                             mineLoading = true; mineErrorText = nil; minePortfolio = nil; autoWalletResults = []
@@ -543,17 +602,17 @@ struct WalletListView: View {
                     }
                     .disabled(mineLoading || store.wallets.isEmpty)
                     if let mineErrorText { Text(mineErrorText).font(.subheadline).foregroundStyle(.red) }
-                    if autoWalletLoading { Text("全工具自动查进行中…每个钱包的复盘/画像/评分/活动逐个出。").font(.subheadline).foregroundStyle(Color(white: 0.70)) }
-                    ForEach(autoWalletResults.indices, id: \.self) { i in Text(autoWalletResults[i]).font(.subheadline).foregroundStyle(Color(white: 0.85)) }
+                    if autoWalletLoading { Text("全工具自动查进行中…每个钱包的复盘/画像/评分/活动逐个出。").font(.subheadline).foregroundStyle(ThemeColors.secondary(for: theme)) }
+                    ForEach(autoWalletResults.indices, id: \.self) { i in Text(autoWalletResults[i]).font(.subheadline).foregroundStyle(ThemeColors.text(for: theme)) }
                     if let p = minePortfolio {
-                        Text("本次是否缓存：\(p.cached == true ? "是（旧数据）" : "否（本次新取）")；取数时间戳：\(p.fetchedAt ?? 0)").font(.subheadline).foregroundStyle(Color(white: 0.70))
+                        Text("本次是否缓存：\(p.cached == true ? "是（旧数据）" : "否（本次新取）")；取数时间戳：\(p.fetchedAt ?? 0)").font(.subheadline).foregroundStyle(ThemeColors.secondary(for: theme))
                         if let b = p.brain {
-                            if let c = b.conclusion { Text(c).font(.subheadline).foregroundStyle(.white) }
-                            Text("逐币查了 \(b.analyzedCount ?? 0) 个，上限 \(b.analyzedLimit ?? 0) 个，未逐个查 \(b.unanalyzedCount ?? 0) 个，非原生共 \(b.totalNonNative ?? 0) 个。").font(.subheadline).foregroundStyle(Color(white: 0.85))
+                            if let c = b.conclusion { Text(c).font(.subheadline).foregroundStyle(ThemeColors.text(for: theme)) }
+                            Text("逐币查了 \(b.analyzedCount ?? 0) 个，上限 \(b.analyzedLimit ?? 0) 个，未逐个查 \(b.unanalyzedCount ?? 0) 个，非原生共 \(b.totalNonNative ?? 0) 个。").font(.subheadline).foregroundStyle(ThemeColors.text(for: theme))
                         }
-                        if let t = p.merged?.totalUsd { Text("合并总价：\(fmtUsd(t))").font(.headline).foregroundStyle(.white) }
+                        if let t = p.merged?.totalUsd { Text("合并总价：\(fmtUsd(t))").font(.headline).foregroundStyle(ThemeColors.text(for: theme)) }
                         if let hs = p.merged?.holdings, !hs.isEmpty {
-                            Text("持仓分布图（App 本地画，不外发给画图服务）：").font(.subheadline).foregroundStyle(Color(white: 0.70))
+                            Text("持仓分布图（App 本地画，不外发给画图服务）：").font(.subheadline).foregroundStyle(ThemeColors.secondary(for: theme))
                             Chart {
                                 ForEach(hs.prefix(5).indices, id: \.self) { i in
                                     if let v = hs[i].usd { BarMark(x: .value("币", hs[i].symbol ?? "?"), y: .value("美元", v)).foregroundStyle(.yellow) }
@@ -563,14 +622,14 @@ struct WalletListView: View {
                     }
                 }
                 .padding(16)
-                .background(Color(white: 0.11))
+                .background(ThemeColors.card(for: theme))
                 .cornerRadius(16)
             }
             .padding(.horizontal, 16)
             .padding(.top, 12)
             .padding(.bottom, 120)
         }
-        .background(Color.black)
+        .background(ThemeColors.background(for: theme))
         .navigationTitle("钱包管理")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -818,6 +877,7 @@ struct WosView: View {
     @State private var codes: APIClient.WosCodesResponse?
     @State private var errorText: String?
     @State private var lastAction: String?
+    @AppStorage("appTheme") private var theme = AppTheme.hardcore
     @Environment(\.openURL) private var openURL
 
     private var playerName: String { codes?.player?.name ?? "[ONE]卡皮巴拉" }
@@ -867,89 +927,89 @@ struct WosView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 Text("iOS 游戏内没有兑换按钮，只能走官方网页；官方只要 Player ID，不要密码。任何索要游戏登录密码的页面都不是官方页。")
-                    .font(.subheadline).foregroundStyle(Color(white: 0.70))
+                    .font(.subheadline).foregroundStyle(ThemeColors.secondary(for: theme))
 
                 // 领主信息：你已给的，不用再填。
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("领主信息（已填好，不用再输）").font(.headline).foregroundStyle(.white)
-                    Text(playerName).font(.title3).bold().foregroundStyle(.white)
-                    Text("Player ID：\(playerId)").font(.headline).foregroundStyle(.white)
+                    Text("领主信息（已填好，不用再输）").font(.headline).foregroundStyle(ThemeColors.text(for: theme))
+                    Text(playerName).font(.title3).bold().foregroundStyle(ThemeColors.text(for: theme))
+                    Text("Player ID：\(playerId)").font(.headline).foregroundStyle(ThemeColors.text(for: theme))
                         .textSelection(.enabled)
                     Text("王国 \(playerKingdom)（初始 \(playerInitialKingdom)）· 联盟 \(playerAlliance)")
-                        .font(.subheadline).foregroundStyle(Color(white: 0.70))
+                        .font(.subheadline).foregroundStyle(ThemeColors.secondary(for: theme))
                     HStack(spacing: 10) {
                         Button("复制领主 ID") {
                             if copyText(playerId) { lastAction = "领主 ID \(playerId) 已复制，官网打开后粘贴到 Player ID 框。" } else { lastAction = "复制在当前设备上不可用，请长按 ID 文字手动复制。" }
                         }
                         .padding(.horizontal, 12).padding(.vertical, 8)
-                        .background(Color(white: 0.20)).cornerRadius(10).foregroundStyle(.white)
+                        .background(ThemeColors.input(for: theme)).cornerRadius(10).foregroundStyle(ThemeColors.text(for: theme))
                         Spacer()
                     }
                     whiteButton("一键打开官方兑换中心") {
                         openRedeemSite(copying: playerId, hint: "领主 ID 已复制并打开官网：粘贴到 Player ID 框点 Login，核对头像是你本人，再贴码点 Confirm。")
                     }
                 }
-                .padding(16).background(Color(white: 0.11)).cornerRadius(16)
+                .padding(16).background(ThemeColors.card(for: theme)).cornerRadius(16)
 
                 if let action = lastAction {
-                    Text(action).font(.subheadline).foregroundStyle(.white)
-                        .padding(12).background(Color(white: 0.16)).cornerRadius(12)
+                    Text(action).font(.subheadline).foregroundStyle(ThemeColors.text(for: theme))
+                        .padding(12).background(ThemeColors.card(for: theme)).cornerRadius(12)
                 }
 
                 // WOS1025 今天截止，先领这个。
                 if let urgent = (codes?.codes ?? []).first(where: { $0.code == "WOS1025" }) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("先领 WOS1025：今天 07:59 香港时间截止").font(.headline).foregroundStyle(.red)
-                        Text(urgent.rewards ?? "").font(.subheadline).foregroundStyle(.white)
-                        if let n = urgent.note { Text(n).font(.subheadline).foregroundStyle(Color(white: 0.70)) }
+                        Text(urgent.rewards ?? "").font(.subheadline).foregroundStyle(ThemeColors.text(for: theme))
+                        if let n = urgent.note { Text(n).font(.subheadline).foregroundStyle(ThemeColors.secondary(for: theme)) }
                         whiteButton("复制 WOS1025 并打开官网") {
                             openRedeemSite(copying: "WOS1025", hint: "码 WOS1025 已复制并打开官网：先填领主 ID \(playerId) 点 Login 核对头像，再粘贴码点 Confirm；如有验证码请手动填。")
                         }
                     }
-                    .padding(16).background(Color(white: 0.11)).cornerRadius(16)
+                    .padding(16).background(ThemeColors.card(for: theme)).cornerRadius(16)
                     .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.red, lineWidth: 1))
                 }
 
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
-                        Text("兑换码").font(.headline).foregroundStyle(.white)
+                        Text("兑换码").font(.headline).foregroundStyle(ThemeColors.text(for: theme))
                         Spacer()
                         Button("刷新码表") {
                             Task { do { codes = try await APIClient.fetchWosCodes(); errorText = nil } catch { errorText = "码表失败：\(error.localizedDescription)" } }
-                        }.foregroundStyle(.white)
+                        }.foregroundStyle(ThemeColors.text(for: theme))
                     }
                     if let e = errorText { Text(e).font(.subheadline).foregroundStyle(.red) }
-                    if let source = codes?.source { Text(source).font(.caption).foregroundStyle(Color(white: 0.70)) }
+                    if let source = codes?.source { Text(source).font(.caption).foregroundStyle(ThemeColors.secondary(for: theme)) }
                     ForEach(sortedCodes().indices, id: \.self) { i in
                         let c = sortedCodes()[i]
                         VStack(alignment: .leading, spacing: 6) {
-                            Text(c.code ?? "").font(.headline).foregroundStyle(.white)
-                            Text("\(c.status ?? "") · \(c.rewards ?? "")").font(.subheadline).foregroundStyle(Color(white: 0.85))
-                            if let n = c.note { Text(n).font(.caption).foregroundStyle(Color(white: 0.70)) }
+                            Text(c.code ?? "").font(.headline).foregroundStyle(ThemeColors.text(for: theme))
+                            Text("\(c.status ?? "") · \(c.rewards ?? "")").font(.subheadline).foregroundStyle(ThemeColors.text(for: theme))
+                            if let n = c.note { Text(n).font(.caption).foregroundStyle(ThemeColors.secondary(for: theme)) }
                             Button("复制这个码并打开官网") {
                                 if let code = c.code { openRedeemSite(copying: code, hint: "码 \(code) 已复制并打开官网：先填领主 ID \(playerId) 点 Login 核对头像，再粘贴码点 Confirm；如有验证码请手动填。") }
                             }
                             .padding(.horizontal, 12).padding(.vertical, 8)
-                            .background(Color(white: 0.20)).cornerRadius(10).foregroundStyle(.white)
+                            .background(ThemeColors.input(for: theme)).cornerRadius(10).foregroundStyle(ThemeColors.text(for: theme))
                         }
-                        Divider().background(Color(white: 0.25))
+                        Divider()
                     }
-                    if let n = codes?.note { Text(n).font(.caption).foregroundStyle(Color(white: 0.70)) }
+                    if let n = codes?.note { Text(n).font(.caption).foregroundStyle(ThemeColors.secondary(for: theme)) }
                 }
-                .padding(16).background(Color(white: 0.11)).cornerRadius(16)
+                .padding(16).background(ThemeColors.card(for: theme)).cornerRadius(16)
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("自动兑换为什么没接").font(.headline).foregroundStyle(.white)
+                    Text("自动兑换为什么没接").font(.headline).foregroundStyle(ThemeColors.text(for: theme))
                     Text("官网最后一步有验证码，App 在后台替你点不过去；市面上的第三方自动兑换要把你的 Player ID 交给别人、有的还要付费，没经你同意不接。现在这版是你点一次按钮，码和 ID 都给你备好，官网里你点一次 Confirm 就行；登录密码绝不进聊天、不进反馈。")
-                        .font(.subheadline).foregroundStyle(Color(white: 0.70))
+                        .font(.subheadline).foregroundStyle(ThemeColors.secondary(for: theme))
                 }
-                .padding(16).background(Color(white: 0.11)).cornerRadius(16)
+                .padding(16).background(ThemeColors.card(for: theme)).cornerRadius(16)
             }
             .padding(.horizontal, 16)
             .padding(.top, 12)
             .padding(.bottom, 120)
         }
-        .background(Color.black)
+        .background(ThemeColors.background(for: theme))
         .navigationTitle("寒霜")
         .navigationBarTitleDisplayMode(.inline)
         .task {
