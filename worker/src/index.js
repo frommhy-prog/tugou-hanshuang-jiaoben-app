@@ -48,18 +48,34 @@ async function dexToken(chain, address) {
   if (!res.ok) return null;
   const pairs = await res.json();
   if (!Array.isArray(pairs) || pairs.length === 0) return null;
-  const best = pairs.sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0];
+  const sorted = pairs.sort((a, b) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0));
+  const best = sorted[0];
+  const sum = (fn) => sorted.reduce((a, p) => a + (Number(fn(p)) || 0), 0);
   return {
     name: best.baseToken?.name ?? null,
     symbol: best.baseToken?.symbol ?? null,
     priceUsd: best.priceUsd ? Number(best.priceUsd) : null,
     liquidityUsd: best.liquidity?.usd ?? null,
+    liquidityBase: best.liquidity?.base ?? null,
+    liquidityQuote: best.liquidity?.quote ?? null,
+    baseTokenAddress: best.baseToken?.address ?? null,
+    quoteTokenAddress: best.quoteToken?.address ?? null,
+    quoteTokenSymbol: best.quoteToken?.symbol ?? null,
     volume24hUsd: best.volume?.h24 ?? null,
+    totalVolume24hUsd: sum((p) => p.volume?.h24),
+    totalLiquidityUsd: sum((p) => p.liquidity?.usd),
+    priceChange5mPct: best.priceChange?.m5 ?? null,
+    priceChange1hPct: best.priceChange?.h1 ?? null,
     priceChange24hPct: best.priceChange?.h24 ?? null,
+    txns5m: best.txns?.m5 ?? null,
+    txns1h: best.txns?.h1 ?? null,
+    txns24h: best.txns?.h24 ?? null,
     pairAddress: best.pairAddress ?? null,
     pairCreatedAt: best.pairCreatedAt ?? null,
     dexId: best.dexId ?? null,
+    labels: best.labels ?? null,
     source: "dexscreener",
+    allPairs: sorted.slice(0, 5).map((q) => ({ pairAddress: q.pairAddress ?? null, dexId: q.dexId ?? null, labels: q.labels ?? null, priceUsd: q.priceUsd ? Number(q.priceUsd) : null, liquidityUsd: q.liquidity?.usd ?? null, volume24hUsd: q.volume?.h24 ?? null, pairCreatedAt: q.pairCreatedAt ?? null, baseTokenSymbol: q.baseToken?.symbol ?? null, quoteTokenSymbol: q.quoteToken?.symbol ?? null })),
   };
 }
 
@@ -386,6 +402,7 @@ async function lpInfoAlchemy(env, chain, pairAddress) {
   const out = { lpLocked: null, lpBurnPct: null, lpTopHolder: null, lpTopHolderPct: null, lpTopHolderIsContract: null, lpError: null };
   const alchUrl = env ? alchemyUrl(env, chain) : null;
   if (!alchUrl || !pairAddress) { out.lpError = alchUrl ? "no_pair" : "no_alchemy_key"; return out; }
+  if (!/^0x[0-9a-fA-F]{40}$/.test(pairAddress)) { out.lpError = "v4_pool_id_no_lp_token"; return out; }
   try {
     const totalHex = await rpcJson(alchUrl, "eth_call", [{ to: pairAddress, data: "0x18160ddd" }, "latest"]);
     const total = totalHex ? BigInt(totalHex) : 0n;
@@ -446,7 +463,7 @@ async function lpInfoAlchemy(env, chain, pairAddress) {
 async function evmLogScan(env, chain, address, pairCreatedAtMs) {
   // 链上 Transfer 日志聚合：只给土狗用。大币（转账数超上限）返回 partial，不编一个假 Top10。
   // 返回：{ topHoldersPct, holders, logScanComplete, scannedLogs, creatorHistory, logScanError }
-  const out = { topHoldersPct: null, holders: null, logScanComplete: false, scannedLogs: 0, creatorHistory: null, logScanError: null };
+  const out = { topHoldersPct: null, holders: null, realHolders: null, logScanComplete: false, scannedLogs: 0, creatorHistory: null, logScanError: null };
   try {
     const latestHex = await rpcJsonChainSlow(env, chain, "eth_blockNumber", []);
     const latest = hexToInt(latestHex);
@@ -487,6 +504,8 @@ async function evmLogScan(env, chain, address, pairCreatedAtMs) {
           }
           const vals = [...bals.values()].filter((v) => v > 0).sort((a, b) => b - a);
           out.holders = vals.length;
+          const exclude = new Set(["0x0000000000000000000000000000000000000000", "0x000000000000000000000000000000000000dead", String(address).toLowerCase()]);
+          out.realHolders = [...bals.entries()].filter(([a, v]) => v > 0 && !exclude.has(String(a).toLowerCase())).length;
           try {
             const totalHex = await rpcJson(alchUrl, "eth_call", [{ to: address, data: "0x18160ddd" }, "latest"]);
             const decHex = await rpcJson(alchUrl, "eth_call", [{ to: address, data: "0x313ce567" }, "latest"]);
@@ -694,95 +713,125 @@ export default {
       const address = url.searchParams.get("address") || "";
       if (!CHAINS[chain]) return json({ error: "unknown_chain", chain }, 400);
       if (!isValidAddress(chain, address)) return json({ error: "invalid_address", chain }, 400);
-      let price = await cached(env, `token:${chain}:${address.toLowerCase()}`, () => dexToken(chain, address));
-      if (!price) price = await geckoToken(chain, address);
+      const t0 = Date.now();
+      // 第一波并行：同一链同一合约，价格、安全、Pro、Etherscan 同时查，秒级返回，不串行等、不只信单源
+      const withTimeout = (pr, ms) => Promise.race([pr, new Promise((_, rej) => setTimeout(() => rej(new Error(`timeout_${ms}ms`)), ms))]);
+      const settled = (pr) => withTimeout(pr, 10000).then((v) => ({ ok: true, v }), (e) => ({ ok: false, error: String(e && e.message ? e.message : e) }));
+      const dexP = settled(cached(env, `token:${chain}:${address.toLowerCase()}`, () => dexToken(chain, address)));
+      const geckoP = settled(geckoToken(chain, address));
+      const goplusP = chain === "solana" ? Promise.resolve({ ok: false, error: "solana_no_goplus" }) : settled(goplusSecurity(chain, address));
+      const honeypotP = chain === "solana" ? Promise.resolve({ ok: false, error: "solana_no_honeypot" }) : settled(honeypotSecurity(chain, address));
+      const rugP = chain === "solana" ? settled(rugcheckSecurity(address)) : Promise.resolve({ ok: false, error: "evm_no_rugcheck" });
+      const proP = chain === "solana" ? Promise.resolve({ ok: false, error: "solana_no_pro" }) : settled(blockscoutProInfo(env, chain, address));
+      const esP = chain === "solana" ? Promise.resolve({ ok: false, error: "solana_no_etherscan" }) : settled(etherscanSecurity(env, chain, address));
+      const [dexR, geckoR, goplusR, honeypotR, rugR, proR, esR] = await Promise.all([dexP, geckoP, goplusP, honeypotP, rugP, proP, esP]);
+      const dexPrice = dexR.ok ? dexR.v : null;
+      const geckoPrice = geckoR.ok ? geckoR.v : null;
+      let price = dexPrice || geckoPrice;
+      const priceDiscrepancyPct = dexPrice?.priceUsd != null && geckoPrice?.priceUsd != null && dexPrice.priceUsd > 0 ? Math.round(Math.abs(dexPrice.priceUsd - geckoPrice.priceUsd) / dexPrice.priceUsd * 10000) / 100 : null;
+      // 安全：GoPlus 与 honeypot 同时出结果，取最保守（蜜罐任一 true 即 true，税取最大值），分歧超过 10% 标出
       let security = null;
       let securityError = null;
-      try { security = chain === "solana" ? await rugcheckSecurity(address) : await evmSecurity(chain, address); if (!security) securityError = "upstream_empty"; } catch (e) { security = null; securityError = String(e && e.message ? e.message : e); }
-      let bs = null;
-      let bsError = null;
-      let lpBurn = null;
-      if (chain !== "solana" && !env.BLOCKSCOUT_API_KEY) {
-        try { bs = await blockscoutInfo(chain, address); } catch (e) { bs = null; bsError = String(e && e.message ? e.message : e); }
-        if (bs) {
-          if (!security) security = { holders: null, topHoldersPct: null, buyTax: null, sellTax: null, honeypot: null, renounced: null, mintable: null, blacklist: null, lpLocked: null, risk: null, source: "blockscout", flags: {} };
-          if (security.holders == null && bs.holders != null) security.holders = bs.holders;
-          if (security.topHoldersPct == null && bs.topHoldersPct != null) security.topHoldersPct = bs.topHoldersPct;
-          if (security.mintable == null && bs.mintable != null) security.mintable = bs.mintable;
-          if (security.blacklist == null && bs.blacklist != null) security.blacklist = bs.blacklist;
-          security.flags = { ...(security.flags || {}), blockscout: { topHoldersPct: bs.topHoldersPct, sourceScan: bs.sourceScan, bsError: bs.bsError } };
-          if (security.risk == null && (bs.mintable != null || bs.blacklist != null)) security.risk = bs.blacklist === true ? "yellow" : bs.mintable === true ? "yellow" : "green";
-          if (security.source === "blockscout") securityError = null;
-        }
-        try { lpBurn = await rpcLpBurn(chain, price?.pairAddress); } catch (_) { lpBurn = null; }
-        if (lpBurn && security && security.lpLocked == null) { security.lpLocked = lpBurn.lpLocked; security.flags = { ...(security.flags || {}), lpBurnedPct: lpBurn.lpBurnedPct }; }
+      if (chain === "solana") {
+        if (rugR.ok && rugR.v) security = rugR.v; else securityError = rugR.error || "upstream_empty";
+      } else {
+        const gp = goplusR.ok ? goplusR.v : null;
+        const hp = honeypotR.ok ? honeypotR.v : null;
+        if (gp && hp) {
+          security = { ...gp, honeypot: gp.honeypot === true || hp.honeypot === true, buyTax: Math.max(gp.buyTax ?? 0, hp.buyTax ?? 0), sellTax: Math.max(gp.sellTax ?? 0, hp.sellTax ?? 0), source: "goplus+honeypot", flags: { ...(gp.flags || {}), honeypot_is: { buyTax: hp.buyTax, sellTax: hp.sellTax, honeypot: hp.honeypot }, securityDiscrepancy: Math.abs((gp.buyTax ?? 0) - (hp.buyTax ?? 0)) > 10 || Math.abs((gp.sellTax ?? 0) - (hp.sellTax ?? 0)) > 10 || gp.honeypot !== hp.honeypot } };
+          if (security.honeypot === true) security.risk = "red";
+        } else if (gp) security = gp;
+        else if (hp) security = hp;
+        else securityError = goplusR.error || honeypotR.error || "upstream_empty";
       }
-      let bsPro = null;
-      let bsProError = null;
-      if (chain !== "solana") {
-        try { bsPro = await blockscoutProInfo(env, chain, address); if (bsPro && bsPro.error) { bsProError = bsPro.error; bsPro = null; } } catch (e) { bsPro = null; bsProError = String(e && e.message ? e.message : e); }
-        if (bsPro) {
+      let bs = null; let bsError = null; let lpBurn = null;
+      let bsPro = null; let bsProError = null;
+      if (proR.ok && proR.v) {
+        if (proR.v.error) { bsProError = proR.v.error; }
+        else {
+          bsPro = proR.v;
           if (!security) security = { holders: null, topHoldersPct: null, buyTax: null, sellTax: null, honeypot: null, renounced: null, mintable: null, blacklist: null, lpLocked: null, risk: null, source: "blockscout_pro", flags: {} };
           if (security.holders == null && bsPro.holders != null) security.holders = bsPro.holders;
           if (security.topHoldersPct == null && bsPro.topHoldersPct != null) security.topHoldersPct = bsPro.topHoldersPct;
           security.flags = { ...(security.flags || {}), blockscout_pro: { holders: bsPro.holders, topHoldersPct: bsPro.topHoldersPct, totalSupply: bsPro.totalSupply, bsProError: bsPro.bsProError } };
         }
-      }
-      let esCreator = null;
-      let etherscanError = null;
-      if (chain !== "solana") {
-        try {
-          const es = await etherscanSecurity(env, chain, address);
-          if (es.error) etherscanError = es.error;
-          if (es.mintable != null || es.blacklist != null || es.creatorHistory) {
-            if (!security) security = { holders: null, topHoldersPct: null, buyTax: null, sellTax: null, honeypot: null, renounced: null, mintable: null, blacklist: null, lpLocked: null, risk: null, source: "etherscan", flags: {} };
-            if (security.mintable == null && es.mintable != null) security.mintable = es.mintable;
-            if (security.blacklist == null && es.blacklist != null) security.blacklist = es.blacklist;
-            if (es.creatorHistory) esCreator = es.creatorHistory;
-            security.flags = { ...(security.flags || {}), etherscan: { mintable: es.mintable, blacklist: es.blacklist, sourceScan: es.sourceScan } };
-            if (security.risk == null && (es.mintable != null || es.blacklist != null)) security.risk = es.blacklist === true ? "yellow" : es.mintable === true ? "yellow" : "green";
-          }
-        } catch (e) { etherscanError = String(e && e.message ? e.message : e); }
-        try {
-          if (security && security.renounced == null) {
-            const own = await rpcOwner(chain, address);
-            if (own != null) security.renounced = own;
-          }
-        } catch (_) {}
-      }
-      let logScan = null;
+      } else if (chain !== "solana") { bsProError = proR.error || null; }
+      let esCreator = null; let etherscanError = null;
+      if (esR.ok && esR.v) {
+        const es = esR.v;
+        if (es.error) etherscanError = es.error;
+        if (es.mintable != null || es.blacklist != null || es.creatorHistory) {
+          if (!security) security = { holders: null, topHoldersPct: null, buyTax: null, sellTax: null, honeypot: null, renounced: null, mintable: null, blacklist: null, lpLocked: null, risk: null, source: "etherscan", flags: {} };
+          if (security.mintable == null && es.mintable != null) security.mintable = es.mintable;
+          if (security.blacklist == null && es.blacklist != null) security.blacklist = es.blacklist;
+          if (es.creatorHistory) esCreator = es.creatorHistory;
+          security.flags = { ...(security.flags || {}), etherscan: { mintable: es.mintable, blacklist: es.blacklist, sourceScan: es.sourceScan } };
+          if (security.risk == null && (es.mintable != null || es.blacklist != null)) security.risk = es.blacklist === true ? "yellow" : es.mintable === true ? "yellow" : "green";
+        }
+        if (security && security.renounced == null && chain !== "solana") {
+          try { const own = await rpcOwner(chain, address); if (own != null) security.renounced = own; } catch (_) {}
+        }
+      } else if (chain !== "solana") { etherscanError = esR.error || null; }
+      // 第二波并行：日志扫描、LP、总供应、gas 同时查，都依赖价格但彼此独立
       const holdersNum = security?.holders != null ? Number(security.holders) : null;
       const skipLogScan = holdersNum != null && holdersNum > 500000;
-      if (chain !== "solana" && !skipLogScan && (security?.topHoldersPct == null || (bsPro?.creatorHistory == null && esCreator == null && bs?.creatorHistory == null))) {
+      const needLogScan = chain !== "solana" && !skipLogScan && (security?.topHoldersPct == null || (bsPro?.creatorHistory == null && esCreator == null && bs?.creatorHistory == null));
+      const logScanP = needLogScan ? Promise.race([evmLogScan(env, chain, address, price?.pairCreatedAt), new Promise((res) => setTimeout(() => res(null), 15000))]).catch(() => null) : Promise.resolve(null);
+      const pairP = (async () => {
+        if (chain === "solana") return null;
+        if (price?.pairAddress) return price.pairAddress;
+        try { return await geckoPair(chain, address); } catch (_) { return null; }
+      })();
+      const supplyP = (async () => {
         try {
-          logScan = await evmLogScan(env, chain, address, price?.pairCreatedAt);
-          if (logScan) {
-            if (logScan.logScanComplete) {
-              if (security && security.topHoldersPct == null && logScan.topHoldersPct != null) security.topHoldersPct = logScan.topHoldersPct;
-              if (security && security.holders == null && logScan.holders != null) security.holders = logScan.holders;
-            }
-            if (security) security.flags = { ...(security.flags || {}), logScan: { complete: logScan.logScanComplete, scannedLogs: logScan.scannedLogs, error: logScan.logScanError } };
+          if (chain === "solana") {
+            const sup = await rpcJson("https://api.mainnet-beta.solana.com", "getTokenSupply", [address]);
+            if (sup?.amount) return { raw: sup.amount, tokens: Number(sup.amount) / (10 ** Number(sup.decimals || 0)) };
+          } else {
+            const totHex = await rpcCall(RPC_URLS[chain] || [], address, "0x18160ddd");
+            const decHex = await rpcCall(RPC_URLS[chain] || [], address, "0x313ce567");
+            if (totHex !== null && decHex !== null) return { raw: totHex.toString(), tokens: Number(totHex) / (10 ** Number(decHex)) };
+            if (bsPro?.totalSupply) { const dec = decHex !== null ? Number(decHex) : 18; return { raw: String(bsPro.totalSupply), tokens: Number(BigInt(bsPro.totalSupply)) / (10 ** dec) }; }
           }
-        } catch (_) { logScan = null; }
+        } catch (_) {}
+        return null;
+      })();
+      const gasP = (async () => {
+        try { if (chain === "solana") return null; const gasHex = await rpcJson(RPC_URLS[chain] || [], "eth_gasPrice", []); return gasHex ? Number(BigInt(gasHex)) / 1e9 : null; } catch (_) { return null; }
+      })();
+      const [logScanRes, pairAddr, supplyRes, gasRes] = await Promise.all([logScanP, pairP, supplyP, gasP]);
+      let logScan = logScanRes;
+      if (logScan) {
+        if (logScan.logScanComplete) {
+          if (security && security.topHoldersPct == null && logScan.topHoldersPct != null) security.topHoldersPct = logScan.topHoldersPct;
+          if (security && security.holders == null && logScan.holders != null) security.holders = logScan.holders;
+        }
+        if (security) security.flags = { ...(security.flags || {}), logScan: { complete: logScan.logScanComplete, scannedLogs: logScan.scannedLogs, error: logScan.logScanError } };
       }
       let lpInfo = null;
-      if (chain !== "solana") {
+      if (chain !== "solana" && pairAddr) {
         try {
-          if (!price) {
-            const retry = await dexToken(chain, address);
-            if (retry) price = retry;
-          }
-          let pairAddr = price?.pairAddress || null;
-          if (!pairAddr) pairAddr = await geckoPair(chain, address);
-          if (pairAddr) {
-            lpInfo = await lpInfoAlchemy(env, chain, pairAddr);
-            if (lpInfo && lpInfo.lpBurnPct != null && security) {
-              security.lpLocked = lpInfo.lpLocked;
-              security.flags = { ...(security.flags || {}), lpAlchemy: { burnPct: lpInfo.lpBurnPct, topHolder: lpInfo.lpTopHolder, topHolderPct: lpInfo.lpTopHolderPct, topHolderIsContract: lpInfo.lpTopHolderIsContract, error: lpInfo.lpError } };
-            }
+          lpInfo = await lpInfoAlchemy(env, chain, pairAddr);
+          if (lpInfo && lpInfo.lpBurnPct != null && security) {
+            security.lpLocked = lpInfo.lpLocked;
+            security.flags = { ...(security.flags || {}), lpAlchemy: { burnPct: lpInfo.lpBurnPct, topHolder: lpInfo.lpTopHolder, topHolderPct: lpInfo.lpTopHolderPct, topHolderIsContract: lpInfo.lpTopHolderIsContract, error: lpInfo.lpError } };
           }
         } catch (_) { lpInfo = null; }
       }
+      let totalSupplyTokens = supplyRes ? supplyRes.tokens : null;
+      let totalSupplyRaw = supplyRes ? supplyRes.raw : null;
+      const marketCapUsd = price?.priceUsd != null && totalSupplyTokens != null ? price.priceUsd * totalSupplyTokens : null;
+      let swapFeePct = null, swapFeeError = null, gasPriceGwei = gasRes;
+      try {
+        if (pairAddr && /^0x[0-9a-fA-F]{40}$/.test(pairAddr) && chain !== "solana") {
+          const feeHex = await rpcCall(RPC_URLS[chain] || [], pairAddr, "0xddca3f43");
+          if (feeHex !== null) swapFeePct = Number(feeHex) / 10000;
+          else if (Array.isArray(price?.labels) && price.labels.includes("v2")) swapFeePct = 0.3;
+        } else if (pairAddr && !/^0x[0-9a-fA-F]{40}$/.test(pairAddr)) { swapFeeError = "v4_pool_id_no_lp_token"; }
+      } catch (e) { swapFeeError = String(e && e.message ? e.message : e); }
+      let finalRisk = security?.risk ?? null;
+      if (finalRisk !== "red" && (security?.mintable === true || security?.blacklist === true)) finalRisk = "yellow";
+      const volumePoolRatio = price?.volume24hUsd != null && price?.liquidityUsd ? Math.round((price.volume24hUsd / price.liquidityUsd) * 10000) / 10000 : null;
       const poolAge = price?.pairCreatedAt ? Math.round(((Date.now() - Number(price.pairCreatedAt)) / 86400000) * 10) / 10 : null;
       return json({
         chain, address,
@@ -792,8 +841,18 @@ export default {
         buyTax: security?.buyTax ?? null, sellTax: security?.sellTax ?? null,
         honeypot: security?.honeypot ?? null, renounced: security?.renounced ?? null,
         mintable: security?.mintable ?? null, blacklist: security?.blacklist ?? null,
-        lpLocked: security?.lpLocked ?? null, lpBurnPct: lpInfo?.lpBurnPct ?? null, lpTopHolder: lpInfo?.lpTopHolder ?? null, lpTopHolderPct: lpInfo?.lpTopHolderPct ?? null, lpTopHolderIsContract: lpInfo?.lpTopHolderIsContract ?? null, lpError: lpInfo?.lpError ?? null, poolAge, creatorHistory: bsPro?.creatorHistory ?? esCreator ?? bs?.creatorHistory ?? logScan?.creatorHistory ?? null,
-        risk: security?.risk ?? null, riskSource: security?.source ?? "pending",
+        lpLocked: security?.lpLocked ?? null, lpBurnPct: lpInfo?.lpBurnPct ?? null, lpTopHolder: lpInfo?.lpTopHolder ?? null, lpTopHolderPct: lpInfo?.lpTopHolderPct ?? null, lpTopHolderIsContract: lpInfo?.lpTopHolderIsContract ?? null, lpError: lpInfo?.lpError ?? null, poolAge,
+        marketCapUsd, totalSupplyTokens, totalSupplyRaw,
+        txns5m: price?.txns5m ?? null, txns1h: price?.txns1h ?? null, txns24h: price?.txns24h ?? null,
+        totalVolume24hUsd: price?.totalVolume24hUsd ?? null, totalLiquidityUsd: price?.totalLiquidityUsd ?? null, volumePoolRatio,
+        liquidityBase: price?.liquidityBase ?? null, liquidityQuote: price?.liquidityQuote ?? null, quoteTokenSymbol: price?.quoteTokenSymbol ?? null,
+        priceChange5mPct: price?.priceChange5mPct ?? null, priceChange1hPct: price?.priceChange1hPct ?? null,
+        swapFeePct, swapFeeError, gasPriceGwei, realHolders: logScan?.realHolders ?? null,
+        allPairs: price?.allPairs ?? null,
+        internalMarket: chain === "solana" ? { covered: false, note: "Solana 内盘（Pump.fun bonding curve）在 Dexscreener/Gecko 覆盖外，本版不编数；只有外盘池才有价格" } : { covered: false, note: "EVM 发射台内盘（Four.meme 等）在 Dexscreener/Gecko 覆盖外，本版只给外盘多池，不编内盘数" },
+        multiSource: { priceDexUsd: dexPrice?.priceUsd ?? null, priceGeckoUsd: geckoPrice?.priceUsd ?? null, priceDiscrepancyPct, pricePrimary: dexPrice ? "dexscreener" : geckoPrice ? "geckoterminal" : null, holdersPro: bsPro?.holders ?? null, holdersSecurity: security?.holders ?? null, holdersLogScan: logScan?.holders ?? null, goplusError: goplusR.error ?? null, honeypotError: honeypotR.error ?? null, queryTimeMs: Date.now() - t0 },
+        backupSources: { price: ["dexscreener", "geckoterminal"], security: ["goplus", "honeypot_is", "etherscan_source"], holdersTop10Creator: ["blockscout_pro", "alchemy_logscan", "public_rpc_logscan", "goplus_honeypot_holders"], lp: ["alchemy_lp", "public_rpc_lp_burn"] }, creatorHistory: bsPro?.creatorHistory ?? esCreator ?? bs?.creatorHistory ?? logScan?.creatorHistory ?? null,
+        risk: finalRisk, riskSource: security?.source ?? "pending",
         security: security ? { source: security.source, flags: security.flags } : null,
         securityError, bsError, bsProError, etherscanError, logScan: logScan ? { complete: logScan.logScanComplete, scannedLogs: logScan.scannedLogs, error: logScan.logScanError } : null,
         tradeLinks: {
