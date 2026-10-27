@@ -354,6 +354,13 @@ struct TokenCheckView: View {
                         if let s = socialResult { Text("社媒三轨：情绪分 \(s.sentiment == nil ? "null（帖子内容未抓，不编）" : "\(s.sentiment!)")，搜索链接在 Worker 返回的 links 里，App 内点符号跳转。").font(.footnote) }
                         if let t = topicResult?.topics, !t.isEmpty { Text("同主题：\(t.count) 条匹配，来源是热搜与 Dex 榜，不是推特帖子。").font(.footnote) }
                     }
+                    Section("分享") {
+                        if let s = summaryResult?.summary {
+                            ShareLink(item: "搞钱体检：\(chain.rawValue) \(contract) 结论 \(s.verdict ?? "未知")。\(s.conclusion ?? "") 风险：\((s.risks ?? []).joined(separator: "；"))。只看不交易，不是买卖建议。") { Label("分享这个结论", systemImage: "square.and.arrow.up") }
+                        } else {
+                            Text("先点上面的体检出结论，这里才有可分享的结论；设置页分享页里一直有 App 介绍可分享。").font(.footnote)
+                        }
+                    }
                     Section("跳转") {
                         if let url = result.tradeLinks?.ave, let u = URL(string: url) { Link("Ave", destination: u) }
                         if let url = result.tradeLinks?.gmgn, let u = URL(string: url) { Link("GMGN", destination: u) }
@@ -820,17 +827,26 @@ struct DiscoveryView: View {
 
 // 分享页：用系统分享面板（ShareLink），能发到手机里已装的国内外应用（微信、QQ、微博、X、Telegram、WhatsApp 等以系统面板实际列出的为准）。
 // 不接任何社交 SDK，不直接调微信/QQ API，分享内容是用户自己看到的数据摘要，不是推荐、不是买卖建议。
+// 上一版的毛病：进来是空编辑器，ShareLink 只在写了字后才出现，看起来就是摆设；本版进来就有默认内容，按钮永远在，
+// 清空了也分享默认介绍而不是消失；想分享某个币的结论时，去体检页结果区点“分享这个结论”，不用在这里手抄。
 struct ShareView: View {
-    @State private var shareText = ""
+    static let defaultText = "搞钱：土狗合约体检 + 持仓分析 App（只看不交易）。查合约给结论、查钱包给大脑总结，数据来自 Dex/Gecko/链上公开源，不是买卖建议。"
+    @State private var shareText = ShareView.defaultText
+    private var shareItem: String {
+        let t = shareText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return t.isEmpty ? ShareView.defaultText : shareText
+    }
     var body: some View {
         NavigationView {
             Form {
                 Section("分享（系统面板，装了什么应用就列什么）") {
                     TextEditor(text: $shareText).frame(height: 160)
-                    Text("先在体检/钱包页看到结论，再把结论粘贴到这里分享；不要在分享里写私钥、助记词、游戏登录密码。").font(.footnote)
-                    if !shareText.isEmpty {
-                        ShareLink(item: shareText) { Label("分享这段文字", systemImage: "square.and.arrow.up") }
-                    }
+                    ShareLink(item: shareItem) { Label("分享这段文字", systemImage: "square.and.arrow.up") }
+                    Button("恢复 App 介绍") { shareText = ShareView.defaultText }
+                    Text("点进来就有上面这段 App 介绍可分享，不用先写字；改成自己的话也能分享，清空了就分享默认介绍，按钮不会消失。不要在分享里写私钥、助记词、游戏登录密码。").font(.footnote)
+                }
+                Section("分享某个币的结论") {
+                    Text("去体检页查到币后，结果区有“分享这个结论”，点它直接分享该币的结论与风险点，不用在这里手抄；钱包总价与持仓构成不走这里分享。").font(.footnote)
                 }
                 Section("说明") {
                     Text("国内：微信、QQ、微博等只在系统面板里出现，不保证每个应用都接受纯文字；国外：X、Telegram、WhatsApp 同理。分享不是 App 内自动推送，点分享后由用户在目标应用里确认发送。").font(.footnote)
