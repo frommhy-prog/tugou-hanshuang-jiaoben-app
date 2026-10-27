@@ -29,6 +29,9 @@ struct ContentView: View {
 struct TokenCheckView: View {
     @State private var chain: Chain = .bsc
     @State private var contract: String = ""
+    @State private var result: APIClient.TokenResponse?
+    @State private var errorText: String?
+    @State private var loading = false
 
     var body: some View {
         NavigationView {
@@ -39,14 +42,43 @@ struct TokenCheckView: View {
                 TextField("粘贴合约地址", text: $contract)
                     .autocapitalization(.none)
                     .disableAutocorrection(true)
-                Section("说明") {
-                    Text("粘贴后走 Worker 查价格、流动性、24h 量。持仓人数、税、蜜罐、权限、LP 锁定第二阶段再接，不编数。")
-                        .font(.footnote)
+                Button(loading ? "查询中…" : "体检") {
+                    Task {
+                        loading = true; errorText = nil; result = nil
+                        do {
+                            result = try await APIClient.fetchToken(chain: chain, address: contract)
+                        } catch {
+                            errorText = "查不到或网络失败：\(error.localizedDescription)"
+                        }
+                        loading = false
+                    }
                 }
-                Section("跳转") {
-                    Link("Ave", destination: URL(string: "https://ave.ai/")!)
-                    Link("GMGN", destination: URL(string: "https://gmgn.ai/")!)
-                    Link("Dexscreener", destination: URL(string: "https://dexscreener.com/")!)
+                .disabled(loading || contract.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
+                if let errorText {
+                    Section("提示") { Text(errorText).font(.footnote) }
+                }
+                if let result, let price = result.price {
+                    Section("价格（\(price.source ?? "")）") {
+                        Text("\(price.name ?? "") \(price.symbol ?? "")")
+                        if let v = price.priceUsd { Text("价格：$\(v)") }
+                        if let v = price.liquidityUsd { Text("流动性：$\(v)") }
+                        if let v = price.volume24hUsd { Text("24h 量：$\(v)") }
+                        if let v = price.priceChange24hPct { Text("24h 涨跌：\(v)%") }
+                    }
+                    Section("风险") {
+                        Text("风险灯第二阶段再接，现在不编数（来源：\(result.riskSource ?? "pending")）。")
+                            .font(.footnote)
+                    }
+                    Section("跳转") {
+                        if let url = result.tradeLinks?.ave, let u = URL(string: url) { Link("Ave", destination: u) }
+                        if let url = result.tradeLinks?.gmgn, let u = URL(string: url) { Link("GMGN", destination: u) }
+                        if let url = result.tradeLinks?.dexscreener, let u = URL(string: url) { Link("Dexscreener", destination: u) }
+                    }
+                } else if result != nil {
+                    Section("结果") {
+                        Text("这个合约在 Dexscreener 上没查到池子，先核对链和合约有没有贴错。").font(.footnote)
+                    }
                 }
             }
             .navigationTitle("合约体检")
@@ -56,6 +88,8 @@ struct TokenCheckView: View {
 
 struct HoldingsView: View {
     @ObservedObject var wallets: WalletStore
+    @State private var holdings: APIClient.HoldingsResponse?
+    @State private var errorText: String?
 
     var body: some View {
         NavigationView {
@@ -69,9 +103,31 @@ struct HoldingsView: View {
                             Text("\(w.chain.displayName) · \(w.address)").font(.caption).lineLimit(1)
                         }
                     }
+                    Button("刷新聚合（走 Worker）") {
+                        Task {
+                            do {
+                                holdings = try await APIClient.fetchHoldings(wallets: wallets.wallets)
+                                errorText = nil
+                            } catch {
+                                errorText = "聚合失败：\(error.localizedDescription)"
+                            }
+                        }
+                    }
+                }
+                if let holdings {
+                    Section("聚合结果") {
+                        Text("通过校验的钱包：\(holdings.wallets.count) 个")
+                        Text("格式不对的：\(holdings.invalid.count) 个")
+                        Text("余额来源：\(holdings.balanceSource ?? "pending")（接通前不显示假余额）")
+                            .font(.footnote)
+                        if let note = holdings.note { Text(note).font(.footnote) }
+                    }
+                }
+                if let errorText {
+                    Section("提示") { Text(errorText).font(.footnote) }
                 }
                 Section("交易所") {
-                    Text("币安、欧易、Gate：只读 Key 到位后接通，现在不显示假持仓。")
+                    Text("币安、欧易、Gate：只读 Key 先跳过，这一版不显示交易所持仓，等 Key 到位再接。")
                         .font(.footnote)
                 }
             }

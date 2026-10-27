@@ -4,7 +4,7 @@
 
 const CHAINS = {
   bsc: { dex: "bsc", gecko: "bsc", evm: true },
-  eth: { dex: "eth", gecko: "eth", evm: true },
+  eth: { dex: "ethereum", gecko: "eth", evm: true },
   base: { dex: "base", gecko: "base", evm: true },
   solana: { dex: "solana", gecko: "solana", evm: false },
   robinhood: { dex: "robinhood", gecko: "robinhood", evm: true, chainId: 4663 },
@@ -94,7 +94,7 @@ export default {
         tradeLinks: {
           ave: `https://ave.ai/token/${address}-${chain}`,
           gmgn: `https://gmgn.ai/${chain}/token/${address}`,
-          dexscreener: price?.pairAddress ? `https://dexscreener.com/${chain}/${price.pairAddress}` : null,
+          dexscreener: price?.pairAddress ? `https://dexscreener.com/${CHAINS[chain].dex}/${price.pairAddress}` : null,
         },
       });
     }
