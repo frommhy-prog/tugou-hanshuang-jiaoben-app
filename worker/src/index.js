@@ -505,10 +505,12 @@ async function evmPoolQuote(chain, address, pairAddr, env, priceCache) {
     return { source: poolKind === "v2" ? "evm_pool_v2" : "evm_pool_v3", pair: pairAddr, token0, token1, quoteToken, poolKind, reserves, sqrtPriceX96, priceQuote, quotePriceUsd: quoteUsd, quotePriceSource: quoteUsdSource, priceUsd };
   } catch (e) { return { source: "evm_pool", error: String(e && e.message ? e.message : e) }; }
 }
-const KNOWN_POOLS = { xlayer: { "0xe538905cf8410324e03a5a23c1c177a474d59b2b": ["0x9f73888fb725a3409548bc8d2e42365ac063e148", "0x5d7e3ad08b0c52e460787677b0632cd024df437c"] } };
+const KNOWN_POOLS = { xlayer: { "0xe538905cf8410324e03a5a23c1c177a474d59b2b": ["0x9f73888fb725a3409548bc8d2e42365ac063e148", "0x5d7e3ad08b0c52e460787677b0632cd024df437c"] }, polygon: { "0x2791bca1f2de4661ed88a30c99a7a9449aa84174": ["0xDaC8A8E6DBf8c690ec6815e0fF03491B2770255D"] }, optimism: { "0x0b2c639c533813f4aa9d7837caf62653d097ff85": ["0x1fb3cf6e48F1E7B10213E7b6d87D4c073C7Fdb7b"] }, arbitrum: { "0xaf88d065e77c8cc2239327c5edb3a432268e5831": ["0xC6962004f452bE9203591991D15f6b388e09E8D0"] } };
+const KNOWN_NATIVE = { "xlayer:0xe538905cf8410324e03a5a23c1c177a474d59b2b": { coinId: "okb", source: "coingecko_okb", note: "WOKB 与 OKB 1:1 锚定，CoinGecko OKB 价与 Gecko WOKB 价交叉核对过（108.65 对 108.71，差 0.06%）" }, "okc:0x8f8526dbfd6e38e3d8307702ca8469bae6c56c15": { coinId: "oec-token", source: "coingecko_okt", note: "WOKT 与 OKT 1:1 锚定，CoinGecko oec-token 价作兜底" }, "eth:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48": { coinId: "usd-coin", source: "coingecko_usd_coin", note: "USDC 稳定币，CoinGecko usd-coin 价作 Dex/Gecko/池全空时的兜底" }, "polygon:0x2791bca1f2de4661ed88a30c99a7a9449aa84174": { coinId: "usd-coin", source: "coingecko_usd_coin", note: "USDC 稳定币，CoinGecko usd-coin 价作兜底" }, "optimism:0x0b2c639c533813f4aa9d7837caf62653d097ff85": { coinId: "usd-coin", source: "coingecko_usd_coin", note: "USDC 稳定币，CoinGecko usd-coin 价作兜底" }, "arbitrum:0xaf88d065e77c8cc2239327c5edb3a432268e5831": { coinId: "usd-coin", source: "coingecko_usd_coin", note: "USDC 稳定币，CoinGecko usd-coin 价作兜底" }, "base:0x833589fcd6edb6e08f4c7c32d4f71b54bda02913": { coinId: "usd-coin", source: "coingecko_usd_coin", note: "USDC 稳定币，CoinGecko usd-coin 价作兜底" } };
 async function coingeckoNativePrice(coinId) {
   try {
-    const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd`, { headers: { accept: "application/json", "user-agent": "tugou-hanshuang-jiaoben-app/1.0" } });
+    let res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd`, { headers: { accept: "application/json", "user-agent": "tugou-hanshuang-jiaoben-app/1.0" } });
+    if (!res.ok) res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd`, { headers: { accept: "application/json" } });
     if (!res.ok) return null;
     const body = await res.json();
     const v = body?.[coinId]?.usd;
@@ -540,11 +542,11 @@ async function contractQuote(chain, address, price, env, pairAddrOverride) {
           if (!out.pool && q && !q.error) out.pool = q;
         }
       })());
-      if (chain === "xlayer" && address.toLowerCase() === "0xe538905cf8410324e03a5a23c1c177a474d59b2b") {
+      const native = KNOWN_NATIVE[`${chain}:${address.toLowerCase()}`];
+      if (native) {
         tasks.push((async () => {
-          if (out.pool?.priceUsd != null) return;
-          const cg = await coingeckoNativePrice("okb");
-          if (cg != null) out.coingecko = { source: "coingecko_okb", priceUsd: cg, note: "WOKB 与 OKB 1:1 锚定，CoinGecko OKB 价与 Gecko WOKB 价交叉核对过（108.65 对 108.71，差 0.06%）" }; else out.coingeckoError = "coingecko_okb_failed";
+          const cg = await coingeckoNativePrice(native.coinId);
+          if (cg != null) out.coingecko = { source: native.source, priceUsd: cg, note: native.note }; else out.coingeckoError = `${native.source}_failed`;
         })());
       }
     }
@@ -1272,11 +1274,57 @@ export default {
           dexscreener: price?.pairAddress ? `https://dexscreener.com/${CHAINS[chain].dex}/${price.pairAddress}` : null,
         },
       };
-      try { if (env.CACHE_KV) await env.CACHE_KV.put(`tokenfull:${chain}:${address.toLowerCase()}`, JSON.stringify(body), { expirationTtl: 60 }); } catch (_) {}
+      try { if (env.CACHE_KV && (body.quoteUsd != null || body.price?.priceUsd != null)) await env.CACHE_KV.put(`tokenfull:${chain}:${address.toLowerCase()}`, JSON.stringify(body), { expirationTtl: 60 }); } catch (_) {}
       return json(body);
     }
 
 
+
+    if (path === "/api/wallet-analysis" && request.method === "GET") {
+      // 第二阶段第一版：钱包复盘（EVM + Alchemy host 链）。只计转账次数与时间，不含历史价格 PnL，不编盈亏。
+      const chain = (url.searchParams.get("chain") || "").toLowerCase();
+      const wallet = (url.searchParams.get("wallet") || "").toLowerCase();
+      if (!CHAINS[chain] || !/^0x[0-9a-f]{40}$/.test(wallet)) return json({ error: "bad_chain_or_wallet" }, 400);
+      const alchUrl = alchemyUrl(env, chain);
+      if (!alchUrl) return json({ chain, wallet, error: "no_alchemy_host_for_chain", note: "该链无 Alchemy host，钱包转账历史暂未接，Solana/Robinhood/OKTC/XLayer 在第二版补" });
+      try {
+        const fetchDir = async (dirKey) => {
+          let all = [], pageKey = null;
+          for (let pg = 0; pg < 3; pg++) {
+            const params = [{ fromBlock: "0x0", toBlock: "latest", [dirKey]: wallet, category: ["erc20", "external"], maxCount: "0x3e8", withMetadata: true, order: "desc" }];
+            if (pageKey) params[0].pageKey = pageKey;
+            const res = await rpcJson(alchUrl, "alchemy_getAssetTransfers", params);
+            const trs = res?.transfers || [];
+            all = all.concat(trs);
+            pageKey = res?.pageKey || null;
+            if (!pageKey) break;
+          }
+          return all;
+        };
+        const [outTrs, inTrs] = await Promise.all([fetchDir("fromAddress"), fetchDir("toAddress")]);
+        const perToken = new Map();
+        const touch = (tr, dir) => {
+          const addr = String(tr.rawContract?.address || tr.rawContractAddress || tr.asset || "").toLowerCase();
+          if (!addr) return;
+          let e = perToken.get(addr);
+          if (!e) { e = { address: addr, asset: tr.asset || null, buys: 0, sells: 0, firstTs: null, lastTs: null, firstBuyTs: null, lastSellTs: null }; perToken.set(addr, e); }
+          const ts = tr.metadata?.blockTimestamp ? Math.floor(new Date(tr.metadata.blockTimestamp).getTime() / 1000) : null;
+          if (dir === "buy") { e.buys++; if (!e.firstBuyTs || (ts && ts < e.firstBuyTs)) e.firstBuyTs = ts; }
+          else { e.sells++; if (!e.lastSellTs || (ts && ts > e.lastSellTs)) e.lastSellTs = ts; }
+          if (ts) { if (!e.firstTs || ts < e.firstTs) e.firstTs = ts; if (!e.lastTs || ts > e.lastTs) e.lastTs = ts; }
+        };
+        for (const tr of inTrs) touch(tr, "buy");
+        for (const tr of outTrs) touch(tr, "sell");
+        const tokens = [...perToken.values()].sort((a, b) => (b.buys + b.sells) - (a.buys + a.sells));
+        const roundTrip = tokens.filter((x) => x.buys > 0 && x.sells > 0);
+        const holdingDays = roundTrip.filter((x) => x.firstBuyTs && x.lastSellTs && x.lastSellTs >= x.firstBuyTs).map((x) => (x.lastSellTs - x.firstBuyTs) / 86400);
+        const avgHoldingDays = holdingDays.length ? Math.round(holdingDays.reduce((a, b) => a + b, 0) / holdingDays.length * 100) / 100 : null;
+        const allTs = tokens.flatMap((x) => [x.firstTs, x.lastTs]).filter(Boolean);
+        const activityDays = allTs.length ? Math.round((Math.max(...allTs) - Math.min(...allTs)) / 86400 * 100) / 100 : null;
+        const score = Math.round(40 * Math.min(1, roundTrip.length / 5) + 30 * Math.min(1, tokens.length / 10) + 30 * (avgHoldingDays != null ? Math.min(1, avgHoldingDays / 30) : 0));
+        return json({ chain, wallet, transfersAnalyzed: inTrs.length + outTrs.length, transfersIn: inTrs.length, transfersOut: outTrs.length, tokensTraded: tokens.length, roundTripTokens: roundTrip.length, avgHoldingDays, activityDays, score, topTokens: tokens.slice(0, 10), note: "第一版只计转账次数与时间：buys=转入笔数、sells=转出笔数、roundTrip=有买有卖的币数；不含历史价格 PnL，盈亏需历史价源后补，不编" });
+      } catch (e) { return json({ chain, wallet, error: String(e && e.message ? e.message : e) }, 500); }
+    }
     if (path === "/api/rpc-test" && request.method === "GET") {
       const chain = (url.searchParams.get("chain") || "").toLowerCase();
       const idx = Number(url.searchParams.get("rpc") || "0");
