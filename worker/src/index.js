@@ -97,12 +97,12 @@ function top10Pct(holders) {
 async function goplusSecurity(chain, address) {
   const chainId = CHAINS[chain].chainId;
   if (!chainId) return null;
-  const res = await fetch(`https://api.gopluslabs.io/api/v1/token_security/${chainId}?contract_addresses=${address}`, { headers: { accept: "application/json" } });
-  if (!res.ok) return null;
+  const res = await fetch(`https://api.gopluslabs.io/api/v1/token_security/${chainId}?contract_addresses=${address}`, { headers: { accept: "application/json", "user-agent": "tugou-hanshuang-jiaoben-app/1.0" } });
+  if (!res.ok) throw new Error(`goplus_status_${res.status}`);
   const body = await res.json();
-  if (body?.code !== 1) return null;
+  if (body?.code !== 1) throw new Error(`goplus_code_${body?.code ?? "empty"}`);
   const r = body?.result?.[address.toLowerCase()];
-  if (!r) return null;
+  if (!r) throw new Error("goplus_no_result");
   const buyTax = num(r.buy_tax);
   const sellTax = num(r.sell_tax);
   const honeypot = flag(r.is_honeypot);
@@ -121,10 +121,43 @@ async function goplusSecurity(chain, address) {
   };
 }
 
+// EVM 兜底：GoPlus 从 Worker 出口 IP 返回 4029 时（直接查同一地址返回 code 1，
+// 说明是上游对 Worker 出口 IP 的限流/拦截，不是映射写错），改走 honeypot.is。
+// 它只给蜜罐、买卖税、持仓人数、开源/代理，增发、黑名单、Top 占比留空，不编数。
+async function honeypotSecurity(chain, address) {
+  const chainId = CHAINS[chain].chainId;
+  if (!chainId) return null;
+  const res = await fetch(`https://api.honeypot.is/v2/IsHoneypot?address=${address}&chainID=${chainId}`, { headers: { accept: "application/json", "user-agent": "tugou-hanshuang-jiaoben-app/1.0" } });
+  if (!res.ok) throw new Error(`honeypot_status_${res.status}`);
+  const r = await res.json();
+  if (!r || !r.honeypotResult) return null;
+  const honeypot = r.honeypotResult.isHoneypot ?? null;
+  const summaryRisk = r.summary?.risk ?? null;
+  let risk = null;
+  if (honeypot === true) risk = "red";
+  else if (summaryRisk === "high") risk = "red";
+  else if (summaryRisk === "medium" || (Array.isArray(r.flags) && r.flags.length > 0)) risk = "yellow";
+  else if (summaryRisk === "low") risk = "green";
+  return {
+    holders: num(r.token?.totalHolders), topHoldersPct: null,
+    buyTax: num(r.simulationResult?.buyTax), sellTax: num(r.simulationResult?.sellTax),
+    honeypot, renounced: null, mintable: null, blacklist: null, lpLocked: null,
+    risk, source: "honeypot_is",
+    flags: { openSource: r.contractCode?.openSource ?? null, isProxy: r.contractCode?.isProxy ?? null, summaryRisk, simulationSuccess: r.simulationSuccess ?? null },
+  };
+}
+
+async function evmSecurity(chain, address) {
+  try { const s = await goplusSecurity(chain, address); if (s) return s; } catch (e) { /* fall through to honeypot.is, keep original error below if it also fails */ }
+  try { const s = await honeypotSecurity(chain, address); if (s) return s; } catch (_) {}
+  // 两路都失败时，重新抛 GoPlus 的原始错误，方便 securityError 说清原因。
+  return await goplusSecurity(chain, address);
+}
+
 // Solana：RugCheck 报告，免费、无 Key。totalHolders 为 0 时是缺失数据，按 null 处理，不返回 0 人。
 async function rugcheckSecurity(address) {
-  const res = await fetch(`https://api.rugcheck.xyz/v1/tokens/${address}/report`, { headers: { accept: "application/json" } });
-  if (!res.ok) return null;
+  const res = await fetch(`https://api.rugcheck.xyz/v1/tokens/${address}/report`, { headers: { accept: "application/json", "user-agent": "tugou-hanshuang-jiaoben-app/1.0" } });
+  if (!res.ok) throw new Error(`rugcheck_status_${res.status}`);
   const r = await res.json();
   if (!r || typeof r !== "object") return null;
   const risks = Array.isArray(r.risks) ? r.risks : [];
@@ -177,7 +210,8 @@ export default {
       const dexPrice = await cached(env, `token:${chain}:${address.toLowerCase()}`, () => dexToken(chain, address));
       const price = dexPrice || (await geckoToken(chain, address));
       let security = null;
-      try { security = chain === "solana" ? await rugcheckSecurity(address) : await goplusSecurity(chain, address); } catch (_) { security = null; }
+      let securityError = null;
+      try { security = chain === "solana" ? await rugcheckSecurity(address) : await evmSecurity(chain, address); if (!security) securityError = "upstream_empty"; } catch (e) { security = null; securityError = String(e && e.message ? e.message : e); }
       return json({
         chain, address,
         price,
@@ -189,6 +223,7 @@ export default {
         lpLocked: security?.lpLocked ?? null, poolAge: null, creatorHistory: null,
         risk: security?.risk ?? null, riskSource: security?.source ?? "pending",
         security: security ? { source: security.source, flags: security.flags } : null,
+        securityError,
         tradeLinks: {
           ave: `https://ave.ai/token/${address}-${chain}`,
           gmgn: `https://gmgn.ai/${chain}/token/${address}`,
