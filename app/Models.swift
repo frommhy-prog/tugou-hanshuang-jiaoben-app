@@ -1,8 +1,8 @@
 import Foundation
 
-// 链：首批 BSC / ETH / Base / Solana / Robinhood，不按链重做一套。
+// 链：与 Worker CHAINS 对齐的 8 条链，不按链重做一套。
 enum Chain: String, CaseIterable, Codable, Identifiable {
-    case bsc, eth, base, solana, robinhood
+    case bsc, eth, base, solana, robinhood, arbitrum, optimism, polygon
     var id: String { rawValue }
     var displayName: String {
         switch self {
@@ -11,10 +11,13 @@ enum Chain: String, CaseIterable, Codable, Identifiable {
         case .base: return "Base"
         case .solana: return "Solana"
         case .robinhood: return "Robinhood"
+        case .arbitrum: return "Arbitrum"
+        case .optimism: return "Optimism"
+        case .polygon: return "Polygon"
         }
     }
     var isEVM: Bool { self != .solana }
-    var chainId: Int? { self == .robinhood ? 4663 : nil }
+    var chainId: Int? { switch self { case .robinhood: return 4663; case .arbitrum: return 42161; case .optimism: return 10; case .polygon: return 137; default: return nil } }
 }
 
 // 钱包：只存公开地址 + 链 + 备注名，绝不存私钥。

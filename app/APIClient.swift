@@ -23,10 +23,30 @@ enum APIClient {
         var dexscreener: String?
     }
 
+    struct CreatorHistory: Codable {
+        var creatorAddress: String?
+        var creationTxHash: String?
+        var creationTimestamp: Int?
+    }
+
     struct TokenResponse: Codable {
         var chain: String
         var address: String
         var price: Price?
+        var holders: Int?
+        var topHoldersPct: Double?
+        var buyTax: Double?
+        var sellTax: Double?
+        var honeypot: Bool?
+        var renounced: Bool?
+        var mintable: Bool?
+        var blacklist: Bool?
+        var lpLocked: Bool?
+        var lpBurnPct: Double?
+        var lpTopHolder: String?
+        var lpTopHolderPct: Double?
+        var poolAge: Double?
+        var creatorHistory: CreatorHistory?
         var risk: String?
         var riskSource: String?
         var tradeLinks: TradeLinks?

@@ -67,8 +67,22 @@ struct TokenCheckView: View {
                         if let v = price.priceChange24hPct { Text("24h 涨跌：\(v)%") }
                     }
                     Section("风险") {
-                        Text("风险灯第二阶段再接，现在不编数（来源：\(result.riskSource ?? "pending")）。")
-                            .font(.footnote)
+                        if let r = result.risk { Text("风险灯：\(r)（来源：\(result.riskSource ?? "")）") }
+                        if let v = result.holders { Text("持仓人数：\(v)") }
+                        if let v = result.topHoldersPct { Text("Top10 占比：\(v)%") }
+                        if let v = result.buyTax { Text("买税：\(v)%") }
+                        if let v = result.sellTax { Text("卖税：\(v)%") }
+                        if let v = result.honeypot { Text("蜜罐：\(v ? "是" : "否")") }
+                        if let v = result.mintable { Text("可增发：\(v ? "是" : "否")") }
+                        if let v = result.blacklist { Text("黑名单：\(v ? "是" : "否")") }
+                        if let v = result.lpLocked { Text("LP 锁定：\(v ? "是" : "否")") }
+                        if let v = result.lpBurnPct { Text("LP 销毁占比：\(v)%") }
+                        if let v = result.lpTopHolder { Text("LP 最大持有人：\(v)") }
+                        if let v = result.poolAge { Text("池子年龄：\(v) 天") }
+                        if let c = result.creatorHistory?.creatorAddress { Text("创建者：\(c)") }
+                        if result.holders == nil && result.topHoldersPct == nil && result.creatorHistory == nil {
+                            Text("持仓/Top10/创建者这一轮没出，可能是上游间歇或大币按设计跳过，不显示假数。").font(.footnote)
+                        }
                     }
                     Section("跳转") {
                         if let url = result.tradeLinks?.ave, let u = URL(string: url) { Link("Ave", destination: u) }
@@ -120,6 +134,7 @@ struct HoldingsView: View {
                         Text("格式不对的：\(holdings.invalid.count) 个")
                         Text("余额来源：\(holdings.balanceSource ?? "pending")（接通前不显示假余额）")
                             .font(.footnote)
+                        if let v = holdings.totalUsd { Text("总价值：$\(v)") }
                         if let note = holdings.note { Text(note).font(.footnote) }
                     }
                 }
