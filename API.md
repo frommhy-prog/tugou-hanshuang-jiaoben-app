@@ -30,3 +30,9 @@ Worker 域名占位：`https://tugou-hanshuang-jiaoben-app.<你的 Cloudflare �
 - 钱包监控：POST /api/holdings，入参 wallets（链+公开地址+备注）与 tokens（自选代币列表），只读公开地址不碰私钥；原生与自选代币余额走公开 RPC（多地址轮询，ETH 主用 Cloudflare ETH 网关），现货价走 Dexscreener/GeckoTerminal；未定价余额不计入 totalUsd。实测：ETH WETH 合约原生余额 2221715.155948026 ETH，价 2313.88 美元，合计约 51.4 亿美元，balanceSource 为 rpc。
 - 自动分析未完成：胜率、盈亏、聪明钱画像、自己钱包复盘需要交易历史，属第二阶段；交易历史在部分链上仍受 Blockscout/Etherscan 免费档限制，不在这里编数。
 - Tron、Sui、Aptos 等非 EVM 链不在本轮适配器内，地址体系和数据源不同，需单独适配，不记为已接。
+
+## 2026-10-27 18:54 Blockscout Pro 免费 Key 接通（Top10 终于有真实来源）
+- Muse 侧已接通 custom.blockscout，助手脚本 bin/bs.py，统一接口 api.blockscout.com/{chain_id}/api/v2，不带 Key 返回 402，带 Key 通。
+- 实测：ETH WETH 总供应 2222010091493531624966045、持仓人数 3359464、Top10 占比 60.03%；Robinhood SEND 总供应 1e28（100 亿，纠正了之前浏览器页 10 亿的说法）、持仓人数 113、Top10 占比 98.98%；ETH 创建者与创建交易与 Etherscan 一致。
+- 链覆盖差异（实测）：ETH、Arbitrum、Optimism、Robinhood 的代币接口通；Base、Polygon 的代币接口 consistently 返回 402，Top10 仍未解；BSC 返回 404（BSC 无 Blockscout 实例，属预期）。
+- Worker 已接 blockscoutProInfo，读 env.BLOCKSCOUT_API_KEY，填 holders、topHoldersPct、creatorHistory（Pro 优先于 Etherscan 与分站），失败写入 bsProError；Worker 已部署 etag 6d714e7a，现报 missing_env_BLOCKSCOUT_API_KEY，须 Jon 在 Cloudflare 控制台 Workers & Pages > tugou-hanshuang-jiaoben-app > Settings > Variables 里加 Secret BLOCKSCOUT_API_KEY（同把 Key），加完无需重新部署、再重测。

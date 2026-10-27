@@ -19,7 +19,7 @@ const SOURCES = [
   { id: "ave", role: "行情/跳转", link: "https://ave.ai/" },
   { id: "gmgn", role: "行情/聪明钱/跳转", link: "https://gmgn.ai/" },
   { id: "x", role: "社媒信号/新币线索", link: "https://x.com/" },
-  { id: "blockscout", role: "Robinhood 地址/交易/代币页", link: "https://robinhoodchain.blockscout.com/" },
+  { id: "blockscout", role: "Pro 统一接口：持仓/Top10/创建者（ETH、Arbitrum、Optimism、Robinhood；Base、Polygon、Sc 回 402、BSC 无 Blockscout 实例回 404）", link: "https://api.blockscout.com/" },
   { id: "goplus", role: "EVM 合约风险", link: "https://gopluslabs.io/" },
   { id: "rugcheck", role: "Solana 风险", link: "https://rugcheck.xyz/" },
 ];
@@ -331,6 +331,46 @@ async function priceFor(chain, address) {
   return pr;
 }
 
+const BLOCKSCOUT_PRO_CHAINID = { eth: "1", arbitrum: "42161", optimism: "10", robinhood: "4663", base: "8453", polygon: "137", bsc: "56" };
+async function blockscoutProInfo(env, chain, address) {
+  const key = env.BLOCKSCOUT_API_KEY;
+  if (!key) return { error: "missing_env_BLOCKSCOUT_API_KEY" };
+  const cid = BLOCKSCOUT_PRO_CHAINID[chain];
+  if (!cid) return { error: "blockscout_pro_chain_not_supported" };
+  const base = `https://api.blockscout.com/${cid}/api/v2`;
+  const err = {};
+  let token = null, holders = null, addr = null;
+  try { token = await fetchJson(`${base}/tokens/${address}?apikey=${key}`); } catch (e) { err.token = String(e && e.message ? e.message : e); }
+  try { holders = await fetchJson(`${base}/tokens/${address}/holders?apikey=${key}`); } catch (e) { err.holders = String(e && e.message ? e.message : e); }
+  try { addr = await fetchJson(`${base}/addresses/${address}?apikey=${key}`); } catch (e) { err.address = String(e && e.message ? e.message : e); }
+  if (!token && !holders && !addr) throw new Error(`blockscout_pro_token_${err.token}_holders_${err.holders}_address_${err.address}`);
+  let topHoldersPct = null;
+  try {
+    const total = token?.total_supply ? BigInt(String(token.total_supply)) : 0n;
+    const items = Array.isArray(holders?.items) ? holders.items.slice(0, 10) : [];
+    if (total > 0n && items.length > 0) {
+      let sum = 0n;
+      for (const it of items) { try { sum += BigInt(String(it.value)); } catch (_) {} }
+      topHoldersPct = Number((sum * 10000n) / total) / 100;
+    }
+  } catch (_) {}
+  let creatorHistory = null;
+  try {
+    if (addr?.creator_address_hash) {
+      let ts = null;
+      if (addr.creation_transaction_hash) {
+        try { const tx = await fetchJson(`${base}/transactions/${addr.creation_transaction_hash}?apikey=${key}`); if (tx?.timestamp) ts = Math.floor(new Date(tx.timestamp).getTime() / 1000); } catch (_) {}
+      }
+      creatorHistory = { creatorAddress: addr.creator_address_hash, creationTxHash: addr.creation_transaction_hash ?? null, creationTimestamp: ts };
+    }
+  } catch (_) {}
+  return {
+    holders: token?.holders_count != null ? Number(token.holders_count) : null,
+    totalSupply: token?.total_supply ?? null,
+    topHoldersPct, creatorHistory, bsProError: err,
+  };
+}
+
 async function blockscoutInfo(chain, address) {
   const host = BLOCKSCOUT[chain];
   if (!host) return null;
@@ -419,6 +459,17 @@ export default {
         try { lpBurn = await rpcLpBurn(chain, price?.pairAddress); } catch (_) { lpBurn = null; }
         if (lpBurn && security && security.lpLocked == null) { security.lpLocked = lpBurn.lpLocked; security.flags = { ...(security.flags || {}), lpBurnedPct: lpBurn.lpBurnedPct }; }
       }
+      let bsPro = null;
+      let bsProError = null;
+      if (chain !== "solana") {
+        try { bsPro = await blockscoutProInfo(env, chain, address); if (bsPro && bsPro.error) { bsProError = bsPro.error; bsPro = null; } } catch (e) { bsPro = null; bsProError = String(e && e.message ? e.message : e); }
+        if (bsPro) {
+          if (!security) security = { holders: null, topHoldersPct: null, buyTax: null, sellTax: null, honeypot: null, renounced: null, mintable: null, blacklist: null, lpLocked: null, risk: null, source: "blockscout_pro", flags: {} };
+          if (security.holders == null && bsPro.holders != null) security.holders = bsPro.holders;
+          if (security.topHoldersPct == null && bsPro.topHoldersPct != null) security.topHoldersPct = bsPro.topHoldersPct;
+          security.flags = { ...(security.flags || {}), blockscout_pro: { holders: bsPro.holders, topHoldersPct: bsPro.topHoldersPct, totalSupply: bsPro.totalSupply, bsProError: bsPro.bsProError } };
+        }
+      }
       let esCreator = null;
       let etherscanError = null;
       if (chain !== "solana") {
@@ -450,10 +501,10 @@ export default {
         buyTax: security?.buyTax ?? null, sellTax: security?.sellTax ?? null,
         honeypot: security?.honeypot ?? null, renounced: security?.renounced ?? null,
         mintable: security?.mintable ?? null, blacklist: security?.blacklist ?? null,
-        lpLocked: security?.lpLocked ?? null, poolAge, creatorHistory: esCreator ?? bs?.creatorHistory ?? null,
+        lpLocked: security?.lpLocked ?? null, poolAge, creatorHistory: bsPro?.creatorHistory ?? esCreator ?? bs?.creatorHistory ?? null,
         risk: security?.risk ?? null, riskSource: security?.source ?? "pending",
         security: security ? { source: security.source, flags: security.flags } : null,
-        securityError, bsError, etherscanError,
+        securityError, bsError, bsProError, etherscanError,
         tradeLinks: {
           ave: `https://ave.ai/token/${address}-${chain}`,
           gmgn: `https://gmgn.ai/${chain}/token/${address}`,
