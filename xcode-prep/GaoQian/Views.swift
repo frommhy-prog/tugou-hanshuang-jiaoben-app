@@ -558,6 +558,10 @@ struct MonitorView: View {
                         }
                     }
                 }
+                Section("策略实验室") {
+                    NavigationLink("机器人与智能体（只读，不交易）") { StrategyLabView() }
+                    Text("Freqtrade 规则检查、Hummingbot 比价、OctoBot 网格/DCA 计算器、Jesse 零前视、CCXT 统一价、多智能体分工、FinRL 状态快照；回测、做市执行、Bot 启停、交易下单、大模型意见均不落地，原因见里面。").font(.footnote)
+                }
                 Section("新一批（活动、评分、生命周期、社媒三轨；帖子内容不抓，情绪分 null）") {
                     TextField("Solana 钱包活动（公开地址）", text: $profileWallet)
                     Button(loading ? "加载中…" : "Solana 钱包活动（签名列表，不是解码交易）") {

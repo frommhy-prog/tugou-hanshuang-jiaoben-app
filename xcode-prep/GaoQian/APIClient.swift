@@ -701,4 +701,40 @@ enum APIClient {
         let (data, _) = try await URLSession.shared.data(from: components.url!)
         return try JSONDecoder().decode(SocialWatchResponse.self, from: data)
     }
+
+    struct StrategyLabResponse: Codable {
+        var chain: String?; var address: String?; var symbol: String?; var priceUsd: Double?; var liquidityUsd: Double?; var volume24hUsd: Double?; var buyShare24hPct: Double?; var poolAgeDays: Double?; var pairCount: Int?
+        var rules: [LabRule]?; var grid: [GridLevel]?; var dcaExample: DcaExample?; var backtest: BacktestInfo?; var note: String?; var error: String?
+        struct LabRule: Codable { var name: String?; var pass: Bool?; var value: Double?; var threshold: Double? }
+        struct GridLevel: Codable { var pct: Int?; var priceUsd: Double? }
+        struct DcaExample: Codable { var amountUsd: Double?; var tokensAtCurrentPrice: Double? }
+        struct BacktestInfo: Codable { var available: Bool?; var reason: String? }
+    }
+    struct ArbResponse: Codable { var mode: String?; var symbol: String?; var prices: [String: Double]?; var spreadPct: Double?; var note: String? }
+    struct AgentsResponse: Codable {
+        var chain: String?; var address: String?; var symbol: String?; var consensus: String?
+        var roles: Roles?
+        struct Roles: Codable { var technical: Role?; var fundamental: Role?; var risk: Role?
+            struct Role: Codable { var conclusion: String?; var note: String? } }
+    }
+    static func fetchStrategyLab(chain: Chain, address: String) async throws -> StrategyLabResponse {
+        var c = URLComponents(url: baseURL.appendingPathComponent("api/strategy-lab"), resolvingAgainstBaseURL: false)!
+        c.queryItems = [URLQueryItem(name: "chain", value: chain.rawValue), URLQueryItem(name: "address", value: address.trimmingCharacters(in: .whitespacesAndNewlines))]
+        let (d, _) = try await URLSession.shared.data(from: c.url!); return try JSONDecoder().decode(StrategyLabResponse.self, from: d)
+    }
+    static func fetchArb(chain: Chain, address: String) async throws -> ArbResponse {
+        var c = URLComponents(url: baseURL.appendingPathComponent("api/arb-check"), resolvingAgainstBaseURL: false)!
+        c.queryItems = [URLQueryItem(name: "chain", value: chain.rawValue), URLQueryItem(name: "address", value: address.trimmingCharacters(in: .whitespacesAndNewlines))]
+        let (d, _) = try await URLSession.shared.data(from: c.url!); return try JSONDecoder().decode(ArbResponse.self, from: d)
+    }
+    static func fetchArbSymbol(symbol: String) async throws -> ArbResponse {
+        var c = URLComponents(url: baseURL.appendingPathComponent("api/arb-check"), resolvingAgainstBaseURL: false)!
+        c.queryItems = [URLQueryItem(name: "symbol", value: symbol.trimmingCharacters(in: .whitespacesAndNewlines).uppercased())]
+        let (d, _) = try await URLSession.shared.data(from: c.url!); return try JSONDecoder().decode(ArbResponse.self, from: d)
+    }
+    static func fetchAgents(chain: Chain, address: String) async throws -> AgentsResponse {
+        var c = URLComponents(url: baseURL.appendingPathComponent("api/agents"), resolvingAgainstBaseURL: false)!
+        c.queryItems = [URLQueryItem(name: "chain", value: chain.rawValue), URLQueryItem(name: "address", value: address.trimmingCharacters(in: .whitespacesAndNewlines))]
+        let (d, _) = try await URLSession.shared.data(from: c.url!); return try JSONDecoder().decode(AgentsResponse.self, from: d)
+    }
 }
