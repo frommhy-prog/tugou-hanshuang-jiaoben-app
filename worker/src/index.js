@@ -52,6 +52,7 @@ async function dexToken(chain, address) {
     volume24hUsd: best.volume?.h24 ?? null,
     priceChange24hPct: best.priceChange?.h24 ?? null,
     pairAddress: best.pairAddress ?? null,
+    pairCreatedAt: best.pairCreatedAt ?? null,
     dexId: best.dexId ?? null,
     source: "dexscreener",
   };
@@ -180,6 +181,73 @@ async function rugcheckSecurity(address) {
   };
 }
 
+// Blockscout：ETH / Base / Robinhood / BSC（BSC 实例若不存在会失败，届时走兜底，不报错）。
+const BLOCKSCOUT = { eth: "eth.blockscout.com", base: "base.blockscout.com", robinhood: "robinhoodchain.blockscout.com", bsc: "bsc.blockscout.com" };
+const RPC = { eth: "https://eth.llamarpc.com", bsc: "https://bsc-dataseed.binance.org", base: "https://mainnet.base.org" };
+const DEAD = "0x000000000000000000000000000000000000dEaD";
+
+async function fetchJson(url) {
+  const res = await fetch(url, { headers: { accept: "application/json", "user-agent": "tugou-hanshuang-jiaoben-app/1.0" } });
+  if (!res.ok) throw new Error(`upstream_status_${res.status}`);
+  return await res.json();
+}
+function hexToBigInt(hex) {
+  if (typeof hex !== "string" || !hex.startsWith("0x")) return null;
+  try { return BigInt(hex); } catch (_) { return null; }
+}
+async function rpcCall(rpcUrl, to, data) {
+  const res = await fetch(rpcUrl, { method: "POST", headers: { "content-type": "application/json", accept: "application/json", "user-agent": "tugou-hanshuang-jiaoben-app/1.0" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to, data }, "latest"] }) });
+  if (!res.ok) return null;
+  const body = await res.json();
+  return hexToBigInt(body?.result);
+}
+// LP 销毁占比：只对 V2 式 LP 代币有意义。V3 池没有 LP 代币，totalSupply 调不出来就返回 null，不硬填。
+async function rpcLpBurn(chain, pairAddress) {
+  const rpcUrl = RPC[chain];
+  if (!rpcUrl || !pairAddress) return null;
+  const deadBal = await rpcCall(rpcUrl, pairAddress, "0x70a08231" + "000000000000000000000000" + DEAD.slice(2));
+  const total = await rpcCall(rpcUrl, pairAddress, "0x18160ddd");
+  if (deadBal === null || total === null || total === 0n) return null;
+  const pctX100 = Number((deadBal * 10000n) / total) / 100;
+  return { lpLocked: pctX100 >= 50, lpBurnedPct: pctX100 };
+}
+
+async function blockscoutInfo(chain, address) {
+  const host = BLOCKSCOUT[chain];
+  if (!host) return null;
+  const api = `https://${host}/api`;
+  const bsError = { token: null, holders: null, source: null, creation: null };
+  let tokenRes = null, holdersRes = null, sourceRes = null, creationRes = null;
+  try { tokenRes = await fetchJson(`${api}?module=token&action=getToken&contractaddress=${address}`); } catch (e) { bsError.token = String(e && e.message ? e.message : e); }
+  try { holdersRes = await fetchJson(`${api}?module=token&action=getTokenHolders&contractaddress=${address}&page=1&offset=10`); } catch (e) { bsError.holders = String(e && e.message ? e.message : e); }
+  try { sourceRes = await fetchJson(`${api}?module=contract&action=getsourcecode&address=${address}`); } catch (e) { bsError.source = String(e && e.message ? e.message : e); }
+  try { creationRes = await fetchJson(`${api}?module=contract&action=getcontractcreation&contractaddresses=${address}`); } catch (e) { bsError.creation = String(e && e.message ? e.message : e); }
+  if (!tokenRes && !holdersRes && !sourceRes && !creationRes) throw new Error(`blockscout_v1_token_${bsError.token}_holders_${bsError.holders}_source_${bsError.source}_creation_${bsError.creation}`);
+  let topHoldersPct = null;
+  try {
+    const total = tokenRes?.result?.totalSupply ? BigInt(String(tokenRes.result.totalSupply)) : 0n;
+    const items = Array.isArray(holdersRes?.result) ? holdersRes.result.slice(0, 10) : [];
+    if (total > 0n && items.length > 0) {
+      let sum = 0n;
+      for (const it of items) { try { sum += BigInt(String(it.value)); } catch (_) {} }
+      topHoldersPct = Number((sum * 10000n) / total) / 100;
+    }
+  } catch (_) {}
+  let sourceScan = null;
+  try {
+    const src = typeof sourceRes?.result?.[0]?.SourceCode === "string" ? sourceRes.result[0].SourceCode.toLowerCase() : "";
+    if (src && src.length > 50) {
+      sourceScan = { verified: true, mintable: /function\s+(mint|issue)\s*\(/.test(src), blacklist: /blacklist|black_list|isblacklisted/.test(src), isProxy: sourceRes.result[0].IsProxy === "true" };
+    }
+  } catch (_) {}
+  let creatorHistory = null;
+  try {
+    const c = creationRes?.result?.[0];
+    if (c?.contractCreator) creatorHistory = { creatorAddress: c.contractCreator, creationTxHash: c.txHash ?? null, creationTimestamp: c.timestamp ? Number(c.timestamp) : null };
+  } catch (_) {}
+  return { holders: null, topHoldersPct, mintable: sourceScan ? sourceScan.mintable : null, blacklist: sourceScan ? sourceScan.blacklist : null, creatorHistory, sourceScan, bsError };
+}
+
 async function cached(env, key, fn, ttlSeconds = 180) {
   // 有 KV 就缓存 3 分钟；没有 KV 就直接查，不假装缓存了。
   try {
@@ -207,11 +275,32 @@ export default {
       const address = url.searchParams.get("address") || "";
       if (!CHAINS[chain]) return json({ error: "unknown_chain", chain }, 400);
       if (!isValidAddress(chain, address)) return json({ error: "invalid_address", chain }, 400);
-      const dexPrice = await cached(env, `token:${chain}:${address.toLowerCase()}`, () => dexToken(chain, address));
-      const price = dexPrice || (await geckoToken(chain, address));
+      let dexPrice = await cached(env, `token:${chain}:${address.toLowerCase()}`, () => dexToken(chain, address));
+      if (!dexPrice) dexPrice = await dexToken(chain, address);
+      let price = dexPrice || (await geckoToken(chain, address));
+      if (!price) price = await geckoToken(chain, address);
       let security = null;
       let securityError = null;
       try { security = chain === "solana" ? await rugcheckSecurity(address) : await evmSecurity(chain, address); if (!security) securityError = "upstream_empty"; } catch (e) { security = null; securityError = String(e && e.message ? e.message : e); }
+      let bs = null;
+      let bsError = null;
+      let lpBurn = null;
+      if (chain !== "solana") {
+        try { bs = await blockscoutInfo(chain, address); } catch (e) { bs = null; bsError = String(e && e.message ? e.message : e); }
+        if (bs) {
+          if (!security) security = { holders: null, topHoldersPct: null, buyTax: null, sellTax: null, honeypot: null, renounced: null, mintable: null, blacklist: null, lpLocked: null, risk: null, source: "blockscout", flags: {} };
+          if (security.holders == null && bs.holders != null) security.holders = bs.holders;
+          if (security.topHoldersPct == null && bs.topHoldersPct != null) security.topHoldersPct = bs.topHoldersPct;
+          if (security.mintable == null && bs.mintable != null) security.mintable = bs.mintable;
+          if (security.blacklist == null && bs.blacklist != null) security.blacklist = bs.blacklist;
+          security.flags = { ...(security.flags || {}), blockscout: { topHoldersPct: bs.topHoldersPct, sourceScan: bs.sourceScan, bsError: bs.bsError } };
+          if (security.risk == null && (bs.mintable != null || bs.blacklist != null)) security.risk = bs.blacklist === true ? "yellow" : bs.mintable === true ? "yellow" : "green";
+          if (security.source === "blockscout") securityError = null;
+        }
+        try { lpBurn = await rpcLpBurn(chain, price?.pairAddress); } catch (_) { lpBurn = null; }
+        if (lpBurn && security && security.lpLocked == null) { security.lpLocked = lpBurn.lpLocked; security.flags = { ...(security.flags || {}), lpBurnedPct: lpBurn.lpBurnedPct }; }
+      }
+      const poolAge = price?.pairCreatedAt ? Math.round(((Date.now() - Number(price.pairCreatedAt)) / 86400000) * 10) / 10 : null;
       return json({
         chain, address,
         price,
@@ -220,10 +309,10 @@ export default {
         buyTax: security?.buyTax ?? null, sellTax: security?.sellTax ?? null,
         honeypot: security?.honeypot ?? null, renounced: security?.renounced ?? null,
         mintable: security?.mintable ?? null, blacklist: security?.blacklist ?? null,
-        lpLocked: security?.lpLocked ?? null, poolAge: null, creatorHistory: null,
+        lpLocked: security?.lpLocked ?? null, poolAge, creatorHistory: bs?.creatorHistory ?? null,
         risk: security?.risk ?? null, riskSource: security?.source ?? "pending",
         security: security ? { source: security.source, flags: security.flags } : null,
-        securityError,
+        securityError, bsError,
         tradeLinks: {
           ave: `https://ave.ai/token/${address}-${chain}`,
           gmgn: `https://gmgn.ai/${chain}/token/${address}`,
