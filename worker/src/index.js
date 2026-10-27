@@ -267,6 +267,173 @@ async function rpcCall(rpcUrl, to, data) {
   }
   return null;
 }
+
+// ===== 合约报价模块：链上报价，不依赖 Dex/Gecko 的池子价 =====
+// Four.meme：Helper3.getTokenInfo（SDK four-flap-meme-sdk 4.5.1，地址见其 ADDRESSES，
+// BSC Helper3 0xF251F83e40a78868FcfA3FA4599Dad6494E46034，selector 0x1f69565f）。
+// 返回 12 字段：version, tokenManager, quote, lastPrice, feeRate, minFee, launchTime,
+// offers, maxOffers, funds, maxFunds, liquidityAdded。SDK 用 formatUnits(lastPrice, 18) 格式化，
+// 所以 priceQuote = lastPrice / 1e18（单位：计价币/枚）。quote=0x0 表示原生币（BNB/ETH）。
+// Pump.fun：链上 BondingCurve 账户。PDA seeds ["bonding-curve", mint]，程序
+// 6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P，哈希后缀 "ProgramDerivedAddress"，
+// 找 bump 255..0 第一个不在 ed25519 曲线上的点。曲线布局：disc 8 字节，
+// offset 8 virtualTokenReserves u64，16 virtualSolReserves u64，24 realTokenReserves u64，
+// 32 realSolReserves u64，40 tokenTotalSupply u64，48 complete u8。
+// 价 = (virtualSol/1e9) / (virtualToken/10^decimals)，再乘 SOL 现货价。已毕业币曲线已清空，
+// virtual=0，不给曲线价，改走外盘价。
+const FOUR_HELPER3 = { bsc: "0xF251F83e40a78868FcfA3FA4599Dad6494E46034", base: "0x1172FABbAc4Fe05f5a5Cebd8EBBC593A76c42399", arbitrum: "0x02287dc3CcA964a025DAaB1111135A46C10D3A57" };
+const PUMP_PROGRAM = "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P";
+const B58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+function b58decode(s) {
+  let n = 0n;
+  for (const c of s) { const i = B58_ALPHABET.indexOf(c); if (i < 0) throw new Error("bad_base58"); n = n * 58n + BigInt(i); }
+  let hex = n.toString(16); if (hex.length % 2) hex = "0" + hex;
+  let bytes = hex === "00" ? [] : Array.from({ length: hex.length / 2 }, (_, i) => parseInt(hex.slice(i * 2, i * 2 + 2), 16));
+  let pad = 0; for (const c of s) { if (c === "1") pad++; else break; }
+  return new Uint8Array([...new Array(pad).fill(0), ...bytes]);
+}
+function b58encode(bytes) {
+  let n = 0n; for (const b of bytes) n = (n << 8n) + BigInt(b);
+  let out = ""; while (n > 0n) { const r = n % 58n; n = n / 58n; out = B58_ALPHABET[Number(r)] + out; }
+  let pad = 0; for (const b of bytes) { if (b === 0) pad++; else break; }
+  return "1".repeat(pad) + (out || "1");
+}
+function modPow(base, exp, mod) { let r = 1n; base %= mod; while (exp > 0n) { if (exp & 1n) r = (r * base) % mod; base = (base * base) % mod; exp >>= 1n; } return r; }
+function edIsOnCurve(hashBytes) {
+  try {
+    const P = (1n << 255n) - 19n;
+    const D = ((-121665n * modPow(121666n, P - 2n, P)) % P + P) % P;
+    const I = modPow(2n, (P - 1n) / 4n, P);
+    let y = 0n; for (let i = hashBytes.length - 1; i >= 0; i--) y = (y << 8n) + BigInt(hashBytes[i]);
+    y = y & ((1n << 255n) - 1n);
+    const xx = ((y * y - 1n) * modPow((D * y * y + 1n) % P, P - 2n, P)) % P;
+    let x = modPow(xx, (P + 3n) / 8n, P);
+    if ((x * x - xx) % P !== 0n) x = (x * I) % P;
+    return (x * x - xx) % P === 0n;
+  } catch (_) { return true; }
+}
+async function sha256Bytes(data) {
+  const buf = await crypto.subtle.digest("SHA-256", data);
+  return new Uint8Array(buf);
+}
+async function findPumpPda(mintBytes) {
+  const prog = b58decode(PUMP_PROGRAM);
+  const seedStr = new TextEncoder().encode("bonding-curve");
+  const suffix = new TextEncoder().encode("ProgramDerivedAddress");
+  for (let bump = 255; bump >= 0; bump--) {
+    const data = new Uint8Array(seedStr.length + mintBytes.length + 1 + prog.length + suffix.length);
+    let o = 0; data.set(seedStr, o); o += seedStr.length; data.set(mintBytes, o); o += mintBytes.length; data[o++] = bump; data.set(prog, o); o += prog.length; data.set(suffix, o);
+    const h = await sha256Bytes(data);
+    if (!edIsOnCurve(h)) return { pda: b58encode(h), bump };
+  }
+  return null;
+}
+async function solRpc(method, params, env) {
+  const urls = [];
+  if (env?.ALCHEMY_API_KEY) urls.push(`https://solana-mainnet.g.alchemy.com/v2/${env.ALCHEMY_API_KEY}`);
+  urls.push("https://api.mainnet-beta.solana.com", "https://solana-rpc.publicnode.com", "https://rpc.ankr.com/solana");
+  let lastErr = null;
+  for (const u of urls) {
+    try {
+      const res = await fetch(u, { method: "POST", headers: { "content-type": "application/json", accept: "application/json", "user-agent": "tugou-hanshuang-jiaoben-app/1.0" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }) });
+      if (!res.ok) { lastErr = new Error(`sol_rpc_status_${res.status}`); continue; }
+      const body = await res.json();
+      if (body.error) { lastErr = new Error(`sol_rpc_${body.error.message || "error"}`); continue; }
+      return body.result;
+    } catch (e) { lastErr = e; }
+  }
+  throw lastErr || new Error("sol_rpc_no_url");
+}
+async function pumpCurveQuote(address, env) {
+  try {
+    const mintBytes = b58decode(address);
+    const pdaRes = await findPumpPda(mintBytes);
+    if (!pdaRes) return { source: "pump_curve", error: "pda_not_found" };
+    const [curveAcc, mintAcc, solPrice] = await Promise.all([
+      solRpc("getAccountInfo", [pdaRes.pda, { encoding: "base64" }], env).catch((e) => ({ __err: String(e && e.message ? e.message : e) })),
+      solRpc("getAccountInfo", [address, { encoding: "base64" }], env).catch(() => null),
+      priceFor("solana", "So11111111111111111111111111111111111111112").catch(() => null),
+    ]);
+    if (!curveAcc?.value?.data?.[0]) return { source: "pump_curve", pda: pdaRes.pda, bump: pdaRes.bump, error: "curve_account_not_found", rpcError: curveAcc?.__err ?? null };
+    const raw = Uint8Array.from(atob(curveAcc.value.data[0]), (c) => c.charCodeAt(0));
+    if (raw.length < 49) return { source: "pump_curve", pda: pdaRes.pda, error: "curve_data_short" };
+    const disc = await sha256Bytes(new TextEncoder().encode("account:BondingCurve"));
+    const discOk = disc.slice(0, 8).every((v, i) => v === raw[i]);
+    if (!discOk) return { source: "pump_curve", pda: pdaRes.pda, error: "curve_discriminator_mismatch" };
+    const dv = new DataView(raw.buffer, raw.byteOffset, raw.byteLength);
+    const vtok = dv.getBigUint64(8, true), vsol = dv.getBigUint64(16, true), rtok = dv.getBigUint64(24, true), rsol = dv.getBigUint64(32, true), total = dv.getBigUint64(40, true);
+    const complete = raw[48] === 1;
+    let decimals = 6;
+    if (mintAcc?.value?.data?.[0]) {
+      const mraw = Uint8Array.from(atob(mintAcc.value.data[0]), (c) => c.charCodeAt(0));
+      if (mraw.length >= 45) decimals = mraw[44];
+    }
+    if (complete || vtok === 0n || vsol === 0n) return { source: "pump_curve", pda: pdaRes.pda, bump: pdaRes.bump, complete, virtualTokenReserves: vtok.toString(), virtualSolReserves: vsol.toString(), realTokenReserves: rtok.toString(), realSolReserves: rsol.toString(), totalSupply: total.toString(), decimals, priceUsd: null, error: "curve_graduated_or_empty" };
+    const priceSol = (Number(vsol) / 1e9) / (Number(vtok) / (10 ** decimals));
+    const solUsd = solPrice?.priceUsd ?? null;
+    const priceUsd = solUsd != null ? priceSol * solUsd : null;
+    return { source: "pump_curve", pda: pdaRes.pda, bump: pdaRes.bump, complete, virtualTokenReserves: vtok.toString(), virtualSolReserves: vsol.toString(), realTokenReserves: rtok.toString(), realSolReserves: rsol.toString(), totalSupply: total.toString(), decimals, priceSol, solPriceUsd: solUsd, priceUsd, marketCapCurveUsd: priceUsd != null ? priceUsd * (Number(total) / (10 ** decimals)) : null };
+  } catch (e) { return { source: "pump_curve", error: String(e && e.message ? e.message : e) }; }
+}
+async function fourQuote(chain, address) {
+  const helper = FOUR_HELPER3[chain];
+  if (!helper) return null;
+  try {
+    const urls = RPC_URLS[chain] || [];
+    if (!urls.length) return { source: "four_helper3", error: "no_rpc_url" };
+    const data = "0x1f69565f" + address.slice(2).padStart(64, "0");
+    let raw = null;
+    for (const u of urls) {
+      try {
+        const res = await fetch(u, { method: "POST", headers: { "content-type": "application/json", accept: "application/json", "user-agent": "tugou-hanshuang-jiaoben-app/1.0" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to: helper, data }, "latest"] }) });
+        if (!res.ok) continue;
+        const body = await res.json();
+        if (body?.result && typeof body.result === "string" && body.result.length >= 2 + 64 * 12) { raw = body.result; break; }
+      } catch (_) {}
+    }
+    if (!raw) return { source: "four_helper3", helper, error: "helper_call_failed" };
+    const hex = raw.slice(2);
+    const slot = (i) => hex.slice(i * 64, (i + 1) * 64);
+    const version = Number(BigInt("0x" + slot(0)));
+    const tokenManager = "0x" + slot(1).slice(24);
+    const quote = "0x" + slot(2).slice(24);
+    const lastPrice = BigInt("0x" + slot(3));
+    const funds = BigInt("0x" + slot(9));
+    const maxFunds = BigInt("0x" + slot(10));
+    const liquidityAdded = slot(11).slice(-1) === "1";
+    if (!tokenManager || tokenManager.toLowerCase() === "0x0000000000000000000000000000000000000000" || (version !== 1 && version !== 2)) return { source: "four_helper3", helper, error: "not_four_token" };
+    if (liquidityAdded) return { source: "four_helper3", helper, version, tokenManager, quote, liquidityAdded, priceUsd: null, error: "graduated_use_external_price" };
+    const priceQuote = Number(lastPrice) / 1e18;
+    let quoteUsd = null, quoteUsdSource = null;
+    try {
+      if (quote.toLowerCase() === "0x0000000000000000000000000000000000000000") {
+        const wrapped = NATIVE_WRAPPED[chain];
+        const pr = wrapped ? await priceFor(chain, wrapped).catch(() => null) : null;
+        if (pr?.priceUsd != null) { quoteUsd = pr.priceUsd; quoteUsdSource = "dexscreener_native_wrapped"; }
+      } else {
+        const pr = await priceFor(chain, quote).catch(() => null);
+        if (pr?.priceUsd != null) { quoteUsd = pr.priceUsd; quoteUsdSource = "dexscreener_quote_token"; }
+      }
+    } catch (_) {}
+    const priceUsd = quoteUsd != null ? priceQuote * quoteUsd : null;
+    return { source: "four_helper3", helper, version, tokenManager, quote, lastPrice: lastPrice.toString(), priceQuote, quotePriceUsd: quoteUsd, quotePriceSource: quoteUsdSource, funds: funds.toString(), fundsQuote: Number(funds) / 1e18, maxFunds: maxFunds.toString(), maxFundsQuote: Number(maxFunds) / 1e18, liquidityAdded, priceUsd };
+  } catch (e) { return { source: "four_helper3", error: String(e && e.message ? e.message : e) }; }
+}
+async function contractQuote(chain, address, price, env) {
+  const out = { four: null, pump: null, primaryPriceUsd: null, primarySource: null };
+  try {
+    if (chain === "solana") {
+      out.pump = await Promise.race([pumpCurveQuote(address, env), new Promise((res) => setTimeout(() => res({ source: "pump_curve", error: "timeout_8s" }), 8000))]);
+      if (out.pump?.priceUsd != null) { out.primaryPriceUsd = out.pump.priceUsd; out.primarySource = "pump_curve"; }
+    } else if (FOUR_HELPER3[chain]) {
+      out.four = await Promise.race([fourQuote(chain, address), new Promise((res) => setTimeout(() => res({ source: "four_helper3", error: "timeout_8s" }), 8000))]);
+      if (out.four?.priceUsd != null) { out.primaryPriceUsd = out.four.priceUsd; out.primarySource = "four_helper3"; }
+    }
+    if (out.primaryPriceUsd == null && price?.priceUsd != null) { out.primaryPriceUsd = price.priceUsd; out.primarySource = price.source || "dexscreener_or_geckoterminal"; }
+  } catch (_) {}
+  return out;
+}
+
 // LP 销毁占比：只对 V2 式 LP 代币有意义。V3 池没有 LP 代币，totalSupply 调不出来就返回 null，不硬填。
 async function rpcLpBurn(chain, pairAddress) {
   const urls = RPC_URLS[chain] || (RPC[chain] ? [RPC[chain]] : []);
@@ -875,7 +1042,8 @@ export default {
       })();
       const ownerP = (chain !== "solana" && security?.renounced == null) ? rpcOwner(chain, address).catch(() => null) : Promise.resolve(null);
       const fourP = fourInternal(chain, address).catch(() => null);
-      const [logScanRes, pairAddr, supplyRes, gasRes, ownerRes, fourRes] = await Promise.all([logScanP, pairP, supplyP, gasP, ownerP, fourP]);
+      const quoteP = contractQuote(chain, address, price, env).catch(() => null);
+      const [logScanRes, pairAddr, supplyRes, gasRes, ownerRes, fourRes, quoteRes] = await Promise.all([logScanP, pairP, supplyP, gasP, ownerP, fourP, quoteP]);
       if (security && security.renounced == null && ownerRes != null) security.renounced = ownerRes;
       let logScan = logScanRes;
       if (logScan) {
@@ -926,8 +1094,11 @@ export default {
         priceChange5mPct: price?.priceChange5mPct ?? null, priceChange1hPct: price?.priceChange1hPct ?? null,
         swapFeePct, swapFeeError, gasPriceGwei, realHolders: logScan?.realHolders ?? null,
         allPairs: price?.allPairs ?? null,
-        internalMarket: chain === "solana" ? { platform: "pump.fun", status: (price?.allPairs || []).some((q) => q.dexId === "pump") ? "internal" : (price?.allPairs || []).some((q) => ["pumpswap", "raydium", "orca"].includes(q.dexId)) ? "graduated_external" : (price ? "external_or_unknown" : "unknown_no_dex_pair"), dexIds: (price?.allPairs || []).map((q) => q.dexId), note: "Pump.fun 前端 API 自 2026-09-24 起 404，Worker 内盘只按 Dex 池 dexId 判定（pump=内盘，pumpswap/raydium=已毕业外盘），链上曲线 PDA 需 Solana ed25519 数学、本版未内置，不编曲线储备数；无 Dex 对的 pump 币可能是未索引的内盘，标 unknown_no_dex_pair" } : chain === "bsc" ? { ...(fourRes || {}), externalPools: price?.allPairs ?? null, note: "BSC 内盘走 Four.meme 代理余额法，余额 200M-1B 为内盘，余额 0 且有 PancakeSwap 外盘对为已毕业，余额 0 且无外盘对为非 Four.meme" } : { platform: null, status: "external_only", externalPools: price?.allPairs ?? null, note: "本链无统一免费内盘接口（Base/ETH 等发射台各异、无统一代理余额法），本版只给外盘多池，内盘不编数" },
+        internalMarket: chain === "solana" ? { platform: "pump.fun", status: (price?.allPairs || []).some((q) => q.dexId === "pump") ? "internal" : (price?.allPairs || []).some((q) => ["pumpswap", "raydium", "orca"].includes(q.dexId)) ? "graduated_external" : (price ? "external_or_unknown" : "unknown_no_dex_pair"), dexIds: (price?.allPairs || []).map((q) => q.dexId), note: "Pump.fun 前端 API 自 2026-09-24 起 404；本版链上曲线 PDA 已接（seeds bonding-curve+mints，程序 6EF8…，价=virtualSol/virtualToken×SOL价），曲线未毕业即内盘、已毕业曲线清空改走外盘；无 Dex 对且无曲线账户的 pump 币标 unknown_no_dex_pair" } : chain === "bsc" ? { ...(fourRes || {}), externalPools: price?.allPairs ?? null, note: "BSC 内盘走 Four.meme 代理余额法，余额 200M-1B 为内盘，余额 0 且有 PancakeSwap 外盘对为已毕业，余额 0 且无外盘对为非 Four.meme" } : { platform: null, status: "external_only", externalPools: price?.allPairs ?? null, note: "本链无统一免费内盘接口（Base/ETH 等发射台各异、无统一代理余额法），本版只给外盘多池，内盘不编数" },
         multiSource: { priceDexUsd: dexPrice?.priceUsd ?? null, priceGeckoUsd: geckoPrice?.priceUsd ?? null, priceDiscrepancyPct, pricePrimary: dexPrice ? "dexscreener" : geckoPrice ? "geckoterminal" : null, holdersPro: bsPro?.holders ?? null, holdersSecurity: security?.holders ?? null, holdersLogScan: logScan?.holders ?? null, goplusError: goplusR.error ?? null, honeypotError: honeypotR.error ?? null, queryTimeMs: Date.now() - t0 },
+        contractQuote: quoteRes ?? null,
+        quoteUsd: quoteRes?.primaryPriceUsd ?? price?.priceUsd ?? null,
+        quoteSource: quoteRes?.primarySource ?? null,
         internalMarketGecko: geckoPrice ? { launchpad: geckoPrice.launchpadDetails ?? null, totalReserveUsd: geckoPrice.totalReserveUsd ?? null, totalSupply: geckoPrice.totalSupplyGecko ?? null, priceUsd: geckoPrice.priceUsd ?? null, source: "geckoterminal" } : null,
         paidPromotion,
         backupSources: { price: ["dexscreener", "geckoterminal"], security: ["goplus", "honeypot_is", "etherscan_source"], holdersTop10Creator: ["blockscout_pro", "alchemy_logscan", "public_rpc_logscan", "goplus_honeypot_holders"], lp: ["alchemy_lp", "public_rpc_lp_burn"] }, creatorHistory: bsPro?.creatorHistory ?? esCreator ?? bs?.creatorHistory ?? logScan?.creatorHistory ?? null,
