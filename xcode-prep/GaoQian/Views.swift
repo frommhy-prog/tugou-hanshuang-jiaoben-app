@@ -31,6 +31,8 @@ struct ContentView: View {
             SettingsView()
                 .tabItem { Label("设置", systemImage: "gearshape") }
         }
+        .toolbarBackground(.visible, for: .tabBar)
+        .toolbarBackground(Color.black, for: .tabBar)
         .preferredColorScheme(.dark)
     }
 }
@@ -310,7 +312,6 @@ struct HoldingsView: View {
     @State private var cooldownRemainingSec = 0
 
     var body: some View {
-        NavigationView {
             List {
                 if wallets.wallets.isEmpty {
                     Text("还没有钱包。去“钱包”页添加，支持多钱包、多链混加，随时可换。")
@@ -372,15 +373,14 @@ struct HoldingsView: View {
                     Text("币安、欧易、Gate：只读 Key 先跳过，这一版不显示交易所持仓，等 Key 到位再接。")
                         .font(.footnote)
                 }
+                Section { Color.clear.frame(height: 80).listRowBackground(Color.clear) }
             }
             .navigationTitle("全链持仓")
-        }
     }
 }
 
 struct WalletListView: View {
     @ObservedObject var store: WalletStore
-    @ObservedObject private var fx = CurrencyStore.shared
     @State private var chain: Chain = .bsc
     @State private var address: String = ""
     @State private var label: String = ""
@@ -393,18 +393,53 @@ struct WalletListView: View {
     @State private var autoWalletResults: [String] = []
     @State private var autoWalletLoading = false
 
+    private func fieldLabel(_ text: String) -> some View {
+        Text(text).font(.subheadline).bold().foregroundStyle(.white)
+    }
+
+    private func inputField(_ placeholder: String, text: Binding<String>) -> some View {
+        TextField(placeholder, text: text)
+            .autocapitalization(.none)
+            .disableAutocorrection(true)
+            .padding(12)
+            .background(Color(white: 0.18))
+            .cornerRadius(10)
+            .foregroundStyle(.white)
+    }
+
+    private func whiteButton(_ title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title).bold().frame(maxWidth: .infinity).padding(12)
+                .background(Color.white).foregroundStyle(.black).cornerRadius(12)
+        }
+    }
+
     var body: some View {
-        NavigationView {
-            List {
-                Section("添加钱包（只填公开地址，不要私钥）") {
-                    Picker("链", selection: $chain) {
-                        ForEach(Chain.allCases) { c in Text(c.displayName).tag(c) }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("只填公开地址，绝不填私钥。多钱包、多链混加，随时可换。")
+                    .font(.subheadline).foregroundStyle(Color(white: 0.70))
+
+                // 添加钱包：一张卡，标签在输入框上面，输入框有底色，一眼就知道往哪填。
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("添加钱包").font(.headline).foregroundStyle(.white)
+                    fieldLabel("链")
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 88), spacing: 8)], spacing: 8) {
+                        ForEach(Chain.allCases) { c in
+                            Button { chain = c } label: {
+                                Text(c.displayName).font(.subheadline).bold()
+                                    .padding(.vertical, 8).frame(maxWidth: .infinity)
+                                    .background(chain == c ? Color.white : Color(white: 0.16))
+                                    .foregroundStyle(chain == c ? Color.black : Color.white)
+                                    .cornerRadius(999)
+                            }
+                        }
                     }
-                    TextField("备注名（可选）", text: $label)
-                    TextField("公开钱包地址", text: $address)
-                        .autocapitalization(.none)
-                        .disableAutocorrection(true)
-                    Button("添加") {
+                    fieldLabel("备注名（可选）")
+                    inputField("比如：主钱包、测试钱包", text: $label)
+                    fieldLabel("公开钱包地址")
+                    inputField("粘贴公开地址，不要私钥", text: $address)
+                    whiteButton("添加") {
                         // 自动识别：贴 Solana 地址自动切到 Solana 链；EVM 地址靠钱包框上下文定为钱包，格式不对或重复时不清空输入，提示原因。
                         chain = RefreshInfo.autoChain(for: address, current: chain)
                         if store.add(chain: chain, address: address, label: label) {
@@ -414,22 +449,48 @@ struct WalletListView: View {
                             addErrorText = "没加上：地址格式不对（EVM 要 0x + 40 位，Solana 要 Base58 32–44 位），或同链同地址已存在。"
                         }
                     }
-                    if let addErrorText { Text(addErrorText).font(.footnote) }
+                    if let addErrorText { Text(addErrorText).font(.subheadline).foregroundStyle(.red) }
                 }
-                Section("已添加（可左滑删除，随时换）") {
-                    ForEach(store.wallets) { w in
-                        VStack(alignment: .leading) {
-                            Text(w.label).bold()
-                            Text("\(w.chain.displayName) · \(w.address)").font(.caption).lineLimit(1)
+                .padding(16)
+                .background(Color(white: 0.11))
+                .cornerRadius(16)
+
+                // 已添加：没钱包时不再只剩一个光秃秃的标题，给出空状态；有钱包时每行都有看得见的删除钮，不靠猜左滑。
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("已添加").font(.headline).foregroundStyle(.white)
+                    if store.wallets.isEmpty {
+                        Text("还没加钱包。上面选链、贴公开地址、点添加，就会出现在这里。")
+                            .font(.subheadline).foregroundStyle(Color(white: 0.70))
+                    } else {
+                        ForEach(store.wallets) { w in
+                            HStack(alignment: .top, spacing: 10) {
+                                Text(w.chain.displayName).font(.caption).bold()
+                                    .padding(.horizontal, 8).padding(.vertical, 4)
+                                    .background(Color(white: 0.20)).cornerRadius(8)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(w.label).bold().foregroundStyle(.white)
+                                    Text(w.address).font(.caption).foregroundStyle(Color(white: 0.70))
+                                        .lineLimit(1).truncationMode(.middle)
+                                }
+                                Spacer()
+                                Button("删除") { store.remove(w) }.foregroundStyle(.red)
+                            }
+                            Divider().background(Color(white: 0.25))
                         }
                     }
-                    .onDelete(perform: store.remove)
                 }
-                Section("我的钱包全量分析（不走缓存、不走旧价）") {
-                    Text("全量 = 本次不读结果缓存、不读价格 KV、不回旧价，直接打上游；大脑逐币从 5 个放宽到 20 个/钱包，超 20 的币用体检页的分析按钮逐个查。代价是更容易撞 Dex/Gecko 限流，只手动点，不要自动轮询。").font(.footnote)
-                    if let mineCostText { Text("预计消耗：\(mineCostText)").font(.footnote) }
-                    if let usageText { Text(usageText).font(.footnote) }
-                    Button(mineLoading ? "全量分析中…" : "我的钱包全量分析") {
+                .padding(16)
+                .background(Color(white: 0.11))
+                .cornerRadius(16)
+
+                // 全量分析：原来这段文字被悬浮 Tab 栏压住一半，现在整段在卡片里，底部留空，Tab 栏再也盖不住。
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("我的钱包全量分析").font(.headline).foregroundStyle(.white)
+                    Text("全量 = 本次不读结果缓存、不读价格 KV、不回旧价，直接打上游；大脑逐币从 5 个放宽到 20 个/钱包，超 20 的币用体检页的分析按钮逐个查。代价是更容易撞 Dex/Gecko 限流，只手动点，不要自动轮询。")
+                        .font(.subheadline).foregroundStyle(Color(white: 0.70))
+                    if let mineCostText { Text("预计消耗：\(mineCostText)").font(.subheadline).foregroundStyle(Color(white: 0.85)) }
+                    if let usageText { Text(usageText).font(.subheadline).foregroundStyle(Color(white: 0.85)) }
+                    whiteButton(mineLoading ? "全量分析中…" : "我的钱包全量分析") {
                         Task {
                             mineLoading = true; mineErrorText = nil; minePortfolio = nil; autoWalletResults = []
                             do {
@@ -440,7 +501,6 @@ struct WalletListView: View {
                                 }
                                 let portfolio = try await APIClient.fetchPortfolio(wallets: store.wallets, brain: true, mine: true, fresh: true)
                                 minePortfolio = portfolio
-                                // 小组件快照：全量分析成功后写一次，App Group 共用，小组件只读快照不联网。
                                 if let merged = portfolio.merged {
                                     let hs = (merged.holdings ?? []).compactMap { h in WidgetHolding(symbol: h.symbol, usd: h.usd, changePct: h.priceChange24hPct) }.sorted(by: { ($0.usd ?? 0) > ($1.usd ?? 0) })
                                     SharedStore.saveSnapshot(WidgetSnapshot(
@@ -457,7 +517,6 @@ struct WalletListView: View {
                                 mineErrorText = "全量分析失败：\(error.localizedDescription)"
                             }
                             mineLoading = false
-                            // 全工具自动查（Jon 定）：全量一点，自动跑每个钱包能查的工具，分路、某一路失败不拦其他路，不自动轮询。
                             autoWalletLoading = true
                             var rows: [String] = []
                             for w in store.wallets {
@@ -480,18 +539,18 @@ struct WalletListView: View {
                         }
                     }
                     .disabled(mineLoading || store.wallets.isEmpty)
-                    if let mineErrorText { Text(mineErrorText).font(.footnote) }
-                    if autoWalletLoading { Text("全工具自动查进行中…每个钱包的复盘/画像/评分/活动逐个出。").font(.footnote) }
-                    ForEach(autoWalletResults.indices, id: \.self) { i in Text(autoWalletResults[i]).font(.footnote) }
+                    if let mineErrorText { Text(mineErrorText).font(.subheadline).foregroundStyle(.red) }
+                    if autoWalletLoading { Text("全工具自动查进行中…每个钱包的复盘/画像/评分/活动逐个出。").font(.subheadline).foregroundStyle(Color(white: 0.70)) }
+                    ForEach(autoWalletResults.indices, id: \.self) { i in Text(autoWalletResults[i]).font(.subheadline).foregroundStyle(Color(white: 0.85)) }
                     if let p = minePortfolio {
-                        Text("本次是否缓存：\(p.cached == true ? "是（旧数据）" : "否（本次新取）")；取数时间戳：\(p.fetchedAt ?? 0)").font(.footnote)
+                        Text("本次是否缓存：\(p.cached == true ? "是（旧数据）" : "否（本次新取）")；取数时间戳：\(p.fetchedAt ?? 0)").font(.subheadline).foregroundStyle(Color(white: 0.70))
                         if let b = p.brain {
-                            if let c = b.conclusion { Text(c).font(.footnote) }
-                            Text("逐币查了 \(b.analyzedCount ?? 0) 个，上限 \(b.analyzedLimit ?? 0) 个，未逐个查 \(b.unanalyzedCount ?? 0) 个，非原生共 \(b.totalNonNative ?? 0) 个。").font(.footnote)
+                            if let c = b.conclusion { Text(c).font(.subheadline).foregroundStyle(.white) }
+                            Text("逐币查了 \(b.analyzedCount ?? 0) 个，上限 \(b.analyzedLimit ?? 0) 个，未逐个查 \(b.unanalyzedCount ?? 0) 个，非原生共 \(b.totalNonNative ?? 0) 个。").font(.subheadline).foregroundStyle(Color(white: 0.85))
                         }
-                        if let t = p.merged?.totalUsd { Text("合并总价：\(fmtUsd(t))").font(.footnote) }
+                        if let t = p.merged?.totalUsd { Text("合并总价：\(fmtUsd(t))").font(.headline).foregroundStyle(.white) }
                         if let hs = p.merged?.holdings, !hs.isEmpty {
-                            Text("持仓分布图（App 本地画，不外发给画图服务）：").font(.footnote)
+                            Text("持仓分布图（App 本地画，不外发给画图服务）：").font(.subheadline).foregroundStyle(Color(white: 0.70))
                             Chart {
                                 ForEach(hs.prefix(5).indices, id: \.self) { i in
                                     if let v = hs[i].usd { BarMark(x: .value("币", hs[i].symbol ?? "?"), y: .value("美元", v)).foregroundStyle(.yellow) }
@@ -500,9 +559,17 @@ struct WalletListView: View {
                         }
                     }
                 }
+                .padding(16)
+                .background(Color(white: 0.11))
+                .cornerRadius(16)
             }
-            .navigationTitle("钱包管理")
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+            .padding(.bottom, 120)
         }
+        .background(Color.black)
+        .navigationTitle("钱包管理")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 

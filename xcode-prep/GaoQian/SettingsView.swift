@@ -134,12 +134,34 @@ enum LiveActivityManager {
 struct HoldingsTabView: View {
     @ObservedObject var wallets: WalletStore
     @State private var segment = 0
+
+    private func segmentButton(_ title: String, _ tag: Int) -> some View {
+        Button { segment = tag } label: {
+            Text(title).font(.subheadline).bold().frame(maxWidth: .infinity).padding(.vertical, 9)
+                .background(segment == tag ? Color.white : Color.clear)
+                .foregroundStyle(segment == tag ? Color.black : Color(white: 0.75))
+                .cornerRadius(10)
+        }
+    }
+
     var body: some View {
-        VStack {
-            Picker("持仓", selection: $segment) {
-                Text("聚合").tag(0); Text("钱包管理").tag(1)
-            }.pickerStyle(.segmented).padding(.horizontal)
-            if segment == 0 { HoldingsView(wallets: wallets) } else { WalletListView(store: wallets) }
+        NavigationStack {
+            VStack(spacing: 0) {
+                HStack(spacing: 4) {
+                    segmentButton("聚合", 0)
+                    segmentButton("钱包管理", 1)
+                }
+                .padding(4)
+                .background(Color(white: 0.12))
+                .cornerRadius(14)
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 8)
+                if segment == 0 { HoldingsView(wallets: wallets) } else { WalletListView(store: wallets) }
+            }
+            .background(Color.black)
+            .navigationTitle("持仓")
+            .navigationBarTitleDisplayMode(.inline)
         }
     }
 }
