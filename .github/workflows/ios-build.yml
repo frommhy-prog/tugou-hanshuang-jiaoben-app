@@ -1,0 +1,118 @@
+name: ios-build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ios/App/**'
+      - 'ios/Shared/**'
+      - 'ios/Widget/**'
+      - 'ios/project.yml'
+      - 'ios/tools/**'
+      - '.github/workflows/ios-build.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ios-build
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select newest Xcode
+        run: |
+          LATEST=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -1)
+          if [ -n "$LATEST" ]; then sudo xcode-select -s "$LATEST/Contents/Developer"; fi
+          xcodebuild -version
+
+      - name: Install tools
+        run: brew install xcodegen ldid
+
+      - name: Draw icon
+        working-directory: ios
+        run: swift tools/make_icon.swift App/Assets.xcassets/AppIcon.appiconset/icon.png
+
+      - name: Generate Xcode project
+        working-directory: ios
+        run: xcodegen generate
+
+      - name: Build (unsigned, device SDK)
+        working-directory: ios
+        run: |
+          mkdir -p ci
+          set +e
+          xcodebuild -project TSTZM.xcodeproj -scheme TSTZM -sdk iphoneos -configuration Release \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build > ci/build.log 2>&1
+          if grep -q "BUILD SUCCEEDED" ci/build.log; then echo "RESULT: SUCCEEDED" > ci/build-result.txt; else echo "RESULT: FAILED" > ci/build-result.txt; fi
+          grep -E "error:" ci/build.log | sort -u | head -60 > ci/build-errors.txt
+          tail -n 40 ci/build.log > ci/build-tail.txt
+          exit 0
+
+      - name: Package IPA
+        working-directory: ios
+        run: |
+          if grep -q SUCCEEDED ci/build-result.txt; then
+            APP=$(find build/Build/Products/Release-iphoneos -maxdepth 1 -name "TSTZM.app" | head -1)
+            ldid -SConfig/App.entitlements "$APP/TSTZM" || true
+            ldid -SConfig/Widget.entitlements "$APP/PlugIns/TSTZMWidget.appex/TSTZMWidget" || true
+            rm -rf Payload TSTZ-M.ipa
+            mkdir Payload
+            cp -R "$APP" Payload/
+            zip -qry TSTZ-M.ipa Payload
+            ls -la TSTZ-M.ipa
+          fi
+
+      - name: Publish release asset
+        if: hashFiles('ios/TSTZ-M.ipa') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest ios/TSTZ-M.ipa --title "TSTZ-M 最新构建" --notes "build ${{ github.run_number }} / ${{ github.sha }}" --target ${{ github.sha }}
+
+      - name: SideStore source
+        if: hashFiles('ios/TSTZ-M.ipa') != ''
+        env:
+          REPO: ${{ github.repository }}
+          RUN: ${{ github.run_number }}
+        run: |
+          mkdir -p sidestore
+          cp ios/App/Assets.xcassets/AppIcon.appiconset/icon.png sidestore/icon.png
+          export SIZE=$(stat -f%z ios/TSTZ-M.ipa)
+          python3 - <<'PY'
+          import json, os, datetime
+          repo = os.environ["REPO"]; run = os.environ["RUN"]; size = int(os.environ["SIZE"])
+          now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+          raw = "https://raw.githubusercontent.com/" + repo + "/main"
+          dl = "https://github.com/" + repo + "/releases/download/latest/TSTZ-M.ipa"
+          ver = "1.0." + run
+          app = {
+            "name": "TSTZ-M", "bundleIdentifier": "com.Hao-Yi-Miao.TSTZ-M", "developerName": "TSTZ-M",
+            "subtitle": "土狗体检 / 钱包 / 寒霜启示录",
+            "localizedDescription": "土狗合约体检、多链钱包、寒霜启示录兑换码、到价提醒、小组件与灵动岛。",
+            "iconURL": raw + "/sidestore/icon.png", "tintColor": "001C44",
+            "version": ver, "versionDate": now, "downloadURL": dl, "size": size,
+            "versions": [{"version": ver, "buildVersion": run, "date": now, "downloadURL": dl, "size": size, "minOSVersion": "17.0"}]
+          }
+          src = {"name": "TSTZ-M", "identifier": "com.hao-yi-miao.tstzm.source", "subtitle": "TSTZ-M 自用源",
+                 "iconURL": raw + "/sidestore/icon.png", "website": "https://github.com/" + repo, "apps": [app], "news": []}
+          json.dump(src, open("sidestore/source.json", "w"), ensure_ascii=False, indent=2)
+          PY
+
+      - name: Commit generated files
+        run: |
+          git config user.name "ci-bot"
+          git config user.email "ci-bot@users.noreply.github.com"
+          git add -f ios/TSTZM.xcodeproj ios/Config ios/ci/build-result.txt ios/ci/build-errors.txt ios/ci/build-tail.txt ios/App/Assets.xcassets/AppIcon.appiconset/icon.png sidestore || true
+          if ! git diff --cached --quiet; then
+            git commit -m "ci: build result [skip ci]"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
