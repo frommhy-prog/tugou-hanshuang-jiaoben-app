@@ -1,0 +1,472 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		487DE13F75AF4CC4BE0DE4C2 /* AlertsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B7F096839FC46B047B6C59E /* AlertsView.swift */; };
+		539480483D9D88B4DF435035 /* TSTZMWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5DC50D9B92745A36D1438B59 /* TSTZMWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		57945635B26BB416A23D1C24 /* TokenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5157A34444D3CBAA16F1DC8 /* TokenView.swift */; };
+		725909C0DDDE5C505819596A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = ED3DE87E29C3A948998C5EFE /* Assets.xcassets */; };
+		780A7CA3AD6FBBFBA8719AA7 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 673CC854C3F5AED8B597D392 /* Components.swift */; };
+		93266E944C65DEF7CE1FF743 /* Core.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F8DB1833F2D784C2C5EFAF3 /* Core.swift */; };
+		A04EB3F1BBC022869D9BC3F9 /* FrostView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71C2648C8FD1DC4AB56A148F /* FrostView.swift */; };
+		A4F064E14FD4508649706F31 /* Core.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F8DB1833F2D784C2C5EFAF3 /* Core.swift */; };
+		ACA59C68EDA15C8FDDB89F6C /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE73CF7AA13A5E168372E867 /* SettingsView.swift */; };
+		B067178EEEF1DB77AE457B5E /* WalletsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1238E4067C47CA7EDD28A501 /* WalletsView.swift */; };
+		BD5C3CFF9C2C099E94F67FD1 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 411CE31D7810F32D59BBDB21 /* Models.swift */; };
+		D6FFDE35CA1A7EFF4BB41D2B /* TSTZMApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 796A91B016E60A9852B7B81D /* TSTZMApp.swift */; };
+		E5E0B890A072623FD3396116 /* Widget.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF11CB1436FD6731D6C75C4 /* Widget.swift */; };
+		F55D2AEA54F08B49124CA190 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 411CE31D7810F32D59BBDB21 /* Models.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		1DAFB753E6813C1C39E943D6 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D6B8631B42F3B14F8B92F492 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5279ABABE1B5CAE21939ED95;
+			remoteInfo = TSTZMWidget;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		B80FCC29988774B4E567EA53 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				539480483D9D88B4DF435035 /* TSTZMWidget.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		1238E4067C47CA7EDD28A501 /* WalletsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletsView.swift; sourceTree = "<group>"; };
+		1F8DB1833F2D784C2C5EFAF3 /* Core.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core.swift; sourceTree = "<group>"; };
+		411CE31D7810F32D59BBDB21 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		4B7F096839FC46B047B6C59E /* AlertsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertsView.swift; sourceTree = "<group>"; };
+		5DC50D9B92745A36D1438B59 /* TSTZMWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = TSTZMWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		673CC854C3F5AED8B597D392 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
+		71C2648C8FD1DC4AB56A148F /* FrostView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrostView.swift; sourceTree = "<group>"; };
+		796A91B016E60A9852B7B81D /* TSTZMApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TSTZMApp.swift; sourceTree = "<group>"; };
+		B5157A34444D3CBAA16F1DC8 /* TokenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenView.swift; sourceTree = "<group>"; };
+		BE73CF7AA13A5E168372E867 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		C419FA3298537E0C98468B55 /* TSTZM.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = TSTZM.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CEF11CB1436FD6731D6C75C4 /* Widget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Widget.swift; sourceTree = "<group>"; };
+		ED3DE87E29C3A948998C5EFE /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		28A7E7891C523F699521E682 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				C419FA3298537E0C98468B55 /* TSTZM.app */,
+				5DC50D9B92745A36D1438B59 /* TSTZMWidget.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		2D38B9B197371BC732B4E106 /* Widget */ = {
+			isa = PBXGroup;
+			children = (
+				CEF11CB1436FD6731D6C75C4 /* Widget.swift */,
+			);
+			path = Widget;
+			sourceTree = "<group>";
+		};
+		5582C3074156F1C68C86B6CA /* App */ = {
+			isa = PBXGroup;
+			children = (
+				4B7F096839FC46B047B6C59E /* AlertsView.swift */,
+				ED3DE87E29C3A948998C5EFE /* Assets.xcassets */,
+				673CC854C3F5AED8B597D392 /* Components.swift */,
+				71C2648C8FD1DC4AB56A148F /* FrostView.swift */,
+				BE73CF7AA13A5E168372E867 /* SettingsView.swift */,
+				B5157A34444D3CBAA16F1DC8 /* TokenView.swift */,
+				796A91B016E60A9852B7B81D /* TSTZMApp.swift */,
+				1238E4067C47CA7EDD28A501 /* WalletsView.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		B5168DD457C8C0C8BFCFCC14 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				1F8DB1833F2D784C2C5EFAF3 /* Core.swift */,
+				411CE31D7810F32D59BBDB21 /* Models.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		F9F6AF0BBE442584B2DD77AA = {
+			isa = PBXGroup;
+			children = (
+				5582C3074156F1C68C86B6CA /* App */,
+				B5168DD457C8C0C8BFCFCC14 /* Shared */,
+				2D38B9B197371BC732B4E106 /* Widget */,
+				28A7E7891C523F699521E682 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		5279ABABE1B5CAE21939ED95 /* TSTZMWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 70C7FA1EBCC20CA9CEC6DB2D /* Build configuration list for PBXNativeTarget "TSTZMWidget" */;
+			buildPhases = (
+				75A549FA35FD7EA659CBB10D /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TSTZMWidget;
+			packageProductDependencies = (
+			);
+			productName = TSTZMWidget;
+			productReference = 5DC50D9B92745A36D1438B59 /* TSTZMWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		8F32B111D418620350056C80 /* TSTZM */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 645B9A834321256FD9F338AD /* Build configuration list for PBXNativeTarget "TSTZM" */;
+			buildPhases = (
+				B1B020DFECA502CA224A31A9 /* Sources */,
+				B701A03A37DE9FC0228BC2F1 /* Resources */,
+				B80FCC29988774B4E567EA53 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				4841AAB7D68D5D969A72D9B6 /* PBXTargetDependency */,
+			);
+			name = TSTZM;
+			packageProductDependencies = (
+			);
+			productName = TSTZM;
+			productReference = C419FA3298537E0C98468B55 /* TSTZM.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		D6B8631B42F3B14F8B92F492 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					5279ABABE1B5CAE21939ED95 = {
+						ProvisioningStyle = Automatic;
+					};
+					8F32B111D418620350056C80 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = F158D26AF9A809B148B55227 /* Build configuration list for PBXProject "TSTZM" */;
+			developmentRegion = "zh-Hans";
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				"zh-Hans",
+			);
+			mainGroup = F9F6AF0BBE442584B2DD77AA;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 28A7E7891C523F699521E682 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				8F32B111D418620350056C80 /* TSTZM */,
+				5279ABABE1B5CAE21939ED95 /* TSTZMWidget */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		B701A03A37DE9FC0228BC2F1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				725909C0DDDE5C505819596A /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		75A549FA35FD7EA659CBB10D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				93266E944C65DEF7CE1FF743 /* Core.swift in Sources */,
+				BD5C3CFF9C2C099E94F67FD1 /* Models.swift in Sources */,
+				E5E0B890A072623FD3396116 /* Widget.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B1B020DFECA502CA224A31A9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				487DE13F75AF4CC4BE0DE4C2 /* AlertsView.swift in Sources */,
+				780A7CA3AD6FBBFBA8719AA7 /* Components.swift in Sources */,
+				A4F064E14FD4508649706F31 /* Core.swift in Sources */,
+				A04EB3F1BBC022869D9BC3F9 /* FrostView.swift in Sources */,
+				F55D2AEA54F08B49124CA190 /* Models.swift in Sources */,
+				ACA59C68EDA15C8FDDB89F6C /* SettingsView.swift in Sources */,
+				D6FFDE35CA1A7EFF4BB41D2B /* TSTZMApp.swift in Sources */,
+				57945635B26BB416A23D1C24 /* TokenView.swift in Sources */,
+				B067178EEEF1DB77AE457B5E /* WalletsView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		4841AAB7D68D5D969A72D9B6 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5279ABABE1B5CAE21939ED95 /* TSTZMWidget */;
+			targetProxy = 1DAFB753E6813C1C39E943D6 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		01AACB9C0B4E3BCBAB4A62D8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Config/Widget.entitlements;
+				INFOPLIST_FILE = "Config/Widget-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.Hao-Yi-Miao.TSTZ-M.Widget";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		1F9870EAD53519CF1431C950 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		3509C114C4EF35AB1343BCC7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Config/App.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = "Config/App-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.Hao-Yi-Miao.TSTZ-M";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		4576C1CB176FCB1EC33CFA65 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Config/Widget.entitlements;
+				INFOPLIST_FILE = "Config/Widget-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.Hao-Yi-Miao.TSTZ-M.Widget";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		ADF1D31CC567F2694D2E57F3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Config/App.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = "Config/App-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.Hao-Yi-Miao.TSTZ-M";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		B593AF400655A07E55FC3B53 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		645B9A834321256FD9F338AD /* Build configuration list for PBXNativeTarget "TSTZM" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3509C114C4EF35AB1343BCC7 /* Debug */,
+				ADF1D31CC567F2694D2E57F3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		70C7FA1EBCC20CA9CEC6DB2D /* Build configuration list for PBXNativeTarget "TSTZMWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4576C1CB176FCB1EC33CFA65 /* Debug */,
+				01AACB9C0B4E3BCBAB4A62D8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F158D26AF9A809B148B55227 /* Build configuration list for PBXProject "TSTZM" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B593AF400655A07E55FC3B53 /* Debug */,
+				1F9870EAD53519CF1431C950 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = D6B8631B42F3B14F8B92F492 /* Project object */;
+}
