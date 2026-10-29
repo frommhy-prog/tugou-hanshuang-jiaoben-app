@@ -18,6 +18,7 @@
 		ACA59C68EDA15C8FDDB89F6C /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE73CF7AA13A5E168372E867 /* SettingsView.swift */; };
 		B067178EEEF1DB77AE457B5E /* WalletsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1238E4067C47CA7EDD28A501 /* WalletsView.swift */; };
 		BD5C3CFF9C2C099E94F67FD1 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 411CE31D7810F32D59BBDB21 /* Models.swift */; };
+		C55B501FEB4B3D7C85026BD5 /* WosRedeem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B100768069027F9D63BD539 /* WosRedeem.swift */; };
 		D6FFDE35CA1A7EFF4BB41D2B /* TSTZMApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 796A91B016E60A9852B7B81D /* TSTZMApp.swift */; };
 		E5E0B890A072623FD3396116 /* Widget.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF11CB1436FD6731D6C75C4 /* Widget.swift */; };
 		F55D2AEA54F08B49124CA190 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 411CE31D7810F32D59BBDB21 /* Models.swift */; };
@@ -49,6 +50,7 @@
 
 /* Begin PBXFileReference section */
 		1238E4067C47CA7EDD28A501 /* WalletsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletsView.swift; sourceTree = "<group>"; };
+		1B100768069027F9D63BD539 /* WosRedeem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WosRedeem.swift; sourceTree = "<group>"; };
 		1F8DB1833F2D784C2C5EFAF3 /* Core.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core.swift; sourceTree = "<group>"; };
 		411CE31D7810F32D59BBDB21 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		4B7F096839FC46B047B6C59E /* AlertsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertsView.swift; sourceTree = "<group>"; };
@@ -92,6 +94,7 @@
 				B5157A34444D3CBAA16F1DC8 /* TokenView.swift */,
 				796A91B016E60A9852B7B81D /* TSTZMApp.swift */,
 				1238E4067C47CA7EDD28A501 /* WalletsView.swift */,
+				1B100768069027F9D63BD539 /* WosRedeem.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -227,6 +230,7 @@
 				D6FFDE35CA1A7EFF4BB41D2B /* TSTZMApp.swift in Sources */,
 				57945635B26BB416A23D1C24 /* TokenView.swift in Sources */,
 				B067178EEEF1DB77AE457B5E /* WalletsView.swift in Sources */,
+				C55B501FEB4B3D7C85026BD5 /* WosRedeem.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
