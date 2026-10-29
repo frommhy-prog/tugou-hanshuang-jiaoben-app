@@ -43,33 +43,54 @@ extension Notification.Name {
     static let cfgChanged = Notification.Name("tstzm.cfgChanged")
 }
 
-// tstzm://setup?token=xxxx  一键写入令牌
+// 全局路由：深链可切换标签页，并把兑换码交给寒霜页
+final class AppRouter: ObservableObject {
+    static let shared = AppRouter()
+    @Published var tab = 0
+    @Published var pendingCode: String?
+}
+
+// tstzm://setup?token=xxxx 一键写入令牌；tstzm://frost?code=XXXX 跳到寒霜页并带上兑换码
 enum Deeplink {
     static func handle(_ url: URL) {
-        guard url.scheme == "tstzm", url.host == "setup" else { return }
+        guard url.scheme == "tstzm" else { return }
         let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
-        if let t = items.first(where: { $0.name == "token" })?.value, !t.isEmpty { Cfg.token = t }
-        if let b = items.first(where: { $0.name == "base" })?.value, !b.isEmpty { Cfg.base = b }
-        NotificationCenter.default.post(name: .cfgChanged, object: nil)
+        if url.host == "setup" {
+            if let t = items.first(where: { $0.name == "token" })?.value, !t.isEmpty { Cfg.token = t }
+            if let b = items.first(where: { $0.name == "base" })?.value, !b.isEmpty { Cfg.base = b }
+            NotificationCenter.default.post(name: .cfgChanged, object: nil)
+        } else if url.host == "frost" {
+            let code = items.first(where: { $0.name == "code" })?.value
+            DispatchQueue.main.async {
+                AppRouter.shared.tab = 2
+                AppRouter.shared.pendingCode = code
+            }
+        }
     }
 }
 
 struct RootView: View {
     @AppStorage("currency", store: Cfg.defaults) private var currency = "USD"
+    @ObservedObject private var router = AppRouter.shared
     @State private var needSetup = Cfg.token.isEmpty
 
     var body: some View {
-        TabView {
+        TabView(selection: $router.tab) {
             TokenView()
                 .tabItem { Label("体检", systemImage: "waveform.path.ecg") }
+                .tag(0)
             WalletsView()
                 .tabItem { Label("钱包", systemImage: "wallet.pass") }
+                .tag(1)
             FrostView()
                 .tabItem { Label("寒霜", systemImage: "snowflake") }
+                .tag(2)
             AlertsView()
                 .tabItem { Label("提醒", systemImage: "bell.badge") }
+                .tag(3)
             SettingsView()
                 .tabItem { Label("设置", systemImage: "gearshape") }
+                .tag(4)
         }
         .id(currency)
         .sheet(isPresented: $needSetup) { ConnectView(onDone: { needSetup = false }) }
