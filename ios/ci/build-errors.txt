@@ -1,1 +1,0 @@
-/Users/runner/work/tugou-hanshuang-jiaoben-app/tugou-hanshuang-jiaoben-app/ios/App/Engine.swift:352:20: error: redundant conformance of 'Finding' to protocol 'Encodable'
