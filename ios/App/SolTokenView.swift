@@ -214,7 +214,7 @@ struct SolTokenView: View {
                 }
                 HStack(spacing: 10) {
                     StatTile(title: "24h 成交", value: Money.format(t.market?.vol24))
-                    StatTile(title: "24h 买/卖笔数", value: (t.market?.b24).map { "\($0)" } ?? "?" + " / " + ((t.market?.s24).map { "\($0)" } ?? "?"))
+                    StatTile(title: "24h 买 / 卖笔数", value: Fmt2.buySell(t.market?.b24, t.market?.s24))
                 }
                 if let c = t.market?.createdAt {
                     Text("最深池子创建于 " + Fmt2.time(c / 1000)).font(.caption).foregroundStyle(.secondary)
@@ -369,9 +369,10 @@ struct HolderDetail: View {
                 }
             }
             if let s = r.stats, (s.tradeN ?? 0) > 0 {
-                Text("整体风格（窗口 \(s.swapTx ?? 0) 笔 swap，\(s.tokensTraded ?? 0) 个币）：已兑现 " + (s.realizedN ?? 0 > 0 ? Fmt2.sol(s.realizedSol) : "样本不足") + "，胜率 " + (s.winRate.map { String(format: "%.0f%%", $0 * 100) } ?? "样本不足")).font(.caption)
-            } else if let s = r.stats, (s.swapTx ?? 0) > 0 {
-                Text("读到 \(s.swapTx ?? 0) 笔涉及该地址的 swap，但按链上余额变化无法归属为它自己的买卖（可能是做市商/路由/中转账户）").font(.caption2).foregroundStyle(.secondary)
+                Text("整体风格（窗口 \(s.swapTx ?? 0) 笔 swap，\(s.tokensTraded ?? 0) 个币）：已兑现 " + ((s.realizedN ?? 0) > 0 ? Fmt2.sol(s.realizedSol) : "样本不足") + "，胜率 " + (s.winRate.map { String(format: "%.0f%%", $0 * 100) } ?? "样本不足")).font(.caption)
+            }
+            ForEach(r.notes ?? [], id: \.self) { n in
+                if n.hasPrefix("读到") || n.hasPrefix("只分析") { Text(n).font(.caption2).foregroundStyle(.secondary) }
             }
             ForEach(r.tags ?? []) { t in TagRow(t: t) }
             ForEach(Array((r.tradesThis ?? []).prefix(5).enumerated()), id: \.offset) { _, tr in
