@@ -76,8 +76,8 @@ struct RootView: View {
 
     var body: some View {
         TabView(selection: $router.tab) {
-            TokenView()
-                .tabItem { Label("体检", systemImage: "waveform.path.ecg") }
+            AnalyzeRoot()
+                .tabItem { Label("代币", systemImage: "waveform.path.ecg") }
                 .tag(0)
             WalletsView()
                 .tabItem { Label("钱包", systemImage: "wallet.pass") }
