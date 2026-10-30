@@ -349,8 +349,6 @@ struct PoolFact: Encodable {
     var findings: [Finding]?
 }
 
-extension Finding: Encodable {}
-
 // MARK: - 格式化与链接
 enum Fmt2 {
     static func time(_ ts: Double?) -> String {
@@ -379,6 +377,11 @@ enum Fmt2 {
         if a >= 1_000_000 { return String(format: "%.2fM", v / 1_000_000) }
         if a >= 1_000 { return String(format: "%.1fK", v / 1_000) }
         return String(format: "%.2f", v)
+    }
+    static func buySell(_ b: Int?, _ s: Int?) -> String {
+        let bs = b.map { "\($0)" } ?? "未知"
+        let ss = s.map { "\($0)" } ?? "未知"
+        return bs + " / " + ss
     }
 }
 
@@ -421,9 +424,9 @@ struct StatsGrid: View {
         LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
             StatTile(title: "分析窗口", value: (s.swapTx.map { "\($0) 笔 swap" } ?? "未知") + (s.spanDays.map { String(format: " / %.1f 天", $0) } ?? ""))
             StatTile(title: "涉及代币", value: s.tokensTraded.map { "\($0) 个" } ?? "未知")
-            StatTile(title: "已兑现盈亏", value: s.realizedN ?? 0 > 0 ? Fmt2.sol(s.realizedSol) : "样本不足", tint: (s.realizedSol ?? 0) >= 0 ? Color.green : Color.red)
+            StatTile(title: "已兑现盈亏", value: (s.realizedN ?? 0) > 0 ? Fmt2.sol(s.realizedSol) : "样本不足", tint: (s.realizedSol ?? 0) >= 0 ? Color.green : Color.red)
             StatTile(title: "胜率", value: s.winRate.map { String(format: "%.0f%%（%d/%d）", $0 * 100, s.winN ?? 0, s.realizedN ?? 0) } ?? "样本不足")
-            StatTile(title: "持仓时间中位数", value: s.closedN ?? 0 > 0 ? Fmt2.dur(s.medHoldSec) : "样本不足")
+            StatTile(title: "持仓时间中位数", value: (s.closedN ?? 0) > 0 ? Fmt2.dur(s.medHoldSec) : "样本不足")
             StatTile(title: "单笔买入中位数", value: s.medBuySol.map { String(format: "%.3f SOL", $0) } ?? "未知")
         }
     }
