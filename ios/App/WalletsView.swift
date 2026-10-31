@@ -318,6 +318,7 @@ struct WalletDetailView: View {
     let wallet: Wallet
     let result: WalletResult?
     @StateObject private var vm = WalletDetailVM()
+    @StateObject private var evm = EvmDetailVM() // 新增：EVM 钱包交易记录与分析
     @State private var seg = 0
 
     private var isSol: Bool { Addr.isSolana(wallet.address) && !Addr.isEVM(wallet.address) }
@@ -397,6 +398,13 @@ struct WalletDetailView: View {
 
     // MARK: 交易记录
     private var tradesSection: some View {
+        Group {
+            if isSol { solTradesSection }
+            else { EvmTradesBody(wallet: wallet, vm: evm) } // 新增：EVM 逐笔交易记录
+        }
+    }
+
+    private var solTradesSection: some View {
         Card {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
@@ -404,9 +412,7 @@ struct WalletDetailView: View {
                     Spacer()
                     if vm.loading { ProgressView() }
                 }
-                if !isSol {
-                    Text("EVM 钱包的逐笔交易记录暂未接入；持仓与总值可正常查看。Solana 钱包已支持。").font(.footnote).foregroundStyle(.secondary)
-                } else if let e = vm.error {
+                if let e = vm.error {
                     Text(e).font(.footnote).foregroundStyle(Color.orange)
                     Button("重试") { Task { await vm.load(wallet.address) } }.font(.footnote.weight(.semibold))
                 } else if let w = vm.w {
@@ -447,7 +453,7 @@ struct WalletDetailView: View {
     private var analysisSection: some View {
         Group {
             if !isSol {
-                Card { Text("EVM 钱包的交易记录分析暂未接入；Solana 钱包已支持。").font(.footnote).foregroundStyle(.secondary) }
+                EvmAnalysisBody(wallet: wallet, vm: evm) // 新增：EVM 钱包分析
             } else if let w = vm.w {
                 VStack(spacing: 14) {
                     if let s = w.stats {
