@@ -251,8 +251,17 @@ struct TokenView: View {
         riskCard(t)
         flowCard(t)
         holdersChart(t)
+        evmHolders(t) // 新增：EVM 链上持有人榜单（Alchemy 转账还原）
         deepCard
         linksCard(t)
+    }
+
+    // 新增：仅 EVM 且引擎支持的链显示
+    @ViewBuilder
+    private func evmHolders(_ t: TokenResponse) -> some View {
+        if vm.chain != .solana && EvmDetailVM.supported.contains(vm.chain.rawValue), let a = t.address, Addr.isEVM(a) {
+            EvmHoldersCard(chain: vm.chain, address: a)
+        }
     }
 
     private func header(_ t: TokenResponse) -> some View {
