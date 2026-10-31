@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		3DFBB4807F647FA43FCBE011 /* SolTokenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21D1990718F8B7A8B8202812 /* SolTokenView.swift */; };
 		487DE13F75AF4CC4BE0DE4C2 /* AlertsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B7F096839FC46B047B6C59E /* AlertsView.swift */; };
+		52F72A582A1A930236831A71 /* EvmWallet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DEF8DDF4366EB760D952288 /* EvmWallet.swift */; };
 		539480483D9D88B4DF435035 /* TSTZMWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5DC50D9B92745A36D1438B59 /* TSTZMWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		57945635B26BB416A23D1C24 /* TokenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5157A34444D3CBAA16F1DC8 /* TokenView.swift */; };
 		725909C0DDDE5C505819596A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = ED3DE87E29C3A948998C5EFE /* Assets.xcassets */; };
@@ -61,6 +62,7 @@
 		673CC854C3F5AED8B597D392 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 		71C2648C8FD1DC4AB56A148F /* FrostView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrostView.swift; sourceTree = "<group>"; };
 		796A91B016E60A9852B7B81D /* TSTZMApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TSTZMApp.swift; sourceTree = "<group>"; };
+		7DEF8DDF4366EB760D952288 /* EvmWallet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EvmWallet.swift; sourceTree = "<group>"; };
 		B5157A34444D3CBAA16F1DC8 /* TokenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenView.swift; sourceTree = "<group>"; };
 		BE73CF7AA13A5E168372E867 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		C3E715496EC8426F387DE67C /* Engine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Engine.swift; sourceTree = "<group>"; };
@@ -94,6 +96,7 @@
 				ED3DE87E29C3A948998C5EFE /* Assets.xcassets */,
 				673CC854C3F5AED8B597D392 /* Components.swift */,
 				C3E715496EC8426F387DE67C /* Engine.swift */,
+				7DEF8DDF4366EB760D952288 /* EvmWallet.swift */,
 				71C2648C8FD1DC4AB56A148F /* FrostView.swift */,
 				BE73CF7AA13A5E168372E867 /* SettingsView.swift */,
 				21D1990718F8B7A8B8202812 /* SolTokenView.swift */,
@@ -231,6 +234,7 @@
 				780A7CA3AD6FBBFBA8719AA7 /* Components.swift in Sources */,
 				A4F064E14FD4508649706F31 /* Core.swift in Sources */,
 				D1EE2C8788EECC8A57067ECC /* Engine.swift in Sources */,
+				52F72A582A1A930236831A71 /* EvmWallet.swift in Sources */,
 				A04EB3F1BBC022869D9BC3F9 /* FrostView.swift in Sources */,
 				F55D2AEA54F08B49124CA190 /* Models.swift in Sources */,
 				ACA59C68EDA15C8FDDB89F6C /* SettingsView.swift in Sources */,
