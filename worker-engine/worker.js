@@ -1,12 +1,15 @@
-// TSTZ-M 引擎 Worker v4：Solana + EVM 钱包/代币/持有人/池子交易分析（全部由链上原始数据现算，每条结论附依据）
+// TSTZ-M 引擎 Worker v5：Solana + EVM 钱包/代币/持有人/池子交易分析（全部由链上原始数据现算，每条结论附依据）+ v2 模块（美元盈亏、交易所只读持仓、AI、MCP）
 import { makeEvm } from './evm.js';
+import { makeV2 } from './v2.js';
 const enc = new TextEncoder();
 const SOL = 'So11111111111111111111111111111111111111112';
 const USDC = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
 const USDT = 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB';
 const QUOTES = new Set([SOL, USDC, USDT]);
 const SYS_PROG = '11111111111111111111111111111111';
-const HOSTS = ['api.helius.xyz', 'mainnet.helius-rpc.com', 'api.groq.com', 'api.dexscreener.com', 'api.geckoterminal.com', 'api.rugcheck.xyz', 'legacy.internal', 'bnb-mainnet.g.alchemy.com', 'eth-mainnet.g.alchemy.com', 'base-mainnet.g.alchemy.com', 'arb-mainnet.g.alchemy.com', 'opt-mainnet.g.alchemy.com', 'polygon-mainnet.g.alchemy.com', 'bsc-rpc.publicnode.com', 'ethereum-rpc.publicnode.com', 'base-rpc.publicnode.com', 'arbitrum-one-rpc.publicnode.com', 'optimism-rpc.publicnode.com', 'polygon-bor-rpc.publicnode.com']; // 新增：Alchemy 与公共 RPC（仅探测台用）
+// 探测台允许的域名（后缀匹配）；仅开发排查用
+const HOST_SUFFIX = ['helius.xyz', 'helius-rpc.com', 'groq.com', 'dexscreener.com', 'geckoterminal.com', 'rugcheck.xyz', 'legacy.internal', 'alchemy.com', 'publicnode.com', 'dexpaprika.com', 'binance.vision', 'binance.com', 'okx.com', 'gateio.ws', 'gopluslabs.io', 'coingecko.com', 'jup.ag', 'pump.fun'];
+const hostOk = (h) => HOST_SUFFIX.some((s) => h === s || h.endsWith('.' + s));
 const GROQ = 'https://api.groq.com/openai/v1';
 const json = (o, s = 200) => new Response(JSON.stringify(o), { status: s, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -193,7 +196,7 @@ function summarize(trades, pos, h, multi, fees) {
   else if (h.txs.length > 0 && trades.length < h.txs.length) notes.push(`${h.txs.length} 笔 swap 中 ${trades.length} 笔能归属为该钱包的买卖，其余是多币路由、纯转账或金额过小的变动`);
   if (S.uncoveredTokens > 0) notes.push(`${S.uncoveredTokens} 个币在窗口内出现过「卖出但找不到对应买入」，这部分不计入盈亏（可能是窗口之前买入、转入或空投）`);
   if (multi > 0) notes.push(`${multi} 笔一次涉及多个币的交易未计入`);
-  if (S.usdQuoteTrades > 0) notes.push(`${S.usdQuoteTrades} 笔以 USDC/USDT 计价的交易未计入 SOL 盈亏统计`);
+  if (S.usdQuoteTrades > 0) notes.push(`${S.usdQuoteTrades} 笔以 USDC/USDT 计价的交易未计入 SOL 盈亏统计（美元计价的盈亏见持有人分析）`);
   notes.push('SOL 金额取自链上余额变化，含网络费、小费、账户租金，是近似值；盈亏按平均成本法计算');
   const sample = S.realizedN >= 8 && (S.spanDays || 0) >= 1 ? '样本可用' : '样本偏少，结论仅供参考';
   return { stats: S, tags, notes, sample };
@@ -298,7 +301,7 @@ async function opToken(env, mint) {
   return { mint, decimals: sup.value.decimals, supply: total, authorities: { mint: minfo.mintAuthority || null, freeze: minfo.freezeAuthority || null }, market: mk, holders, concentration: conc, findings: f, notes: ['持有人来自链上最大 20 个代币账户（RPC 只提供前 20），不是全部持有人', '同一钱包的多个代币账户已合并'], at: now() };
 }
 
-// ---------- AI（Groq）：只能解读已算出的事实 ----------
+// ---------- AI（Groq）：旧入口，保留给旧版 App；新版走 /e/v2/ai ----------
 const AI_SYS = '你是链上数据分析师。你只能使用用户给出的 facts（已由程序从链上原始数据算出）。规则：1）每条结论必须在 basis 里引用 facts 中的具体字段名和数值；2）facts 里没有的内容一律写“未知”，禁止猜测、禁止编造数字和地址；3）样本偏少或窗口不全时必须明说；4）不给买卖建议。输出严格 JSON：{"summary":"一段不超过120字的结论","judgement":"一句话判断（例如：疑似程序化短线、样本不足无法判断）","points":[{"claim":"结论","basis":"依据（引用 facts 字段与数值）"}],"unknown":["facts 无法回答的问题"]}。全部使用简体中文。';
 async function groqModels(env, key, force) {
   const c = await env.DB.prepare("SELECT v FROM kv WHERE k='groq_model2'").first();
@@ -319,7 +322,7 @@ async function opAI(env, body) {
   for (let attempt = 0; attempt < 3; attempt++) {
     const model = list[attempt];
     if (!model) break;
-    const payload = { model, temperature: 0.2, max_tokens: 2600, response_format: { type: 'json_object' }, messages: [{ role: 'system', content: AI_SYS }, { role: 'user', content: '类型=' + (body.kind || '') + '\nfacts=' + JSON.stringify(body.facts).slice(0, 8000) }] }; // facts 截断 14000→8000（Groq 每分钟令牌上限 8000）
+    const payload = { model, temperature: 0.2, max_tokens: 2600, response_format: { type: 'json_object' }, messages: [{ role: 'system', content: AI_SYS }, { role: 'user', content: '类型=' + (body.kind || '') + '\nfacts=' + JSON.stringify(body.facts).slice(0, 8000) }] };
     if (/gpt-oss/.test(model)) payload.reasoning_effort = 'low';
     const r = await fetch(GROQ + '/chat/completions', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + key }, body: JSON.stringify(payload) });
     const hdr = { status: r.status, model };
@@ -349,7 +352,8 @@ async function cached(env, key, ttl, fresh, fn) {
 }
 const okSol = (s) => /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(s || '');
 const okEvm = (s) => /^0x[0-9a-fA-F]{40}$/.test(s || '');
-const EVMX = makeEvm({ vGet, jget, sleep, now, r4, dur, ledger }); // 新增：EVM 模块
+const EVMX = makeEvm({ vGet, jget, sleep, now, r4, dur, ledger });
+const V2 = makeV2({ vGet, jget, sleep, now, r4, ledger, history, extractTrades, summarize, EVMX, solWallet: opWallet, solToken: opToken, solPool: opPool, cached }); // 新增：v2 模块
 
 export class Job {
   constructor(state, env) { this.state = state; this.env = env; }
@@ -358,12 +362,14 @@ export class Job {
     const fresh = q.get('fresh') === '1';
     try {
       if (p === '/e/ping') return json({ ok: true, at: now() });
+      const v2r = await V2.route(env, p, q, req); // 新增：/e/v2/*、/e/mcp
+      if (v2r !== undefined) return v2r instanceof Response ? v2r : json(v2r);
       if (p === '/e/sol/token') { const m = q.get('mint'); if (!okSol(m)) return json({ error: 'bad_mint' }, 400); return json(await cached(env, 'tok:' + m, 90, fresh, () => opToken(env, m))); }
       if (p === '/e/sol/wallet') { const a = q.get('address'); if (!okSol(a)) return json({ error: 'bad_address' }, 400); const pg = Math.min(8, Math.max(1, Number(q.get('pages')) || 3)); return json(await cached(env, 'w:' + a + ':' + pg, 120, fresh, () => opWallet(env, a, pg))); }
       if (p === '/e/sol/holder') { const m = q.get('mint'), o = q.get('owner'); if (!okSol(m) || !okSol(o)) return json({ error: 'bad_args' }, 400); const pg = Math.min(5, Math.max(1, Number(q.get('pages')) || 3)); return json(await cached(env, 'h:' + m + ':' + o + ':' + pg, 600, fresh, () => opHolder(env, m, o, pg))); }
       if (p === '/e/sol/pool') { const pr = q.get('pair'), m = q.get('mint'); if (!okSol(pr) || !okSol(m)) return json({ error: 'bad_args' }, 400); const pg = Math.min(6, Math.max(1, Number(q.get('pages')) || 3)); return json(await cached(env, 'p:' + pr + ':' + m + ':' + pg, 90, fresh, () => opPool(env, pr, m, pg))); }
       if (p === '/e/ai') { const b = await req.json(); return json(await opAI(env, b)); }
-      // ---- EVM（新增）----
+      // ---- EVM ----
       if (p === '/e/evm/chains') return json({ chains: EVMX.chains, keyPresent: await EVMX.hasKey(env) });
       if (p === '/e/evm/_sim') return json(EVMX.sim());
       if (p.startsWith('/e/evm/')) {
@@ -376,7 +382,7 @@ export class Job {
       }
       return json({ error: 'not_found' }, 404);
     } catch (e) {
-      if (String((e && e.message) || e) === 'no_alchemy_key') return json({ error: 'no_alchemy_key' }); // 新增：未配 Alchemy 密钥时返回 200 + 错误码，App 好提示
+      if (String((e && e.message) || e) === 'no_alchemy_key') return json({ error: 'no_alchemy_key' });
       return json({ error: 'engine', detail: String((e && e.message) || e).slice(0, 300) }, 502);
     }
   }
@@ -387,10 +393,10 @@ const sub = (s, keys) => String(s).replace(/\{\{(\w+)\}\}/g, (_, k) => keys[k] ?
 async function probe(env, m) {
   const keys = {};
   for (const p of ['groq', 'helius']) keys[p] = (await vGet(env, p)) || '';
-  keys.alchemy = (await vGet(env, 'alchemy')) || env.ALCHEMY_API_KEY || ''; // 新增
+  keys.alchemy = (await vGet(env, 'alchemy')) || env.ALCHEMY_API_KEY || '';
   const url = sub(m.url, keys);
   const host = new URL(url).host;
-  if (!HOSTS.includes(host)) return { error: 'host_not_allowed', host };
+  if (!hostOk(host)) return { error: 'host_not_allowed', host };
   const headers = {};
   for (const [k, v] of Object.entries(m.headers || {})) headers[k] = sub(v, keys);
   const init = { method: m.method || 'GET', headers };
@@ -398,17 +404,18 @@ async function probe(env, m) {
   const t0 = Date.now();
   const r = host === 'legacy.internal' ? await env.LEGACY.fetch(url, init) : await fetch(url, init);
   const txt = await r.text();
-  return { status: r.status, ms: Date.now() - t0, len: txt.length, head: txt.slice(m.skip || 0, (m.skip || 0) + (m.max || 3000)).split(keys.alchemy || '\u0000').join('***') }; // 新增：输出里抹掉 Alchemy 密钥
+  return { status: r.status, ms: Date.now() - t0, len: txt.length, head: txt.slice(m.skip || 0, (m.skip || 0) + (m.max || 3000)).split(keys.alchemy || '\u0000').join('***') };
 }
+// 交易所接口需要亚太出口，避免被按地区拒绝
+const jobStub = (env, path, hint) => env.JOB.get(env.JOB.idFromName(crypto.randomUUID()), hint || path.startsWith('/e/v2/cex') ? { locationHint: hint || 'apac' } : undefined);
 
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
-    if (url.pathname === '/health') return json({ ok: true, v: 4 });
+    if (url.pathname === '/health') return json({ ok: true, v: 5 });
     if (!authed(req, env)) return json({ error: 'unauthorized' }, 401);
     if (!url.pathname.startsWith('/e/')) return json({ error: 'not_found' }, 404);
-    const stub = env.JOB.get(env.JOB.idFromName(crypto.randomUUID()));
-    return stub.fetch(req);
+    return jobStub(env, url.pathname).fetch(req);
   },
   async queue(batch, env) {
     for (const msg of batch.messages) {
@@ -416,8 +423,7 @@ export default {
       let out;
       try {
         if (m.op === 'api') {
-          const stub = env.JOB.get(env.JOB.idFromName(crypto.randomUUID()));
-          const r = await stub.fetch('https://job' + m.path, { method: m.method || 'GET', body: m.body ? JSON.stringify(m.body) : undefined });
+          const r = await jobStub(env, m.path, m.hint).fetch('https://job' + m.path, { method: m.method || 'GET', body: m.body ? JSON.stringify(m.body) : undefined });
           const t = await r.text();
           out = { status: r.status, len: t.length, head: t.slice(m.skip || 0, (m.skip || 0) + (m.max || 6000)) };
         } else out = await probe(env, m);
