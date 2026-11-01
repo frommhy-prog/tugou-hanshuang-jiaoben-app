@@ -1,4 +1,4 @@
-// TSTZ-M 引擎 EVM 模块 v1：Alchemy 转账记录 → 按交易哈希配对 swap → 平均成本盈亏。每条结论附依据，查不到写「未知」
+// TSTZ-M 引擎 EVM 模块 v2：Alchemy 转账记录 → 按交易哈希配对 swap → 平均成本盈亏。每条结论附依据，查不到写「未知」
 // 数据源只有 Alchemy（密钥取自加密库 alchemy 或 Secret ALCHEMY_API_KEY）与 Dexscreener（价格/池子）
 export function makeEvm(h) {
   const { vGet, jget, sleep, now, r4, dur, ledger } = h;
@@ -115,41 +115,49 @@ export function makeEvm(h) {
     return { trades, cands, byBlock, multi, inbound };
   }
 
-  // 该链转账接口没有内部转账（如卖出收到的原生币）时：用区块前后余额变化 + 回执手续费反推卖出所得（标记 approx）
-  async function resolveSells(env, chain, W, cands, byBlock) {
-    const trades = []; let unresolved = 0, notSale = 0, shared = 0;
-    const list = [...cands].sort((a, b) => b.g.block - a.g.block);
-    const take = list.slice(0, 60); unresolved += list.length - take.length;
-    for (let i = 0; i < take.length; i += 5) {
-      const part = take.slice(i, i + 5), calls = [];
-      for (const x of part) calls.push(['eth_getTransactionReceipt', [x.g.hash]], ['eth_getBalance', [W, hexBlock(x.g.block - 1)]], ['eth_getBalance', [W, hexBlock(x.g.block)]]);
-      let r;
-      try { r = await batch(env, chain, calls); } catch (_) { unresolved += part.length; continue; }
-      part.forEach((x, k) => {
-        const rc = r[k * 3], b0 = r[k * 3 + 1], b1 = r[k * 3 + 2];
-        if (!rc || rc.err || !rc.v || !b0 || b0.err || !b1 || b1.err) { unresolved++; return; }
-        let gas = 0n;
-        if (rc.v.from && rc.v.from.toLowerCase() === W) gas = BigInt(rc.v.gasUsed || '0x0') * BigInt(rc.v.effectiveGasPrice || '0x0') + BigInt(rc.v.l1Fee || '0x0');
-        const delta = Number(BigInt(b1.v) - BigInt(b0.v) + gas) / 1e18;
-        const others = (byBlock.get(x.g.block) || []).filter((o) => o.hash !== x.g.hash);
-        const otherNet = others.reduce((s, o) => s + o.nat, 0);
-        if (others.length) shared++;
-        const proceeds = delta - x.g.nat - otherNet;
-        if (proceeds > 1e-5) trades.push({ sig: x.g.hash, t: x.g.ts, block: x.g.block, mint: x.m, qty: x.qty, sym: x.g.sym[x.m], side: 'sell', q: 'NATIVE', amt: proceeds, approx: true });
-        else notSale++;
-      });
-      await sleep(900);
+  // 该链转账接口没有内部转账（如卖出收到的原生币）时：用区块前后余额变化反推卖出所得（已含 gas 扣除，标 approx）。
+  // 同一区块里有多笔待判定的卖出时无法拆分，记为未解析，不硬分。
+  async function resolveSells(env, chain, W, cands, byBlock, focus) {
+    const trades = []; let unresolved = 0, notSale = 0, shared = 0, ambiguous = 0;
+    const partial = new Set();
+    const list = [...cands].sort((a, b) => (focus && a.m === focus ? 0 : 1) - (focus && b.m === focus ? 0 : 1) || b.g.block - a.g.block);
+    const take = list.slice(0, 300);
+    for (const x of list.slice(300)) { unresolved++; partial.add(x.m); }
+    const perBlock = new Map();
+    for (const x of take) { if (!perBlock.has(x.g.block)) perBlock.set(x.g.block, []); perBlock.get(x.g.block).push(x); }
+    const need = new Set();
+    for (const [b, arr] of perBlock) if (arr.length === 1) { need.add(b - 1); need.add(b); }
+    const blocks = [...need], bal = new Map();
+    for (let i = 0; i < blocks.length; i += 25) {
+      const part = blocks.slice(i, i + 25);
+      try {
+        const r = await batch(env, chain, part.map((b) => ['eth_getBalance', [W, hexBlock(b)]]));
+        part.forEach((b, k) => { if (r[k] && r[k].v) bal.set(b, BigInt(r[k].v)); });
+      } catch (_) {}
+      await sleep(350);
     }
-    return { trades, unresolved, notSale, shared };
+    for (const [b, arr] of perBlock) {
+      if (arr.length > 1) { for (const x of arr) { ambiguous++; partial.add(x.m); } continue; }
+      const x = arr[0], b0 = bal.get(b - 1), b1 = bal.get(b);
+      if (b0 == null || b1 == null) { unresolved++; partial.add(x.m); continue; }
+      const others = (byBlock.get(b) || []).filter((o) => o.hash !== x.g.hash);
+      const otherNet = others.reduce((s, o) => s + o.nat, 0);
+      if (others.length) shared++;
+      const proceeds = Number(b1 - b0) / 1e18 - x.g.nat - otherNet;
+      if (proceeds > 1e-6) trades.push({ sig: x.g.hash, t: x.g.ts, block: x.g.block, mint: x.m, qty: x.qty, sym: x.g.sym[x.m], side: 'sell', q: 'NATIVE', amt: proceeds, approx: true });
+      else { notSale++; partial.add('xout:' + x.m); }
+    }
+    return { trades, unresolved, notSale, shared, ambiguous, partial };
   }
 
   const med = (a) => { const s = [...a].sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : null; };
   function sumEvm(chain, trades, pos, meta) {
     const c = CH[chain], nat = c.native, all = Object.values(pos);
-    const rs = all.filter((p) => p.sells > 0 && p.sold > p.uncovQty + 1e-12);
+    const okp = all.filter((p) => !p.partial);
+    const rs = okp.filter((p) => p.sells > 0 && p.sold > p.uncovQty + 1e-12);
     const wins = rs.filter((p) => p.realized > 0);
     const sumQ = (q) => rs.filter((p) => p.q === q).reduce((s, p) => s + p.realized, 0);
-    const closed = all.filter((p) => p.sells > 0 && p.firstBuy != null && p.qty <= 0.05 * p.bought);
+    const closed = okp.filter((p) => p.sells > 0 && p.firstBuy != null && p.qty <= 0.05 * p.bought);
     const holds = closed.map((p) => ({ mint: p.mint, s: p.lastSell - p.firstBuy })).filter((x) => x.s >= 0).sort((a, b) => a.s - b.s);
     const medHold = holds.length ? holds[Math.floor(holds.length / 2)].s : null;
     const buyN = trades.filter((t) => t.side === 'buy' && t.q === 'NATIVE').map((t) => t.amt);
@@ -163,7 +171,8 @@ export function makeEvm(h) {
       tokensTraded: new Set(trades.map((t) => t.mint)).size, realizedN: rs.length, winN: wins.length, winRate: rs.length ? r4(wins.length / rs.length) : null,
       realizedNative: r4(sumQ('NATIVE')), realizedUsd: r4(sumQ('USD')), closedN: closed.length, medHoldSec: medHold,
       medBuyNative: r4(med(buyN)), medBuyUsd: r4(med(buyU)), perDay: spanDays ? r4(trades.length / spanDays) : null,
-      uncoveredTokens: all.filter((p) => p.uncovQty > 1e-9).length, nativeQuoteTrades: trades.filter((t) => t.q === 'NATIVE').length, usdQuoteTrades: trades.filter((t) => t.q === 'USD').length,
+      uncoveredTokens: okp.filter((p) => p.uncovQty > 1e-9).length, nativeQuoteTrades: trades.filter((t) => t.q === 'NATIVE').length, usdQuoteTrades: trades.filter((t) => t.q === 'USD').length,
+      partialTokens: all.length - okp.length, unresolvedSells: meta.unresolved + meta.ambiguous,
     };
     const tags = [];
     if (closed.length >= 5 && medHold != null) {
@@ -192,11 +201,13 @@ export function makeEvm(h) {
     const notes = [];
     if (!meta.complete) notes.push(`每个方向只读取了最近 ${meta.pages} 页转账（每页最多 1000 条），窗口约 ${S.spanDays != null ? r4(S.spanDays) + ' 天' : '时间跨度未知'}；更早的历史没有纳入，成本与盈亏只覆盖窗口内`);
     if (meta.hashN > 0 && trades.length === 0) notes.push(`窗口内 ${meta.hashN} 笔交易涉及该地址，但按转账配对无法归属为买卖（可能是纯转账、多币路由或做市），所以没有盈亏统计`);
+    if (S.partialTokens > 0) notes.push(`${S.partialTokens} 个币有「卖出所得无法确认」或「疑似转出」的记录，这些币的盈亏、剩余持仓、胜率都不计入统计（宁可不算，不给假数）`);
     if (S.uncoveredTokens > 0) notes.push(`${S.uncoveredTokens} 个币在窗口内出现过「卖出但找不到对应买入」，这部分不计入盈亏（可能是窗口之前买入、转入或空投）`);
     if (meta.inbound > 0) notes.push(`${meta.inbound} 笔是收到代币但没有对应付款（转入、空投或领取），不计成本`);
     if (meta.multi > 0) notes.push(`${meta.multi} 笔一次涉及多个币或多种计价的交易未计入`);
-    if (S.approxN > 0) notes.push(`${S.approxN} 笔卖出的 ${nat} 所得由区块前后余额变化反推（该链转账接口不含内部转账），已扣除手续费，仍是近似值`);
-    if (meta.unresolved > 0) notes.push(`${meta.unresolved} 笔「卖出代币但没看到收款」的记录无法确认是卖出还是转账（读取余额失败或超出单次上限 60 笔），未计入`);
+    if (S.approxN > 0) notes.push(`${S.approxN} 笔卖出的 ${nat} 所得由区块前后余额变化反推（该链转账接口不含内部转账），已是扣除手续费后的净到账，是近似值`);
+    if (meta.unresolved > 0) notes.push(`${meta.unresolved} 笔「卖出代币但没看到收款」的记录读取余额失败或超出单次上限 300 笔，未计入`);
+    if (meta.ambiguous > 0) notes.push(`${meta.ambiguous} 笔卖出与其他待判定交易在同一区块，所得无法拆分，未计入`);
     if (meta.notSale > 0) notes.push(`${meta.notSale} 笔「转出代币」经余额核对没有收到原生币，判定为转账而非卖出`);
     if (meta.shared > 0) notes.push(`${meta.shared} 笔卖出所在区块还有该钱包的其他交易，反推所得可能有误差`);
     if (S.usdQuoteTrades > 0) notes.push(`${nat} 计价与 USD 计价（稳定币）分开统计，不互相折算；金额不含 gas`);
@@ -205,7 +216,7 @@ export function makeEvm(h) {
     return { stats: S, tags, notes, sample };
   }
 
-  async function core(env, chain, addr, pages) {
+  async function core(env, chain, addr, pages, focus) {
     const c = CH[chain], W = addr.toLowerCase(), st = { internal: true };
     const mk = () => (st.internal ? ['external', 'internal', 'erc20'] : ['external', 'erc20']);
     const so = await scan(env, chain, { fromAddress: W, category: mk(), order: 'desc' }, pages, st);
@@ -215,15 +226,19 @@ export function makeEvm(h) {
     const xs = so.xs.concat(si.xs).filter((x) => cut === 0 || parseInt(x.blockNum, 16) > cut);
     const tss = xs.map((x) => Date.parse((x.metadata && x.metadata.blockTimestamp) || '') / 1000).filter((v) => v > 0);
     const bt = build(chain, W, xs);
-    let rs = { trades: [], unresolved: 0, notSale: 0, shared: 0 }, transferOut = 0;
-    if (!st.internal && bt.cands.length) rs = await resolveSells(env, chain, W, bt.cands, bt.byBlock);
-    else transferOut = bt.cands.length;
+    let rs = { trades: [], unresolved: 0, notSale: 0, shared: 0, ambiguous: 0, partial: new Set() }, transferOut = 0;
+    const partial = new Set(), xout = new Set();
+    if (!st.internal && bt.cands.length) {
+      rs = await resolveSells(env, chain, W, bt.cands, bt.byBlock, focus);
+      for (const k of rs.partial) { if (k.startsWith('xout:')) xout.add(k.slice(5)); else partial.add(k); }
+    } else { transferOut = bt.cands.length; for (const x of bt.cands) xout.add(x.m); }
     const trades = bt.trades.concat(rs.trades).filter((t) => t.t);
     const pos = ledger(trades);
+    for (const p of Object.values(pos)) { if (partial.has(p.mint)) p.partial = true; if (xout.has(p.mint)) p.xout = true; }
     const mints = [...new Set([...trades].sort((a, b) => b.t - a.t).map((t) => t.mint))].slice(0, 60);
     let info = {}, dexErr = null;
     if (mints.length) { try { info = await dexEvm(chain, mints); } catch (e) { dexErr = String((e && e.message) || e).slice(0, 80); } }
-    const meta = { xferN: xs.length, hashN: new Set(xs.map((x) => x.hash)).size, pages: Math.max(so.used, si.used), complete: so.complete && si.complete, from: tss.length ? Math.min(...tss) : null, to: tss.length ? Math.max(...tss) : null, multi: bt.multi, inbound: bt.inbound, unresolved: rs.unresolved, notSale: rs.notSale, shared: rs.shared };
+    const meta = { xferN: xs.length, hashN: new Set(xs.map((x) => x.hash)).size, pages: Math.max(so.used, si.used), complete: so.complete && si.complete, from: tss.length ? Math.min(...tss) : null, to: tss.length ? Math.max(...tss) : null, multi: bt.multi, inbound: bt.inbound, unresolved: rs.unresolved, ambiguous: rs.ambiguous, notSale: rs.notSale, shared: rs.shared };
     const sum = sumEvm(chain, trades, pos, meta);
     if (transferOut > 0) sum.notes.push(`${transferOut} 笔转出代币没有收款，判定为转账（该链转账接口包含内部转账，卖出所得会被记录）`);
     if (dexErr) sum.notes.push('价格源 Dexscreener 暂时不可用，浮动盈亏和币名可能缺失：' + dexErr);
@@ -231,16 +246,17 @@ export function makeEvm(h) {
   }
 
   async function opWallet(env, chain, addr, pages) {
-    const { c, trades, pos, info, sum, internal } = await core(env, chain, addr, pages);
+    const { c, trades, pos, info, sum, internal } = await core(env, chain, addr, pages, null);
     const stb = stSet(chain);
     const positions = Object.values(pos).map((p) => {
       const i = info[p.mint] || {};
+      const remainOk = !p.partial && !p.xout;
       let open = null;
-      if (p.qty > 1e-9) {
+      if (remainOk && p.qty > 1e-9) {
         if (p.q === 'NATIVE' && i.priceNative && i.quote === c.wrapped) open = p.qty * i.priceNative;
         else if (p.q === 'USD' && i.priceUsd && stb.has(i.quote)) open = p.qty * i.priceUsd;
       }
-      return { token: p.mint, sym: i.sym || null, q: p.q, buys: p.buys, sells: p.sells, bought: p.bought, sold: p.sold, boughtAmt: r4(p.boughtAmt), soldAmt: r4(p.soldAmt), realized: r4(p.realized), remainingQty: p.qty > 1e-9 ? p.qty : 0, remainingCost: p.qty > 1e-9 ? r4(p.cost) : 0, unrealized: open != null ? r4(open - p.cost) : null, firstBuy: p.firstBuy, lastSell: p.lastSell, firstTrade: p.firstTrade, lastTrade: p.lastTrade, uncovQty: p.uncovQty > 1e-9 ? p.uncovQty : 0, bestTx: p.bestSig, worstTx: p.worstSig, liqUsd: i.liq || null };
+      return { token: p.mint, sym: i.sym || null, q: p.q, buys: p.buys, sells: p.sells, bought: p.bought, sold: p.sold, boughtAmt: r4(p.boughtAmt), soldAmt: r4(p.soldAmt), realized: p.partial ? null : r4(p.realized), remainingQty: remainOk ? (p.qty > 1e-9 ? p.qty : 0) : null, remainingCost: remainOk ? (p.qty > 1e-9 ? r4(p.cost) : 0) : null, unrealized: open != null ? r4(open - p.cost) : null, partial: !!p.partial, xout: !!p.xout, firstBuy: p.firstBuy, lastSell: p.lastSell, firstTrade: p.firstTrade, lastTrade: p.lastTrade, uncovQty: p.uncovQty > 1e-9 ? p.uncovQty : 0, bestTx: p.bestSig, worstTx: p.worstSig, liqUsd: i.liq || null, priceUsd: i.priceUsd || null };
     }).sort((a, b) => b.lastTrade - a.lastTrade);
     for (const tg of sum.tags) for (const e of tg.ev) e.sym = (info[e.mint] || {}).sym || null;
     const recent = [...trades].sort((a, b) => b.t - a.t).slice(0, 200).map((t) => ({ tx: t.sig, t: t.t, token: t.mint, side: t.side, qty: t.qty, amt: r4(t.amt), q: t.q, approx: t.approx, sym: (info[t.mint] || {}).sym || t.sym || null }));
@@ -248,11 +264,11 @@ export function makeEvm(h) {
   }
 
   async function opHolder(env, chain, token, owner, pages) {
-    const { c, trades, pos, info, sum } = await core(env, chain, owner, pages);
     const T = token.toLowerCase();
-    const mine = Object.values(pos).filter((p) => p.mint === T).map((p) => ({ q: p.q, buys: p.buys, sells: p.sells, bought: p.bought, sold: p.sold, boughtAmt: r4(p.boughtAmt), soldAmt: r4(p.soldAmt), realized: r4(p.realized), remainingQty: p.qty > 1e-9 ? p.qty : 0, remainingCost: p.qty > 1e-9 ? r4(p.cost) : 0, firstBuy: p.firstBuy, lastSell: p.lastSell, uncovQty: p.uncovQty > 1e-9 ? p.uncovQty : 0, avgBuyPrice: p.bought > 0 ? p.boughtAmt / p.bought : null }));
-    const tradesThis = trades.filter((t) => t.mint === T).sort((a, b) => b.t - a.t).slice(0, 40).map((t) => ({ tx: t.sig, t: t.t, token: t.mint, side: t.side, qty: t.qty, amt: r4(t.amt), q: t.q, approx: t.approx, sym: (info[t.mint] || {}).sym || t.sym || null }));
-    const finding = mine.length === 0 ? '窗口内没有这个币的买卖记录：可能是更早买入、转账获得、空投或程序分发，成本无法确认' : null;
+    const { c, trades, pos, info, sum } = await core(env, chain, owner, pages, T);
+    const mine = Object.values(pos).filter((p) => p.mint === T).map((p) => ({ q: p.q, buys: p.buys, sells: p.sells, bought: p.bought, sold: p.sold, boughtAmt: r4(p.boughtAmt), soldAmt: r4(p.soldAmt), realized: p.partial ? null : r4(p.realized), remainingQty: !p.partial && !p.xout ? (p.qty > 1e-9 ? p.qty : 0) : null, remainingCost: !p.partial && !p.xout ? (p.qty > 1e-9 ? r4(p.cost) : 0) : null, partial: !!p.partial, xout: !!p.xout, firstBuy: p.firstBuy, lastSell: p.lastSell, uncovQty: p.uncovQty > 1e-9 ? p.uncovQty : 0, avgBuyPrice: p.bought > 0 ? p.boughtAmt / p.bought : null }));
+    const tradesThis = trades.filter((t) => t.mint === T).sort((a, b) => b.t - a.t).slice(0, 200).map((t) => ({ tx: t.sig, t: t.t, token: t.mint, side: t.side, qty: t.qty, amt: r4(t.amt), q: t.q, approx: t.approx, sym: (info[t.mint] || {}).sym || t.sym || null }));
+    const finding = mine.length === 0 ? '窗口内没有这个币的买卖记录：可能是更早买入、转账获得、空投或程序分发，成本无法确认' : mine[0].partial ? '该币有「卖出所得无法确认」的记录，盈亏不计（宁可不算，不给假数）' : null;
     return { chain, owner, token: T, native: c.native, tokenPositions: mine, tradesThis, finding, ...sum, at: now() };
   }
 
@@ -321,7 +337,7 @@ export function makeEvm(h) {
     ];
     const bt = build('eth', W, xs), pos = ledger(bt.trades);
     const out = Object.values(pos).map((p) => ({ mint: p.mint.slice(0, 6), q: p.q, realized: r4(p.realized), qty: p.qty, buys: p.buys, sells: p.sells }));
-    return { trades: bt.trades.map((t) => ({ h: t.sig, side: t.side, q: t.q, amt: t.amt, qty: t.qty })), cands: bt.cands.map((c2) => c2.g.hash), multi: bt.multi, inbound: bt.inbound, pos: out, expect: 'AAA NATIVE realized=+0.3 (0.8+1.5-1.0=1.3? 见 pos)；BBB 转出为 cand；CCC USD realized=+50' };
+    return { trades: bt.trades.map((t) => ({ h: t.sig, side: t.side, q: t.q, amt: t.amt, qty: t.qty })), cands: bt.cands.map((c2) => c2.g.hash), multi: bt.multi, inbound: bt.inbound, pos: out, expect: 'AAA NATIVE realized=+1.3；BBB 转出为 cand；CCC USD realized=+50' };
   }
 
   return { ok, chains: Object.keys(CH), opWallet, opHolder, opToken, sim, hasKey: async (env) => !!((await vGet(env, 'alchemy')) || env.ALCHEMY_API_KEY) };
