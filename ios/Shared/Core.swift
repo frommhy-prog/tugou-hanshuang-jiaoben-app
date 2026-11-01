@@ -83,6 +83,21 @@ enum Chain: String, CaseIterable, Codable, Identifiable {
         default: return nil
         }
     }
+    // Dexscreener 的链 id
+    var dexId: String {
+        switch self {
+        case .eth: return "ethereum"
+        default: return rawValue
+        }
+    }
+    // GeckoTerminal 的网络 id
+    var geckoId: String {
+        switch self {
+        case .eth: return "eth"
+        case .polygon: return "polygon_pos"
+        default: return rawValue
+        }
+    }
 }
 
 enum Addr {
@@ -258,6 +273,43 @@ enum APIError: LocalizedError {
     }
 }
 
+enum Net {
+    // 在独立任务里发请求：切页、下拉刷新、界面重绘导致上层任务被取消时，请求不会被中途掐断
+    //（否则会出现「网络失败：已取消」）。超时、断网等瞬时错误自动重试，最多 3 次。
+    static func fetch(_ req: URLRequest) async throws -> (Data, URLResponse) {
+        let task = Task.detached(priority: .userInitiated) { () throws -> (Data, URLResponse) in
+            var lastError: Error = URLError(.unknown)
+            for i in 0..<3 {
+                do {
+                    return try await URLSession.shared.data(for: req)
+                } catch let e as URLError {
+                    lastError = e
+                    let transient: [URLError.Code] = [.timedOut, .networkConnectionLost, .notConnectedToInternet, .cannotConnectToHost, .cannotFindHost, .dnsLookupFailed, .secureConnectionFailed, .cancelled]
+                    if !transient.contains(e.code) || i == 2 { throw e }
+                    try? await Task.sleep(nanoseconds: UInt64(700_000_000 * (i + 1)))
+                } catch {
+                    throw error
+                }
+            }
+            throw lastError
+        }
+        return try await task.value
+    }
+
+    static func message(_ e: Error) -> String {
+        if let u = e as? URLError {
+            switch u.code {
+            case .cancelled: return "请求被中断，请重试"
+            case .timedOut: return "请求超时"
+            case .notConnectedToInternet: return "没有网络连接"
+            case .networkConnectionLost: return "网络连接中断"
+            default: return u.localizedDescription
+            }
+        }
+        return e.localizedDescription
+    }
+}
+
 enum API {
     struct Empty: Decodable {}
 
@@ -283,8 +335,8 @@ enum API {
             req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         }
         let result: (Data, URLResponse)
-        do { result = try await URLSession.shared.data(for: req) }
-        catch { throw APIError.network(error.localizedDescription) }
+        do { result = try await Net.fetch(req) }
+        catch { throw APIError.network(Net.message(error)) }
         let data = result.0
         let code = (result.1 as? HTTPURLResponse)?.statusCode ?? 0
         if code == 401 { throw APIError.unauthorized }
