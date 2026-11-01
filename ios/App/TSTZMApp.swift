@@ -8,6 +8,8 @@ struct TSTZMApp: App {
     @AppStorage("theme") private var theme = "system"
     @Environment(\.scenePhase) private var phase
 
+    init() { TZ.apply() } // 启动即应用统一时区
+
     var body: some Scene {
         WindowGroup {
             RootView()
@@ -15,7 +17,7 @@ struct TSTZMApp: App {
                 .onAppear { Theme.apply(theme) }
                 .onChange(of: theme) { _, new in Theme.apply(new) }
                 .onChange(of: phase) { _, new in
-                    if new == .active { Theme.apply(theme) }
+                    if new == .active { Theme.apply(theme); TZ.apply() }
                 }
         }
     }
@@ -76,10 +78,10 @@ struct RootView: View {
 
     var body: some View {
         TabView(selection: $router.tab) {
-            AnalyzeRoot()
+            UnifiedTokenRoot() // 统一代币页：Solana / EVM 合并为一个入口
                 .tabItem { Label("代币", systemImage: "waveform.path.ecg") }
                 .tag(0)
-            WalletsView()
+            WalletsRoot() // 钱包页：链上钱包 / 交易所 / 查询任意地址
                 .tabItem { Label("钱包", systemImage: "wallet.pass") }
                 .tag(1)
             FrostView()
