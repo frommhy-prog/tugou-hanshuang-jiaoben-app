@@ -3,7 +3,7 @@ export function makeV2(h) {
   const { vGet, jget, sleep, now, r4, ledger, history, extractTrades, summarize, EVMX, solWallet, solToken, solPool, cached } = h;
   const enc = new TextEncoder();
   const DEXID = { solana: 'solana', bsc: 'bsc', eth: 'ethereum', base: 'base', arbitrum: 'arbitrum', optimism: 'optimism', polygon: 'polygon' };
-  const NATSYM = { solana: 'SOLUSDT', bsc: 'BNBUSDT', eth: 'ETHUSDT', base: 'ETHUSDT', arbitrum: 'ETHUSDT', optimism: 'ETHUSDT', polygon: 'POLUSDT' };
+  const NATSYM = { solana: 'SOL', bsc: 'BNB', eth: 'ETH', base: 'ETH', arbitrum: 'ETH', optimism: 'ETH', polygon: 'POL' };
   const CHAINS = Object.keys(DEXID);
   const okAddr = (chain, a) => (chain === 'solana' ? /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(a || '') : /^0x[0-9a-fA-F]{40}$/.test(a || ''));
   const bad = (code, detail) => ({ error: code, detail });
@@ -15,18 +15,28 @@ export function makeV2(h) {
   }
   async function cput(env, key, v) { await env.DB.prepare('INSERT OR REPLACE INTO cache (k,v,at) VALUES (?,?,?)').bind(key, JSON.stringify(v), now()).run(); }
 
-  // ---------- 原生币历史价格（Binance 公共行情，小时开盘价线性插值）----------
+  // ---------- 原生币历史价格：Gate 公共 K 线（一次最多 1000 根）为主，欧易公共 K 线回退；小时开盘价线性插值 ----------
   async function series(env, sym, from, to) {
-    const start = Math.floor(from / 3600) * 3600 - 3600, end = to + 3600;
-    const key = 'kl2:' + sym + ':' + Math.floor(start / 3600) + ':' + Math.floor(end / 3600);
+    const start = Math.floor(from / 3600) * 3600 - 3600, end = Math.min(to + 3600, Math.floor(now() / 1000));
+    const key = 'kl3:' + sym + ':' + Math.floor(start / 3600) + ':' + Math.floor(end / 3600);
     const c = await cget(env, key, 1800e3); if (c) return c;
-    const out = []; let cur = start * 1000;
-    for (let i = 0; i < 3 && cur < end * 1000; i++) {
-      const j = await jget('https://data-api.binance.vision/api/v3/klines?symbol=' + sym + '&interval=1h&startTime=' + cur + '&limit=1000', { headers: { accept: 'application/json' } });
-      if (!Array.isArray(j) || !j.length) break;
-      for (const k of j) out.push([Math.floor(k[0] / 1000), Number(k[1])]);
-      cur = j[j.length - 1][0] + 3600000;
-      if (j.length < 1000) break;
+    let out = [];
+    try {
+      const j = await jget('https://api.gateio.ws/api/v4/spot/candlesticks?currency_pair=' + sym + '_USDT&interval=1h&from=' + start + '&to=' + end, { headers: { accept: 'application/json' } });
+      if (Array.isArray(j)) out = j.map((k) => [Number(k[0]), Number(k[5])]).filter((k) => k[0] > 0 && k[1] > 0).sort((a, b) => a[0] - b[0]);
+    } catch (_) { out = []; }
+    if (!out.length) {
+      let after = (end + 3600) * 1000;
+      for (let i = 0; i < 8; i++) {
+        const j = await jget('https://www.okx.com/api/v5/market/history-candles?instId=' + sym + '-USDT&bar=1H&limit=100&after=' + after, { headers: { accept: 'application/json' } });
+        const d = (j && j.data) || [];
+        if (!d.length) break;
+        for (const k of d) out.push([Math.floor(Number(k[0]) / 1000), Number(k[1])]);
+        const oldest = Number(d[d.length - 1][0]);
+        if (oldest / 1000 <= start) break;
+        after = oldest;
+      }
+      out.sort((a, b) => a[0] - b[0]);
     }
     if (out.length) await cput(env, key, out);
     return out;
@@ -64,7 +74,7 @@ export function makeV2(h) {
   // ---------- 持有人分析：成本、盈亏、入场时点、抛压（金额统一折算为美元，口径写明）----------
   async function holder(env, chain, token, owner, pages) {
     const sol = chain === 'solana';
-    let trades = [], stats = null, tags = [], notes = [], sample = null, native = sol ? 'SOL' : null, truncated = false;
+    let trades = [], stats = null, tags = [], notes = [], sample = null, native = sol ? 'SOL' : null, truncated = false, blocked = null;
     if (sol) {
       const hh = await history(env, owner, pages, 'SWAP');
       const ex = extractTrades(hh.txs, owner);
@@ -75,7 +85,9 @@ export function makeV2(h) {
       const r = await EVMX.opHolder(env, chain, token, owner, pages);
       native = r.native;
       trades = (r.tradesThis || []).map((t) => ({ t: t.t, side: t.side, qty: t.qty, amt: t.amt, q: t.q, tx: t.tx, approx: !!t.approx }));
-      truncated = trades.length >= 40;
+      truncated = trades.length >= 200;
+      const tp = (r.tokenPositions || [])[0];
+      if (tp && tp.partial) blocked = '该币有「卖出所得无法确认」的记录（该链转账接口不含内部转账，反推失败或同区块多笔无法拆分），盈亏不计';
       stats = r.stats; tags = r.tags; notes = r.notes; sample = r.sample;
     }
     const mk = await market(env, chain, token);
@@ -83,7 +95,7 @@ export function makeV2(h) {
     const out = { chain, token, owner, native, market: { sym: mk.sym || null, priceUsd: mk.priceUsd || null, liq: mk.liq || null, createdAt: mk.createdAt || null }, stats, tags, notes: [...(notes || [])], sample, truncated, at: now() };
     if (!trades.length) {
       out.position = null;
-      out.insights = [{ level: 'info', text: '窗口内没有这个钱包在该币上的买卖记录', basis: '可能是更早买入、转账获得或空投，成本无法确认；不据此下结论' }];
+      out.insights = [{ level: 'info', text: blocked || '窗口内没有这个钱包在该币上的买卖记录', basis: blocked ? '宁可不算，不给假数' : '可能是更早买入、转账获得或空投，成本无法确认；不据此下结论' }];
       out.trades = [];
       return out;
     }
@@ -92,9 +104,9 @@ export function makeV2(h) {
       try { ser = await series(env, NATSYM[chain], trades[0].t, trades[trades.length - 1].t); } catch (e) { serErr = String((e && e.message) || e).slice(0, 80); }
     }
     const tr = trades.map((t) => ({ ...t, usd: t.q === 'USD' ? t.amt : ser && ser.length ? (priceAt(ser, t.t) || 0) * t.amt || null : null }));
-    const full = tr.every((t) => t.usd != null);
-    out.usdBasis = ser && ser.length ? 'SOL/BNB/ETH 计价的成交按成交时刻的 Binance 小时开盘价线性插值折算为美元（近似）；稳定币计价直接取面值' : null;
-    if (!full) out.notes.push('部分成交无法折算为美元（' + (serErr || '价格源不可用') + '），盈亏未汇总');
+    const full = tr.every((t) => t.usd != null) && !blocked;
+    out.usdBasis = ser && ser.length ? NATSYM[chain] + ' 计价的成交按成交时刻的小时开盘价（Gate/欧易公共 K 线）线性插值折算为美元，是近似值；稳定币计价直接取面值' : null;
+    if (!full && !blocked) out.notes.push('部分成交无法折算为美元（' + (serErr || '价格源不可用') + '），盈亏未汇总');
     out.trades = tr.slice(-40).reverse().map((t) => ({ tx: t.tx, t: t.t, side: t.side, qty: t.qty, amt: r4(t.amt), q: t.q, usd: t.usd != null ? r4(t.usd) : null, approx: t.approx }));
     const insights = [];
     if (full) {
@@ -113,7 +125,7 @@ export function makeV2(h) {
       if (entry) insights.push({ level: delayMin <= 10 && delayMin >= 0 ? 'warn' : 'info', text: '入场：' + entry, basis: '首次买入距池子创建 ' + (delayMin < 0 ? '为负（买入早于最深池子创建）' : delayMin.toFixed(1) + ' 分钟') });
       if (avgBuy != null && price != null && avgBuy > 0) {
         const gain = price / avgBuy - 1;
-        insights.push({ level: gain >= 1 ? 'warn' : gain <= -0.5 ? 'info' : 'info', text: gain >= 0 ? '成本低于现价：平均买入价 ' + usd(avgBuy) + '，现价 ' + usd(price) + '，账面浮盈 ' + pctS(gain) + '，兑现动力强' : '成本高于现价：平均买入价 ' + usd(avgBuy) + '，现价 ' + usd(price) + '，账面浮亏 ' + pctS(gain) + '，倾向持有或止损', basis: '按美元成本的平均成本法；现价取 Dexscreener 最深池子' });
+        insights.push({ level: 'info', text: gain >= 0 ? '成本低于现价：平均买入价 ' + usd(avgBuy) + '，现价 ' + usd(price) + '，账面浮盈 ' + pctS(gain) + '，兑现动力强' : '成本高于现价：平均买入价 ' + usd(avgBuy) + '，现价 ' + usd(price) + '，账面浮亏 ' + pctS(gain) + '，倾向持有或止损', basis: '按美元成本的平均成本法；现价取 Dexscreener 最深池子' });
       }
       if (value != null && qtyHeld > 0 && mk.liq > 0) {
         const imp = value / mk.liq;
@@ -123,9 +135,9 @@ export function makeV2(h) {
       if (pos.uncovQty > 1e-9) insights.push({ level: 'info', text: '有一部分卖出找不到对应买入（窗口之前买入或转入），那部分不计盈亏', basis: '平均成本法只对已记录的买入计成本' });
     } else {
       out.position = null;
-      insights.push({ level: 'info', text: '成交金额无法统一折算为美元，只给出原始成交列表', basis: serErr || '价格源不可用' });
+      insights.push({ level: 'info', text: blocked || '成交金额无法统一折算为美元，只给出原始成交列表', basis: blocked ? '宁可不算，不给假数' : serErr || '价格源不可用' });
     }
-    if (truncated) out.notes.push('该币买卖记录超过 40 笔，只取最近 40 笔，成本可能不完整');
+    if (truncated) out.notes.push('该币买卖记录超过 200 笔，只取最近 200 笔，成本可能不完整');
     out.insights = insights;
     return out;
   }
@@ -175,6 +187,17 @@ export function makeV2(h) {
     } catch (_) {}
     return fin('binance', assets, accounts);
   }
+  // 币安对云服务器出口 IP 常返回 403/451：引擎只负责签名（密钥不出服务端），由手机直接发请求
+  async function binanceSign(env) {
+    const key = await vGet(env, 'binance_key'), sec = await vGet(env, 'binance_secret');
+    if (!key || !sec) return bad('no_key', '未绑定币安 API 密钥');
+    const q = 'timestamp=' + Date.now() + '&recvWindow=60000';
+    const sig = await hmac('SHA-256', sec, q);
+    return { ex: 'binance', requests: [
+      { id: 'spot', method: 'GET', url: 'https://api.binance.com/api/v3/account?' + q + '&signature=' + sig, headers: { 'X-MBX-APIKEY': key } },
+      { id: 'funding', method: 'POST', url: 'https://api.binance.com/sapi/v1/asset/get-funding-asset?' + q + '&signature=' + sig, headers: { 'X-MBX-APIKEY': key } },
+    ], note: '签名 60 秒内有效，只含只读查询' };
+  }
   async function okx(env) {
     const key = await vGet(env, 'okx_key'), sec = await vGet(env, 'okx_secret'), pass = await vGet(env, 'okx_pass');
     if (!key || !sec || !pass) return bad('no_key', '未绑定欧易 API 密钥/密码');
@@ -219,8 +242,8 @@ export function makeV2(h) {
     try { return await fn(env); } catch (e) {
       const m = String((e && e.message) || e);
       const d = (e && e.detail) || '';
-      const hint = m === 'http_451' ? '交易所拒绝了引擎所在地区（451），需换出口地区' : m === 'http_401' || m === 'http_403' ? '密钥无效、权限不足，或交易所限制了 IP 白名单（引擎出口 IP 不固定，请不要开 IP 白名单）' : '';
-      return bad(m, (hint ? hint + '；' : '') + d.slice(0, 160));
+      const hint = m === 'http_451' || (m === 'http_403' && name === 'binance') ? '币安拒绝了引擎所在云服务器的出口 IP（403/451），App 会改由手机直连' : m === 'http_401' || m === 'http_403' ? '密钥无效、权限不足，或交易所限制了 IP 白名单（引擎出口 IP 不固定，请不要开 IP 白名单）' : '';
+      return bad(m, (hint ? hint + '；' : '') + d.replace(/<[^>]+>/g, ' ').slice(0, 120));
     }
   }
 
@@ -276,7 +299,7 @@ export function makeV2(h) {
     { name: 'wallet_analysis', description: '钱包交易记录分析：逐笔买卖、平均成本盈亏、胜率、持仓时间、交易风格（Solana 与 EVM）', inputSchema: { type: 'object', properties: { chain: { type: 'string', enum: CHAINS }, address: { type: 'string' }, pages: { type: 'number' } }, required: ['chain', 'address'] } },
     { name: 'token_holders', description: '代币持有人榜单与集中度（Solana 读链上最大 20 个账户；EVM 由转账记录还原）', inputSchema: { type: 'object', properties: { chain: { type: 'string', enum: CHAINS }, address: { type: 'string' } }, required: ['chain', 'address'] } },
     { name: 'holder_analysis', description: '某持有人在某代币上的成本、盈亏（美元）、入场时点、抛压与风格', inputSchema: { type: 'object', properties: { chain: { type: 'string', enum: CHAINS }, token: { type: 'string' }, owner: { type: 'string' } }, required: ['chain', 'token', 'owner'] } },
-    { name: 'cex_balances', description: '交易所只读持仓（binance / okx / gate），使用 App 内绑定的 API 密钥', inputSchema: { type: 'object', properties: { exchange: { type: 'string', enum: ['binance', 'okx', 'gate'] } }, required: ['exchange'] } },
+    { name: 'cex_balances', description: '交易所只读持仓（okx / gate；币安由手机直连），使用 App 内绑定的 API 密钥', inputSchema: { type: 'object', properties: { exchange: { type: 'string', enum: ['binance', 'okx', 'gate'] } }, required: ['exchange'] } },
   ];
   async function callTool(env, name, a) {
     const chain = a.chain || 'solana';
@@ -323,12 +346,20 @@ export function makeV2(h) {
       return cached(env, 'h2:' + chain + ':' + t.toLowerCase() + ':' + o.toLowerCase() + ':' + pg, 600, fresh, () => holder(env, chain, t, o, pg));
     }
     if (p === '/e/v2/cex') return cex(env, q.get('ex'));
+    if (p === '/e/v2/cexsign') return q.get('ex') === 'binance' ? binanceSign(env) : bad('bad_exchange');
     if (p === '/e/v2/ai') return ai(env, await req.json());
     if (p === '/e/v2/px') {
       const chain = q.get('chain'), from = Number(q.get('from')), to = Number(q.get('to'));
       if (!NATSYM[chain] || !(from > 0) || !(to >= from)) return bad('bad_args');
       const s = await series(env, NATSYM[chain], from, to);
       return { sym: NATSYM[chain], n: s.length, first: s[0] || null, last: s[s.length - 1] || null, at_from: priceAt(s, from), at_to: priceAt(s, to) };
+    }
+    if (p === '/e/v2/_get') { // 开发诊断：从引擎所在机房请求公共接口
+      const u = q.get('u') || '';
+      if (!/^https:\/\/(api\.binance\.com|api1\.binance\.com|api-gcp\.binance\.com|data-api\.binance\.vision|www\.okx\.com|api\.gateio\.ws|api\.dexscreener\.com|api\.geckoterminal\.com|api\.dexpaprika\.com|api\.rugcheck\.xyz|api\.gopluslabs\.io)\//.test(u)) return bad('host_not_allowed');
+      const r = await fetch(u, { headers: { accept: 'application/json' } });
+      const t = await r.text();
+      return { status: r.status, cf: r.headers.get('cf-ray'), len: t.length, head: t.slice(0, 1500) };
     }
     return bad('not_found');
   }
