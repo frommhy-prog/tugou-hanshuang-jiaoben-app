@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>联系开发者</title>
+<style>
+:root{color-scheme:light dark}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;margin:0;padding:24px;background:#f4f5f7;color:#111}
+@media (prefers-color-scheme:dark){body{background:#0e0f12;color:#eee}.card{background:#1a1c21!important}}
+.card{max-width:460px;margin:0 auto;background:#fff;border-radius:16px;padding:22px;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+h1{font-size:18px;margin:0 0 6px}
+p{margin:0 0 14px;color:#888;font-size:13px}
+a.btn{display:flex;align-items:center;justify-content:space-between;text-decoration:none;color:inherit;border:1px solid rgba(128,128,128,.35);border-radius:12px;padding:12px 14px;margin:10px 0;font-size:15px}
+a.btn small{color:#2f6fed;font-weight:600}
+.qr{text-align:center;margin:14px 0}
+.qr img{width:200px;height:200px;border-radius:8px;background:#fff;padding:6px}
+.qr div{font-size:12px;color:#888;margin-top:4px}
+.foot{font-size:11px;color:#999;margin-top:16px;text-align:center}
+</style>
+</head>
+<body>
+<div class="card" id="app"><h1>联系开发者</h1><p>链接无效或已过期</p></div>
+<script>
+(function(){
+  function dec(s){
+    s=s.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4) s+='=';
+    var bin=atob(s), bytes=new Uint8Array(bin.length);
+    for(var i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+    return new TextDecoder('utf-8').decode(bytes);
+  }
+  function esc(t){return String(t).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function mask(k,v){
+    if(k==='email'&&v.indexOf('@')>0){var p=v.split('@');return p[0].slice(0,1)+'***@'+p[1];}
+    return v.length<=2?'***':v.slice(0,1)+'***'+v.slice(-1);
+  }
+  var names={email:'发邮件',wechat:'微信',telegram:'Telegram 对话',x:'X 私信',discord:'Discord',whatsapp:'WhatsApp',line:'LINE',qq:'QQ',signal:'Signal',link:'打开链接'};
+  function link(e){
+    var v=e.v||'';
+    switch(e.k){
+      case 'email': return 'mailto:'+v;
+      case 'telegram': return 'https://t.me/'+v;
+      case 'x': return 'https://x.com/'+v;
+      case 'whatsapp': return 'https://wa.me/'+v;
+      case 'line': return 'https://line.me/ti/p/~'+v;
+      case 'qq': return 'mqq://im/chat?chat_type=wpa&uin='+v+'&version=1&src_type=web';
+      default: return /^https?:/.test(v)?v:'';
+    }
+  }
+  try{
+    var d=JSON.parse(dec(location.hash.slice(1)));
+    var html='<h1>'+esc(d.h||'联系开发者')+'</h1><p>点击下方按钮直接发起联系</p>';
+    (d.e||[]).forEach(function(e){
+      if(!e.v) return;
+      var tag=e.t?esc(e.t):'';
+      if(e.q && /^https?:/.test(e.q)){
+        html+='<div class="qr"><img alt="二维码" src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=4&data='+encodeURIComponent(e.q)+'"><div>'+esc(names[e.k]||e.k)+'：长按识别或用对应 App 扫一扫'+(tag?' · '+tag:'')+'</div></div>';
+        if(e.k==='telegram'){html+='<a class="btn" href="'+esc(link(e))+'"><span>'+esc(names.telegram)+'</span><small>'+tag+'</small></a>';}
+        return;
+      }
+      var l=link(e);
+      if(!l) return;
+      html+='<a class="btn" href="'+esc(l)+'"><span>'+esc(names[e.k]||e.k)+' · '+esc(mask(e.k,e.v))+'</span><small>'+tag+'</small></a>';
+    });
+    html+='<div class="foot">TSTZ-M · 账号已遮挡显示，点击即可跳转</div>';
+    document.getElementById('app').innerHTML=html;
+  }catch(err){}
+})();
+</script>
+</body>
+</html>
