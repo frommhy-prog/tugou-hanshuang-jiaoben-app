@@ -1,0 +1,2 @@
+/Users/runner/work/tugou-hanshuang-jiaoben-app/tugou-hanshuang-jiaoben-app/ios/App/UnifiedToken.swift:37:48: error: cannot find 'ShareSheet' in scope
+/Users/runner/work/tugou-hanshuang-jiaoben-app/tugou-hanshuang-jiaoben-app/ios/App/UnifiedToken.swift:569:22: error: cannot find 'ShareKit' in scope
