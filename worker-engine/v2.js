@@ -1,4 +1,4 @@
-// TSTZ-M 引擎 v2 模块：持有人分析（USD 折算、入场时点、盈亏、抛压）、交易所持仓（只读）、AI（多模型回退+缓存）、MCP 服务
+// TSTZ-M 引擎 v2 模块：持有人分析（USD 折算、入场时点、盈亏、抛压）、交易所持仓（只读）、AI（多模型回退+缓存）、叙事、MCP 服务
 export function makeV2(h) {
   const { vGet, jget, sleep, now, r4, ledger, history, extractTrades, summarize, EVMX, solWallet, solToken, solPool, cached } = h;
   const enc = new TextEncoder();
@@ -74,7 +74,7 @@ export function makeV2(h) {
   // ---------- 持有人分析：成本、盈亏、入场时点、抛压（金额统一折算为美元，口径写明）----------
   async function holder(env, chain, token, owner, pages) {
     const sol = chain === 'solana';
-    let trades = [], stats = null, tags = [], notes = [], sample = null, native = sol ? 'SOL' : null, truncated = false, blocked = null;
+    let trades = [], stats = null, tags = [], notes = [], sample = null, native = sol ? 'SOL' : null, truncated = false, blocked = null, xoutFlag = false;
     if (sol) {
       const hh = await history(env, owner, pages, 'SWAP');
       const ex = extractTrades(hh.txs, owner);
@@ -88,6 +88,7 @@ export function makeV2(h) {
       truncated = trades.length >= 200;
       const tp = (r.tokenPositions || [])[0];
       if (tp && tp.partial) blocked = '该币有「卖出所得无法确认」的记录（该链转账接口不含内部转账，反推失败或同区块多笔无法拆分），盈亏不计';
+      if (tp && tp.xout) xoutFlag = true;
       stats = r.stats; tags = r.tags; notes = r.notes; sample = r.sample;
     }
     const mk = await market(env, chain, token);
@@ -112,7 +113,7 @@ export function makeV2(h) {
     if (full) {
       const pos = Object.values(ledger(tr.map((t) => ({ sig: t.tx, t: t.t, mint: token, side: t.side, qty: t.qty, amt: t.usd, q: 'USD' }))))[0];
       const price = mk.priceUsd, qtyHeld = pos.qty > 1e-9 ? pos.qty : 0;
-      const value = price != null ? qtyHeld * price : null, unreal = value != null ? value - (qtyHeld > 0 ? pos.cost : 0) : null;
+      const value = price != null && !xoutFlag ? qtyHeld * price : null, unreal = value != null ? value - (qtyHeld > 0 ? pos.cost : 0) : null;
       const spent = pos.boughtAmt, realized = pos.realized;
       const roi = spent > 0 && unreal != null ? (realized + unreal) / spent : null;
       const avgBuy = pos.bought > 0 ? pos.boughtAmt / pos.bought : null, avgSell = pos.sold > 0 ? pos.soldAmt / pos.sold : null;
@@ -120,14 +121,15 @@ export function makeV2(h) {
       const launch = mk.createdAt ? mk.createdAt / 1000 : null;
       const delayMin = launch && pos.firstBuy ? (pos.firstBuy - launch) / 60 : null;
       const entry = delayMin == null ? null : delayMin < 0 ? '池子创建前就已持有' : delayMin <= 1 ? '狙击（池子创建 1 分钟内买入）' : delayMin <= 10 ? '早期买家（10 分钟内）' : delayMin <= 60 ? '上线首小时买家' : '后来者（上线 1 小时后）';
-      const state = qtyHeld <= 0 ? '已清仓' : soldPct != null && soldPct >= 0.05 ? '已减仓 ' + (soldPct * 100).toFixed(0) + '%' : '持仓中（基本未卖）';
-      out.position = { boughtUsd: r4(spent), soldUsd: r4(pos.soldAmt), realizedUsd: r4(realized), qtyHeld, costHeldUsd: r4(qtyHeld > 0 ? pos.cost : 0), valueNowUsd: value != null ? r4(value) : null, unrealizedUsd: unreal != null ? r4(unreal) : null, roi: roi != null ? r4(roi) : null, avgBuyUsd: avgBuy, avgSellUsd: avgSell, priceNowUsd: price, soldPct: soldPct != null ? r4(soldPct) : null, firstBuy: pos.firstBuy, lastSell: pos.lastSell, buys: pos.buys, sells: pos.sells, delayMin: delayMin != null ? r4(delayMin) : null, entry, state, uncovQty: pos.uncovQty > 1e-9 ? pos.uncovQty : 0 };
+      const state = xoutFlag ? '持仓状态不确定（有转出记录）' : qtyHeld <= 0 ? '已清仓' : soldPct != null && soldPct >= 0.05 ? '已减仓 ' + (soldPct * 100).toFixed(0) + '%' : '持仓中（基本未卖）';
+      out.position = { boughtUsd: r4(spent), soldUsd: r4(pos.soldAmt), realizedUsd: r4(realized), qtyHeld: xoutFlag ? null : qtyHeld, costHeldUsd: xoutFlag ? null : r4(qtyHeld > 0 ? pos.cost : 0), valueNowUsd: value != null ? r4(value) : null, unrealizedUsd: unreal != null ? r4(unreal) : null, roi: roi != null ? r4(roi) : null, avgBuyUsd: avgBuy, avgSellUsd: avgSell, priceNowUsd: price, soldPct: soldPct != null ? r4(soldPct) : null, firstBuy: pos.firstBuy, lastSell: pos.lastSell, buys: pos.buys, sells: pos.sells, delayMin: delayMin != null ? r4(delayMin) : null, entry, state, uncovQty: pos.uncovQty > 1e-9 ? pos.uncovQty : 0 };
       if (entry) insights.push({ level: delayMin <= 10 && delayMin >= 0 ? 'warn' : 'info', text: '入场：' + entry, basis: '首次买入距池子创建 ' + (delayMin < 0 ? '为负（买入早于最深池子创建）' : delayMin.toFixed(1) + ' 分钟') });
       if (avgBuy != null && price != null && avgBuy > 0) {
         const gain = price / avgBuy - 1;
         insights.push({ level: 'info', text: gain >= 0 ? '成本低于现价：平均买入价 ' + usd(avgBuy) + '，现价 ' + usd(price) + '，账面浮盈 ' + pctS(gain) + '，兑现动力强' : '成本高于现价：平均买入价 ' + usd(avgBuy) + '，现价 ' + usd(price) + '，账面浮亏 ' + pctS(gain) + '，倾向持有或止损', basis: '按美元成本的平均成本法；现价取 Dexscreener 最深池子' });
       }
-      if (value != null && qtyHeld > 0 && mk.liq > 0) {
+      if (xoutFlag) insights.push({ level: 'info', text: '该钱包对这个币有「转出」记录（转给别的地址，不是卖出），剩余持仓与浮动盈亏无法确认，不计入', basis: '转账接口只能看到转出，看不到去向' });
+      else if (value != null && qtyHeld > 0 && mk.liq > 0) {
         const imp = value / mk.liq;
         insights.push({ level: imp >= 0.2 ? 'risk' : imp >= 0.05 ? 'warn' : 'ok', text: '抛压：持仓价值 ' + usd(value) + '，相当于最深池子流动性（' + usd(mk.liq) + '）的 ' + (imp * 100).toFixed(1) + '%', basis: '持仓数量 × 现价 ÷ 池子流动性；全部卖出的价格冲击会比这更大' });
       }
@@ -247,8 +249,9 @@ export function makeV2(h) {
     }
   }
 
-  // ---------- AI：多模型回退 + 结果缓存；输出「判断」而不是复述 ----------
+  // ---------- LLM（Groq）：多模型回退 + 结果缓存 ----------
   const AI_SYS = '你是为链上交易员服务的分析师。输入 facts 是程序已从链上算出的结果（持有人成本/盈亏/入场时点、集中度、池子与成交流向、风险项等）。任务是给出看完数据后的判断，而不是复述数据。规则：1）headline：一句话结论（不超过30字）；stance：只能是「偏风险」「中性」「偏积极」「数据不足」之一，这只是风险评估，不是买卖建议；2）points 3 到 6 条，每条含 claim（推断出的含义，例如“多个大户在同一时段买入，疑似同一团队控盘”，禁止只复述数字）、why（为什么这样判断，写清因果）、evidence（自然语言引用具体数字，例如“前 10 大钱包合计持有 28.4%，其中 5 个在上线 3 分钟内买入”；严禁出现字段名、下标、JSON 路径）；3）risks：最该警惕的 1 到 3 点；watch：接下来该盯的 2 到 4 个可验证信号；4）unknown：facts 缺失、无法判断的事；5）只能使用 facts 里的数字，没有的写进 unknown，禁止编造数字、地址、事件；样本少或窗口不全必须明说。只输出 JSON：{"headline":"","stance":"","points":[{"claim":"","why":"","evidence":""}],"risks":[""],"watch":[""],"unknown":[""]}。全部使用简体中文。';
+  const NARR_SYS = '你是加密叙事研究员。输入是某代币的名称、符号、简介、社交链接、分类（来自公开资料，可能为空）。任务：1）narrative：用一句话说明这个代币在讲什么故事、蹭什么热点，只能依据输入文字推断；输入太少无法判断就写“信息不足”；2）themes：1 到 3 个主题标签（例如 AI Agent、名人 meme、动物 meme、政治事件、游戏、RWA、平台币衍生）；3）keywords：2 到 4 个用于搜索同类代币的词，必须取自名称/简介里真实出现的词，不要编造；4）evidence：每条引用输入里的原文片段来支持上面的判断；5）risks：叙事层面的风险（例如只是蹭热点、没有产品、简介空洞、与他人品牌雷同）；6）unknown：输入里没有、无法判断的事；7）confidence：「低」「中」「高」，输入越少越低。严禁编造团队、合作、事件、数据。只输出 JSON：{"narrative":"","themes":[""],"keywords":[""],"evidence":[""],"risks":[""],"unknown":[""],"confidence":""}。全部使用简体中文。';
   const MODEL_PREF = ['openai/gpt-oss-120b', 'llama-3.3-70b-versatile', 'openai/gpt-oss-20b', 'llama-3.1-8b-instant'];
   async function aiModels(env, key) {
     const c = await env.DB.prepare("SELECT v FROM kv WHERE k='groq_model3'").first();
@@ -262,17 +265,15 @@ export function makeV2(h) {
     return list;
   }
   async function sha(s) { return hex(await crypto.subtle.digest('SHA-256', enc.encode(s))).slice(0, 32); }
-  async function ai(env, body) {
+  async function llm(env, o) {
     const key = await vGet(env, 'groq');
     if (!key) return { error: 'no_groq_key' };
-    const facts = JSON.stringify(body.facts || {}).slice(0, 6500);
-    const ck = 'ai3:' + (await sha((body.kind || '') + facts));
-    if (!body.fresh) { const c = await cget(env, ck, 15 * 60e3); if (c) return { ...c, cached: true }; }
+    if (!o.fresh) { const c = await cget(env, o.ck, 15 * 60e3); if (c) return { ...c, cached: true }; }
     const models = await aiModels(env, key);
     let last = { error: 'groq_unavailable' };
     for (let i = 0; i < models.length; i++) {
       const model = models[i];
-      const payload = { model, temperature: 0.3, max_tokens: 1700, response_format: { type: 'json_object' }, messages: [{ role: 'system', content: AI_SYS }, { role: 'user', content: '类型：' + (body.kind || '') + '\nfacts：' + facts }] };
+      const payload = { model, temperature: 0.3, max_tokens: o.maxTokens, response_format: { type: 'json_object' }, messages: [{ role: 'system', content: o.sys }, { role: 'user', content: o.user }] };
       if (/gpt-oss/.test(model)) payload.reasoning_effort = 'low';
       let r;
       try { r = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + key }, body: JSON.stringify(payload) }); } catch (e) { last = { error: 'groq_network', detail: String((e && e.message) || e).slice(0, 80) }; continue; }
@@ -285,13 +286,22 @@ export function makeV2(h) {
         const c = JSON.parse(txt).choices[0].message.content || '';
         const m = c.match(/\{[\s\S]*\}/);
         const a = JSON.parse(m ? m[0] : c);
-        if (!a || !Array.isArray(a.points) || !a.points.length) { last = { error: 'groq_empty', detail: '模型没有给出要点', hdr }; continue; }
+        if (!o.validate(a)) { last = { error: 'groq_empty', detail: '模型没有给出有效内容', hdr }; continue; }
         const res = { analysis: a, model, quota: hdr };
-        await cput(env, ck, res);
+        await cput(env, o.ck, res);
         return res;
       } catch (_) { last = { error: 'groq_parse', detail: txt.slice(0, 120), hdr }; }
     }
     return last;
+  }
+  async function ai(env, body) {
+    const facts = JSON.stringify(body.facts || {}).slice(0, 6500);
+    return llm(env, { sys: AI_SYS, user: '类型：' + (body.kind || '') + '\nfacts：' + facts, ck: 'ai3:' + (await sha((body.kind || '') + facts)), fresh: body.fresh, maxTokens: 1700, validate: (a) => a && Array.isArray(a.points) && a.points.length > 0 });
+  }
+  async function narrative(env, body) {
+    const f = { 名称: String(body.name || '').slice(0, 80), 符号: String(body.symbol || '').slice(0, 30), 链: String(body.chain || ''), 简介: String(body.description || '').slice(0, 1500), 分类: body.categories || [], 社交: body.socials || [], 官网: body.websites || [] };
+    const facts = JSON.stringify(f).slice(0, 3500);
+    return llm(env, { sys: NARR_SYS, user: '代币资料：' + facts, ck: 'nr1:' + (await sha(facts)), fresh: body.fresh, maxTokens: 900, validate: (a) => a && typeof a.narrative === 'string' && a.narrative.length > 0 });
   }
 
   // ---------- MCP 服务（Streamable HTTP，无状态，只读工具）----------
@@ -336,6 +346,7 @@ export function makeV2(h) {
       if (!outs.length) return new Response(null, { status: 202 });
       return new Response(JSON.stringify(Array.isArray(b) ? outs : outs[0]), { headers: { 'content-type': 'application/json; charset=utf-8' } });
     }
+    if (p === '/e/ai') return ai(env, await req.json()); // 旧入口并入新版 AI（多模型回退、缓存、输出判断）
     if (!p.startsWith('/e/v2/')) return undefined;
     const fresh = q.get('fresh') === '1';
     if (p === '/e/v2/holder') {
@@ -348,6 +359,7 @@ export function makeV2(h) {
     if (p === '/e/v2/cex') return cex(env, q.get('ex'));
     if (p === '/e/v2/cexsign') return q.get('ex') === 'binance' ? binanceSign(env) : bad('bad_exchange');
     if (p === '/e/v2/ai') return ai(env, await req.json());
+    if (p === '/e/v2/narrative') return narrative(env, await req.json());
     if (p === '/e/v2/px') {
       const chain = q.get('chain'), from = Number(q.get('from')), to = Number(q.get('to'));
       if (!NATSYM[chain] || !(from > 0) || !(to >= from)) return bad('bad_args');
