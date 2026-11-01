@@ -1,7 +1,7 @@
 import SwiftUI
 import UIKit
 
-// MARK: - 引擎客户端（Solana 钱包 / 代币 / 持有人 / 池子 分析，数据全部来自链上原始记录）
+// MARK: - 引擎客户端（Solana / EVM 钱包、代币、持有人、池子分析，数据全部来自链上原始记录）
 enum Engine {
     static var base: String {
         Cfg.defaults.string(forKey: "engineBase") ?? "https://tstzm-engine.from-mhy.workers.dev"
@@ -29,8 +29,8 @@ enum Engine {
             req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         }
         let result: (Data, URLResponse)
-        do { result = try await URLSession.shared.data(for: req) }
-        catch { throw APIError.network(error.localizedDescription) }
+        do { result = try await Net.fetch(req) }
+        catch { throw APIError.network(Net.message(error)) }
         let code = (result.1 as? HTTPURLResponse)?.statusCode ?? 0
         if code == 401 { throw APIError.unauthorized }
         if !(200..<300).contains(code) {
@@ -287,21 +287,29 @@ struct SolPool: Codable {
     var detail: String?
 }
 
+// AI：新版输出「判断」（headline/stance/points[claim,why,evidence]/risks/watch/unknown），旧字段保留兼容
 struct AIPoint: Codable {
     var claim: String?
+    var why: String?
+    var evidence: String?
     var basis: String?
 }
 
 struct AIAnalysis: Codable {
+    var headline: String?
+    var stance: String?
     var summary: String?
     var judgement: String?
     var points: [AIPoint]?
+    var risks: [String]?
+    var watch: [String]?
     var unknown: [String]?
 }
 
 struct AIResult: Codable {
     var analysis: AIAnalysis?
     var model: String?
+    var cached: Bool?
     var error: String?
     var detail: String?
 }
@@ -309,6 +317,7 @@ struct AIResult: Codable {
 struct AIPayload<F: Encodable>: Encodable {
     var kind: String
     var facts: F
+    var fresh: Bool?
 }
 
 struct WalletFacts: Encodable {
@@ -351,9 +360,9 @@ struct PoolFact: Encodable {
 
 // MARK: - 格式化与链接
 enum Fmt2 {
+    // 全 App 统一按「设置 → 时区」显示
     static func time(_ ts: Double?) -> String {
-        guard let ts = ts else { return "未知" }
-        return Date(timeIntervalSince1970: ts).formatted(date: .abbreviated, time: .shortened)
+        TZ.format(ts: ts)
     }
     static func dur(_ s: Double?) -> String {
         guard let s = s else { return "未知" }
@@ -369,6 +378,22 @@ enum Fmt2 {
     static func solPlain(_ v: Double?) -> String {
         guard let v = v else { return "未知" }
         return String(format: "%.4f SOL", v)
+    }
+    // 美元金额（分析里的盈亏统一用美元，和引擎文本一致）
+    static func usd(_ v: Double?, signed: Bool = false) -> String {
+        guard let v = v, v.isFinite else { return "未知" }
+        let a = abs(v)
+        let sign = v < 0 ? "-" : (signed ? "+" : "")
+        if a >= 1_000_000 { return sign + "$" + String(format: "%.2fM", a / 1_000_000) }
+        if a >= 10_000 { return sign + "$" + String(format: "%.1fK", a / 1_000) }
+        if a >= 100 { return sign + "$" + String(format: "%.0f", a) }
+        if a >= 1 { return sign + "$" + String(format: "%.2f", a) }
+        if a == 0 { return "$0" }
+        return sign + "$" + String(format: "%.3g", a)
+    }
+    static func pct(_ v: Double?, signed: Bool = true) -> String {
+        guard let v = v, v.isFinite else { return "未知" }
+        return String(format: signed ? "%+.1f%%" : "%.1f%%", v * 100)
     }
     static func qty(_ v: Double?) -> String {
         guard let v = v else { return "未知" }
@@ -398,8 +423,8 @@ struct FindingRow: View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: f.icon).foregroundStyle(f.color).padding(.top, 2)
             VStack(alignment: .leading, spacing: 2) {
-                Text(f.text).font(.subheadline)
-                if let b = f.basis, !b.isEmpty { Text("依据：" + b).font(.caption2).foregroundStyle(.secondary) }
+                Text(TZ.render(f.text)).font(.subheadline)
+                if let b = f.basis, !b.isEmpty { Text("依据：" + TZ.render(b)).font(.caption2).foregroundStyle(.secondary) }
             }
         }
     }
@@ -424,10 +449,21 @@ struct StatsGrid: View {
         LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
             StatTile(title: "分析窗口", value: (s.swapTx.map { "\($0) 笔 swap" } ?? "未知") + (s.spanDays.map { String(format: " / %.1f 天", $0) } ?? ""))
             StatTile(title: "涉及代币", value: s.tokensTraded.map { "\($0) 个" } ?? "未知")
-            StatTile(title: "已兑现盈亏", value: (s.realizedN ?? 0) > 0 ? Fmt2.sol(s.realizedSol) : "样本不足", tint: (s.realizedSol ?? 0) >= 0 ? Color.green : Color.red)
+            StatTile(title: "已兑现盈亏（SOL 计价）", value: (s.realizedN ?? 0) > 0 ? Fmt2.sol(s.realizedSol) : "样本不足", tint: (s.realizedSol ?? 0) >= 0 ? Color.green : Color.red)
             StatTile(title: "胜率", value: s.winRate.map { String(format: "%.0f%%（%d/%d）", $0 * 100, s.winN ?? 0, s.realizedN ?? 0) } ?? "样本不足")
             StatTile(title: "持仓时间中位数", value: (s.closedN ?? 0) > 0 ? Fmt2.dur(s.medHoldSec) : "样本不足")
             StatTile(title: "单笔买入中位数", value: s.medBuySol.map { String(format: "%.3f SOL", $0) } ?? "未知")
+        }
+    }
+}
+
+enum AIStyle {
+    static func stanceColor(_ s: String?) -> Color {
+        switch s ?? "" {
+        case "偏风险": return Color.red
+        case "偏积极": return Color.green
+        case "数据不足": return Color.gray
+        default: return Color.orange
         }
     }
 }
@@ -448,20 +484,39 @@ struct AIResultCard: View {
                     if loading { ProgressView() }
                 }
                 if let a = result?.analysis {
-                    if let j = a.judgement, !j.isEmpty { Text(j).font(.subheadline.weight(.semibold)) }
+                    if let h = a.headline ?? a.judgement, !h.isEmpty {
+                        HStack(alignment: .top, spacing: 8) {
+                            if let st = a.stance, !st.isEmpty { Pill(text: st, color: AIStyle.stanceColor(st)) }
+                            Text(h).font(.subheadline.weight(.semibold))
+                        }
+                    }
                     if let s = a.summary, !s.isEmpty { Text(s).font(.footnote) }
                     ForEach(Array((a.points ?? []).enumerated()), id: \.offset) { _, p in
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("• " + (p.claim ?? "")).font(.footnote)
-                            if let b = p.basis, !b.isEmpty { Text("依据：" + b).font(.caption2).foregroundStyle(.secondary) }
+                            Text("• " + (p.claim ?? "")).font(.footnote.weight(.semibold))
+                            if let w = p.why, !w.isEmpty { Text(w).font(.footnote) }
+                            if let e = p.evidence ?? p.basis, !e.isEmpty { Text("依据：" + e).font(.caption2).foregroundStyle(.secondary) }
                         }
+                    }
+                    if let r = a.risks, !r.isEmpty {
+                        Divider()
+                        Text("最该警惕").font(.caption.weight(.semibold)).foregroundStyle(Color.red)
+                        ForEach(Array(r.enumerated()), id: \.offset) { _, s in Text("· " + s).font(.footnote) }
+                    }
+                    if let w = a.watch, !w.isEmpty {
+                        Text("接下来盯").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                        ForEach(Array(w.enumerated()), id: \.offset) { _, s in Text("· " + s).font(.footnote) }
                     }
                     if let u = a.unknown, !u.isEmpty {
                         Divider()
                         Text("数据无法回答").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                         ForEach(Array(u.enumerated()), id: \.offset) { _, s in Text("· " + s).font(.caption2).foregroundStyle(.secondary) }
                     }
-                    Text("AI 只解读上方程序算出的数据，不引入外部信息；不构成投资建议").font(.caption2).foregroundStyle(.secondary)
+                    HStack {
+                        Text("AI 只解读程序算出的数据，不引入外部信息；不构成投资建议" + ((result?.cached ?? false) ? "（缓存结果）" : "")).font(.caption2).foregroundStyle(.secondary)
+                        Spacer()
+                        Button("重新分析", action: onRun).font(.caption2)
+                    }
                 } else if let m = message {
                     Text(m).font(.footnote).foregroundStyle(.secondary)
                     Button("重试", action: onRun).font(.footnote.weight(.semibold))
@@ -476,6 +531,6 @@ struct AIResultCard: View {
 func aiMessage(_ r: AIResult) -> String? {
     guard let e = r.error else { return nil }
     if e == "no_groq_key" { return "未绑定 Groq 密钥：设置 → API 密钥与额度" }
-    if e.hasPrefix("groq_429") { return "Groq 已限额，恢复后再试（设置里有倒计时）" }
-    return "AI 解读失败：" + e + (r.detail.map { "（" + $0.prefix(80) + "）" } ?? "")
+    if e.hasPrefix("groq_429") { return "Groq 已限额，稍后自动恢复（设置里有倒计时）；规则分析不受影响" }
+    return "AI 暂时不可用（" + e + (r.detail.map { "：" + $0.prefix(60) } ?? "") + "），规则分析不受影响"
 }
