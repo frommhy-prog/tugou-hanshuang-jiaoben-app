@@ -8,6 +8,7 @@ struct SettingsView: View {
     @State private var tokenInput = ""
     @State private var pingText: String?
     @State private var testing = false
+    @State private var tz = TZ.id
 
     var body: some View {
         NavigationStack {
@@ -19,6 +20,13 @@ struct SettingsView: View {
                         Text("夜间").tag("dark")
                     }
                     .pickerStyle(.segmented)
+                }
+                Section("时间与时区") {
+                    Picker("时区", selection: $tz) {
+                        ForEach(TZ.options, id: \.id) { o in Text(o.name).tag(o.id) }
+                    }
+                    .onChange(of: tz) { _, n in TZ.id = n }
+                    Text("全 App 的时间（成交、K 线、引擎结论里的时间）统一按此时区显示。当前 " + TZ.label + "，现在是 " + TZ.format(Date()) + "。").font(.caption).foregroundStyle(.secondary)
                 }
                 Section("计价货币") {
                     NavigationLink {
@@ -39,11 +47,13 @@ struct SettingsView: View {
                 }
                 Section("数据与密钥") {
                     NavigationLink("API 密钥与额度") { KeysView() }
+                    NavigationLink { ConnectorsView() } label: { Label("MCP 连接器", systemImage: "puzzlepiece.extension") }
                 }
                 Section("分享与反馈") {
                     ShareLink(item: "TSTZ-M：土狗体检 + 钱包 + 寒霜启示录，一个 App 搞定") {
                         Label("分享 TSTZ-M", systemImage: "square.and.arrow.up")
                     }
+                    NavigationLink { ContactSettingsView() } label: { Label("联系方式与分享设置", systemImage: "person.crop.rectangle") }
                     NavigationLink { FeedbackView() } label: { Label("反馈问题", systemImage: "bubble.left.and.text.bubble.right") }
                 }
                 Section("关于") {
@@ -66,7 +76,7 @@ struct SettingsView: View {
             let p: Ping = try await API.get("/v1/ping")
             var s = p.ok == true ? "连接正常" : "服务无响应"
             if let e = p.lastEval, let at = e.at {
-                s += " · 提醒检查上次运行 " + Date(timeIntervalSince1970: at / 1000).formatted(date: .omitted, time: .shortened)
+                s += " · 提醒检查上次运行 " + TZ.format(Date(timeIntervalSince1970: at / 1000))
             } else {
                 s += " · 提醒检查器已启动，约 5 分钟内首次运行"
             }
@@ -132,7 +142,7 @@ final class KeysVM: ObservableObject {
 }
 
 let providerNames: [String: String] = [
-    "groq": "Groq（AI 研判）", "helius": "Helius（Solana）",
+    "groq": "Groq（AI 研判）", "helius": "Helius（Solana）", "alchemy": "Alchemy（EVM 链上数据）",
     "telegram_token": "Telegram Bot Token", "telegram_chat": "Telegram Chat ID", "bark": "Bark Key 或链接",
     "binance_key": "币安 API Key（只读）", "binance_secret": "币安 Secret", "okx_key": "欧易 API Key（只读）",
     "okx_secret": "欧易 Secret", "okx_pass": "欧易 Passphrase", "gate_key": "Gate API Key（只读）", "gate_secret": "Gate Secret",
