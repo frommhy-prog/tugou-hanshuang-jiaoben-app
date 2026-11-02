@@ -71,9 +71,11 @@ enum WosAPI {
         req.setValue("https://wos-giftcode.centurygame.com", forHTTPHeaderField: "Origin")
         req.setValue("https://wos-giftcode.centurygame.com/", forHTTPHeaderField: "Referer")
         req.httpBody = Data(body.utf8)
-        let result = try await URLSession.shared.data(for: req)
+        let result: (Data, URLResponse)
+        do { result = try await Net.fetch(req) } catch { throw APIError.network(Net.message(error)) }
         guard let j = try JSONSerialization.jsonObject(with: result.0) as? [String: Any] else {
-            throw APIError.decode(String((String(data: result.0, encoding: .utf8) ?? "").prefix(120)))
+            let code = (result.1 as? HTTPURLResponse)?.statusCode ?? 0
+            throw APIError.decode("HTTP \(code)：" + String((String(data: result.0, encoding: .utf8) ?? "").prefix(120)))
         }
         return j
     }
@@ -86,16 +88,31 @@ enum WosAPI {
     static func redeem(fid: String, code: String, log: @escaping @MainActor (String) -> Void) async -> WosResult {
         func done(_ s: WosStatus, _ m: String) -> WosResult { WosResult(status: s, message: m, at: Date()) }
         await log("登录 ID \(fid)…")
-        do {
-            let r = try await call("player", ["fid": fid])
-            if (r["code"] as? Int) != 0 { return done(.failed, "登录失败：" + msg(r)) }
-            let nick = ((r["data"] as? [String: Any])?["nickname"] as? String) ?? "?"
-            await log("登录成功：\(nick)")
-        } catch {
-            return done(.failed, "登录请求失败：" + error.localizedDescription)
+        // 登录查询：超时/限频重试；接口异常不再直接判死，继续尝试兑换（提交接口自己会校验 ID）
+        var loginNote = ""
+        for i in 1...3 {
+            do {
+                let r = try await call("player", ["fid": fid])
+                if (r["code"] as? Int) == 0 {
+                    let nick = ((r["data"] as? [String: Any])?["nickname"] as? String) ?? "?"
+                    await log("登录成功：\(nick)")
+                    loginNote = ""
+                    break
+                }
+                let m = msg(r)
+                let u = m.uppercased()
+                if u.contains("NOT EXIST") || u.contains("ROLE") { return done(.failed, "领主 ID 无效或不存在：" + m + "（点「编辑领主资料」检查 ID）") }
+                loginNote = "登录接口返回：" + m
+                if u.contains("TIMEOUT") || u.contains("FREQUENT") { try? await Task.sleep(nanoseconds: UInt64(2_000_000_000 * i)); continue }
+                break
+            } catch {
+                loginNote = "登录请求失败：" + error.localizedDescription
+                try? await Task.sleep(nanoseconds: 1_500_000_000)
+            }
         }
+        if !loginNote.isEmpty { await log(loginNote + "；仍尝试直接兑换") }
 
-        var last = "未完成"
+        var last = loginNote.isEmpty ? "未完成" : loginNote
         for attempt in 1...6 {
             await log("第 \(attempt) 次：取验证码")
             var imgData: Data?
@@ -138,13 +155,14 @@ enum WosAPI {
                 if u.contains("CAPTCHA") { last = "验证码识别错误"; try? await Task.sleep(nanoseconds: 1_500_000_000); continue }
                 if u.contains("TIMEOUT") { last = m; continue }
                 if u.contains("USED") { return done(.used, m) }
+                if u.contains("PLAYER") || u.contains("ROLE") { return done(.failed, "领主 ID 无效：" + m) }
                 return done(.failed, m)
             } catch {
                 last = "提交失败：" + error.localizedDescription
                 await log(last)
             }
         }
-        return done(.failed, last + "（可改用手动兑换）")
+        return done(.failed, last + "（已自动转官方页手动兑换）")
     }
 }
 
@@ -198,7 +216,7 @@ enum CaptchaOCR {
     }
 }
 
-// MARK: - 手动兑换：应用内打开官方兑换中心，自动填好 ID（和兑换码）
+// MARK: - 官方页兑换：应用内打开官方兑换中心，自动填好 ID（和兑换码）
 struct RedeemWebView: UIViewRepresentable {
     let url: URL
     let fid: String
