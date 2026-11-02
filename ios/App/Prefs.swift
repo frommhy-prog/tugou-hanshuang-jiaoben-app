@@ -169,19 +169,6 @@ struct ContactEntry: Codable, Identifiable, Hashable {
     var value: String
     var qrLink: String = ""    // 有二维码链接时，分享卡片只显示二维码，不显示账号
     var tagline: String = ""   // 例如「可按需定制」
-    var shareLink: String {
-        let v = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        switch kind {
-        case .email: return "mailto:" + v
-        case .telegram: return "https://t.me/" + v
-        case .x: return "https://x.com/" + v
-        case .whatsapp: return "https://wa.me/" + v
-        case .line: return "https://line.me/ti/p/~" + v
-        case .discord, .signal, .link: return v.hasPrefix("http") ? v : ""
-        case .wechat: return qrLink.isEmpty ? "" : qrLink
-        case .qq: return "mqq://im/chat?chat_type=wpa&uin=" + v + "&version=1&src_type=web"
-        }
-    }
     // 站内点击时的跳转：优先原生 App，再回落网页
     var openLinks: [String] {
         let v = value.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -225,6 +212,8 @@ struct ContactSettings: Codable {
 }
 
 enum ContactStore {
+    static let pageBase = "https://tstzm-contact.from-mhy.workers.dev/"
+
     static var settings: ContactSettings {
         get {
             guard let d = Cfg.defaults.data(forKey: "contact"), let v = try? JSONDecoder().decode(ContactSettings.self, from: d) else { return ContactSettings.defaultValue }
@@ -245,14 +234,14 @@ enum ContactStore {
         return UIImage(cgImage: cg)
     }
 
-    // 分享文本里的联系入口：只放遮挡后的文字和一个可点击的跳转页，不暴露完整账号
+    // 分享文本里的联系入口：只放遮挡后的文字和一个可点击的跳转页（账号编码在链接里，页面上遮挡显示）
     static func contactPageLink(_ s: ContactSettings) -> String {
         var payload: [String: Any] = [:]
         payload["h"] = s.headline
         payload["e"] = s.entries.map { ["k": $0.kind.rawValue, "v": $0.value, "q": $0.qrLink, "t": $0.tagline] }
         guard let data = try? JSONSerialization.data(withJSONObject: payload) else { return "" }
         let b64 = data.base64EncodedString().replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "=", with: "")
-        return "https://frommhy-prog.github.io/tugou-hanshuang-jiaoben-app/c.html#" + b64
+        return pageBase + "#" + b64
     }
 
     static func open(_ e: ContactEntry) {
@@ -269,7 +258,6 @@ enum ContactStore {
 // MARK: - 设置页：联系方式与分享
 struct ContactSettingsView: View {
     @State private var s = ContactStore.settings
-    @State private var adding = false
 
     var body: some View {
         Form {
@@ -278,7 +266,7 @@ struct ContactSettingsView: View {
                 Toggle("遮挡账号文字（只显示 f***@qq.com 样式）", isOn: Binding(get: { s.maskText }, set: { s.maskText = $0; save() }))
                 Toggle("有二维码的平台只显示二维码", isOn: Binding(get: { s.showQR }, set: { s.showQR = $0; save() }))
                 TextField("引导语", text: Binding(get: { s.headline }, set: { s.headline = $0; save() }))
-                Text("遮挡只影响分享图片和文字里的显示；别人点分享文字里的链接，会打开一个联系页，可直接发邮件或跳转到对话。").font(.caption).foregroundStyle(.secondary)
+                Text("遮挡只影响分享图片和文字里的显示；别人点分享文字里的链接，会打开一个联系页，可直接发邮件或跳转到对话。链接里的账号只是编码（不是强加密），别人能解码，请只放愿意公开的联系方式。").font(.caption).foregroundStyle(.secondary)
             }
             Section("联系方式（可自己增删）") {
                 ForEach($s.entries) { $e in
@@ -329,12 +317,12 @@ struct ContactFooter: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(settings.headline).font(.footnote.weight(.semibold))
             let qrs = settings.entries.filter { settings.showQR && !$0.qrLink.isEmpty }
-            let texts = settings.entries.filter { !($0.qrLink.isEmpty == false && settings.showQR) && !$0.value.isEmpty }
+            let texts = settings.entries.filter { !(settings.showQR && !$0.qrLink.isEmpty) && !$0.value.isEmpty }
             if !qrs.isEmpty {
                 HStack(alignment: .top, spacing: 14) {
                     ForEach(qrs) { e in
                         VStack(spacing: 4) {
-                            if let img = ContactStore.qrImage(e.kind == .telegram && e.qrLink.isEmpty ? "https://t.me/" + e.value : e.qrLink, size: compact ? 110 : 140) {
+                            if let img = ContactStore.qrImage(e.qrLink, size: compact ? 110 : 140) {
                                 Image(uiImage: img).interpolation(.none).resizable().frame(width: compact ? 74 : 92, height: compact ? 74 : 92)
                             }
                             Text(e.kind.title).font(.caption2).foregroundStyle(.secondary)
