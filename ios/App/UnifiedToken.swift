@@ -96,7 +96,7 @@ struct UnifiedTokenRoot: View {
             Card {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("粘贴合约，自动出完整分析").font(.headline)
-                    Text("K 线与资金流向、池子、持有人成本与盈亏、合约安全，每条结论附依据；查不到的项目显示「未知」，不编数。")
+                    Text("K 线与资金流向、池子、持有人成本与盈亏、叙事、合约安全，每条结论附依据；查不到的项目显示「未知」，不编数。")
                         .font(.subheadline).foregroundStyle(.secondary)
                 }
             }
@@ -123,19 +123,24 @@ struct UnifiedTokenRoot: View {
         .onAppear { hist = QueryHistory.items.filter { $0.kind == "token" } }
     }
 
-    // MARK: 内容
+    // MARK: 内容（SwiftUI 一个块最多 10 个子视图，所以分两组）
     @ViewBuilder
     private var content: some View {
-        headerCard
-        chartCard
-        statsGrid
-        insightsCard
-        AIResultCard(title: "AI 研判", result: vm.ai, loading: vm.aiLoading, message: vm.aiMsg, onRun: vm.reAI)
-        flowCard
-        poolsCard
-        holdersCard
-        securityCard
-        linksCard
+        Group {
+            headerCard
+            chartCard
+            statsGrid
+            insightsCard
+            AIResultCard(title: "AI 研判", result: vm.ai, loading: vm.aiLoading, message: vm.aiMsg, onRun: vm.reAI)
+        }
+        Group {
+            NarrativeCard(chain: vm.chain, address: vm.address, main: vm.main)
+            flowCard
+            poolsCard
+            holdersCard
+            securityCard
+            linksCard
+        }
     }
 
     private func changeChip(_ key: String, _ label: String) -> some View {
