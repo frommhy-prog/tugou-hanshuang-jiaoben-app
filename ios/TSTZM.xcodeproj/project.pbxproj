@@ -16,6 +16,7 @@
 		52F72A582A1A930236831A71 /* EvmWallet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DEF8DDF4366EB760D952288 /* EvmWallet.swift */; };
 		539480483D9D88B4DF435035 /* TSTZMWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5DC50D9B92745A36D1438B59 /* TSTZMWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		57945635B26BB416A23D1C24 /* TokenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5157A34444D3CBAA16F1DC8 /* TokenView.swift */; };
+		69F46EE989CF1C563F28313B /* Narrative.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D643379E866F39F21887438 /* Narrative.swift */; };
 		725909C0DDDE5C505819596A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = ED3DE87E29C3A948998C5EFE /* Assets.xcassets */; };
 		76E78B0A229CA05528844E57 /* UnifiedTokenModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BBD9E775574F446AF172EE2 /* UnifiedTokenModel.swift */; };
 		780A7CA3AD6FBBFBA8719AA7 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 673CC854C3F5AED8B597D392 /* Components.swift */; };
@@ -61,6 +62,7 @@
 /* Begin PBXFileReference section */
 		1238E4067C47CA7EDD28A501 /* WalletsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletsView.swift; sourceTree = "<group>"; };
 		1B100768069027F9D63BD539 /* WosRedeem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WosRedeem.swift; sourceTree = "<group>"; };
+		1D643379E866F39F21887438 /* Narrative.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Narrative.swift; sourceTree = "<group>"; };
 		1F8DB1833F2D784C2C5EFAF3 /* Core.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core.swift; sourceTree = "<group>"; };
 		21D1990718F8B7A8B8202812 /* SolTokenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SolTokenView.swift; sourceTree = "<group>"; };
 		411CE31D7810F32D59BBDB21 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
@@ -115,6 +117,7 @@
 				CE7637A10277EAFDC835A549 /* EvmToken.swift */,
 				7DEF8DDF4366EB760D952288 /* EvmWallet.swift */,
 				71C2648C8FD1DC4AB56A148F /* FrostView.swift */,
+				1D643379E866F39F21887438 /* Narrative.swift */,
 				6C607B8AF9C14501FAD6CA44 /* Prefs.swift */,
 				BE73CF7AA13A5E168372E867 /* SettingsView.swift */,
 				5D40EE1C47297AFBEF15AD6F /* ShareKit.swift */,
@@ -261,6 +264,7 @@
 				52F72A582A1A930236831A71 /* EvmWallet.swift in Sources */,
 				A04EB3F1BBC022869D9BC3F9 /* FrostView.swift in Sources */,
 				F55D2AEA54F08B49124CA190 /* Models.swift in Sources */,
+				69F46EE989CF1C563F28313B /* Narrative.swift in Sources */,
 				0788CAAB571C220FB1C31E04 /* Prefs.swift in Sources */,
 				ACA59C68EDA15C8FDDB89F6C /* SettingsView.swift in Sources */,
 				A7CB6EE8C7F3501432AC81A6 /* ShareKit.swift in Sources */,
