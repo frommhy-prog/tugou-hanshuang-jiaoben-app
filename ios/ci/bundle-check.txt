@@ -1,0 +1,3 @@
+app=build/Build/Products/Release-iphoneos/TSTZM.app
+chart.html
+lwc.js

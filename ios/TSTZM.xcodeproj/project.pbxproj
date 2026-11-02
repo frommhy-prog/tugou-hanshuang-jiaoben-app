@@ -10,6 +10,8 @@
 		0788CAAB571C220FB1C31E04 /* Prefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C607B8AF9C14501FAD6CA44 /* Prefs.swift */; };
 		0F6DA54AE7C2F2B2EB21F0AB /* UnifiedToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D294844D3A702F3E3CC5550 /* UnifiedToken.swift */; };
 		1E8E6B05AD6504D475488FF4 /* CexView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 884E52722EC4D62516527D9C /* CexView.swift */; };
+		2649D50BF50F25B9823F3F67 /* chart.html in Resources */ = {isa = PBXBuildFile; fileRef = B1BD507992F961D1AD75B3F9 /* chart.html */; };
+		3B9524882CEB35F2E8BCEFC0 /* lwc.js in Resources */ = {isa = PBXBuildFile; fileRef = D8A594C95EF6EDFBF18C0067 /* lwc.js */; };
 		3DFBB4807F647FA43FCBE011 /* SolTokenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21D1990718F8B7A8B8202812 /* SolTokenView.swift */; };
 		44BDE24088A9E3DAE74930FC /* EvmToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE7637A10277EAFDC835A549 /* EvmToken.swift */; };
 		487DE13F75AF4CC4BE0DE4C2 /* AlertsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B7F096839FC46B047B6C59E /* AlertsView.swift */; };
@@ -32,6 +34,7 @@
 		D1EE2C8788EECC8A57067ECC /* Engine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E715496EC8426F387DE67C /* Engine.swift */; };
 		D6FFDE35CA1A7EFF4BB41D2B /* TSTZMApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 796A91B016E60A9852B7B81D /* TSTZMApp.swift */; };
 		E5E0B890A072623FD3396116 /* Widget.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF11CB1436FD6731D6C75C4 /* Widget.swift */; };
+		F4CDC6EA97CD0A1AE3F3B7BB /* ProChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C096B22068077AC8FF966D7 /* ProChart.swift */; };
 		F55D2AEA54F08B49124CA190 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 411CE31D7810F32D59BBDB21 /* Models.swift */; };
 /* End PBXBuildFile section */
 
@@ -65,6 +68,7 @@
 		1D643379E866F39F21887438 /* Narrative.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Narrative.swift; sourceTree = "<group>"; };
 		1F8DB1833F2D784C2C5EFAF3 /* Core.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core.swift; sourceTree = "<group>"; };
 		21D1990718F8B7A8B8202812 /* SolTokenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SolTokenView.swift; sourceTree = "<group>"; };
+		3C096B22068077AC8FF966D7 /* ProChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProChart.swift; sourceTree = "<group>"; };
 		411CE31D7810F32D59BBDB21 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		4B7F096839FC46B047B6C59E /* AlertsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertsView.swift; sourceTree = "<group>"; };
 		5D40EE1C47297AFBEF15AD6F /* ShareKit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareKit.swift; sourceTree = "<group>"; };
@@ -77,6 +81,7 @@
 		7DEF8DDF4366EB760D952288 /* EvmWallet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EvmWallet.swift; sourceTree = "<group>"; };
 		884E52722EC4D62516527D9C /* CexView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CexView.swift; sourceTree = "<group>"; };
 		9D294844D3A702F3E3CC5550 /* UnifiedToken.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedToken.swift; sourceTree = "<group>"; };
+		B1BD507992F961D1AD75B3F9 /* chart.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = chart.html; sourceTree = "<group>"; };
 		B5157A34444D3CBAA16F1DC8 /* TokenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenView.swift; sourceTree = "<group>"; };
 		BAF80D0410C51109C5A3073B /* Connectors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Connectors.swift; sourceTree = "<group>"; };
 		BE73CF7AA13A5E168372E867 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -84,6 +89,7 @@
 		C419FA3298537E0C98468B55 /* TSTZM.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = TSTZM.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CE7637A10277EAFDC835A549 /* EvmToken.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EvmToken.swift; sourceTree = "<group>"; };
 		CEF11CB1436FD6731D6C75C4 /* Widget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Widget.swift; sourceTree = "<group>"; };
+		D8A594C95EF6EDFBF18C0067 /* lwc.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = lwc.js; sourceTree = "<group>"; };
 		ED3DE87E29C3A948998C5EFE /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -119,6 +125,7 @@
 				71C2648C8FD1DC4AB56A148F /* FrostView.swift */,
 				1D643379E866F39F21887438 /* Narrative.swift */,
 				6C607B8AF9C14501FAD6CA44 /* Prefs.swift */,
+				3C096B22068077AC8FF966D7 /* ProChart.swift */,
 				BE73CF7AA13A5E168372E867 /* SettingsView.swift */,
 				5D40EE1C47297AFBEF15AD6F /* ShareKit.swift */,
 				21D1990718F8B7A8B8202812 /* SolTokenView.swift */,
@@ -128,6 +135,7 @@
 				7BBD9E775574F446AF172EE2 /* UnifiedTokenModel.swift */,
 				1238E4067C47CA7EDD28A501 /* WalletsView.swift */,
 				1B100768069027F9D63BD539 /* WosRedeem.swift */,
+				F7426E74087289F943666BAE /* Web */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -139,6 +147,15 @@
 				411CE31D7810F32D59BBDB21 /* Models.swift */,
 			);
 			path = Shared;
+			sourceTree = "<group>";
+		};
+		F7426E74087289F943666BAE /* Web */ = {
+			isa = PBXGroup;
+			children = (
+				B1BD507992F961D1AD75B3F9 /* chart.html */,
+				D8A594C95EF6EDFBF18C0067 /* lwc.js */,
+			);
+			path = Web;
 			sourceTree = "<group>";
 		};
 		F9F6AF0BBE442584B2DD77AA = {
@@ -234,6 +251,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				725909C0DDDE5C505819596A /* Assets.xcassets in Resources */,
+				2649D50BF50F25B9823F3F67 /* chart.html in Resources */,
+				3B9524882CEB35F2E8BCEFC0 /* lwc.js in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -266,6 +285,7 @@
 				F55D2AEA54F08B49124CA190 /* Models.swift in Sources */,
 				69F46EE989CF1C563F28313B /* Narrative.swift in Sources */,
 				0788CAAB571C220FB1C31E04 /* Prefs.swift in Sources */,
+				F4CDC6EA97CD0A1AE3F3B7BB /* ProChart.swift in Sources */,
 				ACA59C68EDA15C8FDDB89F6C /* SettingsView.swift in Sources */,
 				A7CB6EE8C7F3501432AC81A6 /* ShareKit.swift in Sources */,
 				3DFBB4807F647FA43FCBE011 /* SolTokenView.swift in Sources */,
