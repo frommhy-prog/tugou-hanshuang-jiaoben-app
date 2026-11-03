@@ -298,7 +298,7 @@ final class WalletDetailVM: ObservableObject {
             if let e = r.error { error = e + (r.detail.map { "：" + $0 } ?? "") } else { w = r }
         } catch { self.error = error.localizedDescription }
         loading = false
-        if w != nil { await runAI(address) }
+        if w != nil && AIMode.auto { await runAI(address) }
     }
 
     func runAI(_ address: String) async {

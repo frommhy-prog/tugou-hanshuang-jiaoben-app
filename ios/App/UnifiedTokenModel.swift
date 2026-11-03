@@ -431,7 +431,7 @@ final class UTokenVM: ObservableObject {
         guard id == runID else { return }
         await analyzeHolders(id)
         guard id == runID else { return }
-        await runAI(id, fresh: false)
+        if AIMode.auto { await runAI(id, fresh: false) } // 设置里可改为手动
     }
 
     func loadCandles(_ id: Int) async {

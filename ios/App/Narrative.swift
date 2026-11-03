@@ -175,6 +175,8 @@ struct NarrativeCard: View {
                     Text(n).font(.footnote).foregroundStyle(.secondary)
                 } else if vm.loading {
                     Text("读取公开资料并归纳…").font(.footnote).foregroundStyle(.secondary)
+                } else if !AIMode.auto {
+                    Button { Task { await vm.load(chain: chain, address: address, main: main) } } label: { Label("生成叙事与同类对比（手动）", systemImage: "sparkles") }.buttonStyle(.bordered)
                 }
                 Divider()
                 Text("历史相似叙事：同名/同主题代币现在怎么样").font(.subheadline.weight(.semibold))
@@ -187,7 +189,7 @@ struct NarrativeCard: View {
                 }
             }
         }
-        .task(id: chain.rawValue + address) { await vm.load(chain: chain, address: address, main: main) }
+        .task(id: chain.rawValue + address) { if AIMode.auto { await vm.load(chain: chain, address: address, main: main) } }
     }
 
     private var summary: some View {

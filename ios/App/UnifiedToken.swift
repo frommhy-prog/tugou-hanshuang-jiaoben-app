@@ -128,18 +128,17 @@ struct UnifiedTokenRoot: View {
     private var content: some View {
         Group {
             headerCard
-            chartCard
+            KLineCard(vm: vm)
             statsGrid
             insightsCard
-            AIResultCard(title: "AI 研判", result: vm.ai, loading: vm.aiLoading, message: vm.aiMsg, onRun: vm.reAI)
         }
         Group {
-            NarrativeCard(chain: vm.chain, address: vm.address, main: vm.main)
             flowCard
             poolsCard
             holdersCard
             securityCard
             linksCard
+            AIFoldCard(vm: vm)
         }
     }
 

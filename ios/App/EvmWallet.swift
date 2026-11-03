@@ -179,7 +179,7 @@ final class EvmDetailVM: ObservableObject {
             self.error = error.localizedDescription
         }
         loading = false
-        if w != nil { await runAI(address) }
+        if w != nil && AIMode.auto { await runAI(address) }
     }
 
     func runAI(_ address: String) async {
