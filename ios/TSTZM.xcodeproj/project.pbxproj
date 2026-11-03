@@ -10,6 +10,7 @@
 		0788CAAB571C220FB1C31E04 /* Prefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C607B8AF9C14501FAD6CA44 /* Prefs.swift */; };
 		0F6DA54AE7C2F2B2EB21F0AB /* UnifiedToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D294844D3A702F3E3CC5550 /* UnifiedToken.swift */; };
 		1E8E6B05AD6504D475488FF4 /* CexView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 884E52722EC4D62516527D9C /* CexView.swift */; };
+		2360CB964AD6CAD1D0525C66 /* Promo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C7E5C7130E884980F0BBF26 /* Promo.swift */; };
 		2649D50BF50F25B9823F3F67 /* chart.html in Resources */ = {isa = PBXBuildFile; fileRef = B1BD507992F961D1AD75B3F9 /* chart.html */; };
 		3B9524882CEB35F2E8BCEFC0 /* lwc.js in Resources */ = {isa = PBXBuildFile; fileRef = D8A594C95EF6EDFBF18C0067 /* lwc.js */; };
 		3DFBB4807F647FA43FCBE011 /* SolTokenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21D1990718F8B7A8B8202812 /* SolTokenView.swift */; };
@@ -63,6 +64,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0C7E5C7130E884980F0BBF26 /* Promo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Promo.swift; sourceTree = "<group>"; };
 		1238E4067C47CA7EDD28A501 /* WalletsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletsView.swift; sourceTree = "<group>"; };
 		1B100768069027F9D63BD539 /* WosRedeem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WosRedeem.swift; sourceTree = "<group>"; };
 		1D643379E866F39F21887438 /* Narrative.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Narrative.swift; sourceTree = "<group>"; };
@@ -126,6 +128,7 @@
 				1D643379E866F39F21887438 /* Narrative.swift */,
 				6C607B8AF9C14501FAD6CA44 /* Prefs.swift */,
 				3C096B22068077AC8FF966D7 /* ProChart.swift */,
+				0C7E5C7130E884980F0BBF26 /* Promo.swift */,
 				BE73CF7AA13A5E168372E867 /* SettingsView.swift */,
 				5D40EE1C47297AFBEF15AD6F /* ShareKit.swift */,
 				21D1990718F8B7A8B8202812 /* SolTokenView.swift */,
@@ -286,6 +289,7 @@
 				69F46EE989CF1C563F28313B /* Narrative.swift in Sources */,
 				0788CAAB571C220FB1C31E04 /* Prefs.swift in Sources */,
 				F4CDC6EA97CD0A1AE3F3B7BB /* ProChart.swift in Sources */,
+				2360CB964AD6CAD1D0525C66 /* Promo.swift in Sources */,
 				ACA59C68EDA15C8FDDB89F6C /* SettingsView.swift in Sources */,
 				A7CB6EE8C7F3501432AC81A6 /* ShareKit.swift in Sources */,
 				3DFBB4807F647FA43FCBE011 /* SolTokenView.swift in Sources */,
