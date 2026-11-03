@@ -1,10 +1,4 @@
-OK   ios/App/UnifiedToken.swift: '            chartCard\n'
-OK   ios/App/UnifiedToken.swift: '            AIResultCard(title: "AI 研判", result: v'
-OK   ios/App/UnifiedToken.swift: '            NarrativeCard(chain: vm.chain, address'
-OK   ios/App/UnifiedToken.swift: '            securityCard\n            linksCard\n'
-OK   ios/App/UnifiedTokenModel.swift: '        await runAI(id, fresh: false)\n'
-OK   ios/App/Narrative.swift: '.task(id: chain.rawValue + address) { await vm.loa'
-OK   ios/App/Narrative.swift: '                    Text("读取公开资料并归纳…").font(.footn'
-OK   ios/App/WalletsView.swift: '        if w != nil { await runAI(address) }\n'
-OK   ios/App/EvmWallet.swift: '        if w != nil { await runAI(address) }\n'
+OK   ios/App/UnifiedToken.swift: '            KLineCard(vm: vm)\n            statsGri'
+OK   ios/App/SettingsView.swift: '    @AppStorage("currency", store: Cfg.defaults) p'
+OK   ios/App/SettingsView.swift: '                Section("计价货币") {\n'
 APPLIED

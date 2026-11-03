@@ -5,6 +5,7 @@ import UIKit
 struct SettingsView: View {
     @AppStorage("theme") private var theme = "system"
     @AppStorage("currency", store: Cfg.defaults) private var currency = "USD"
+    @AppStorage("aiAuto", store: Cfg.defaults) private var aiAuto = true
     @State private var tokenInput = ""
     @State private var pingText: String?
     @State private var testing = false
@@ -27,6 +28,14 @@ struct SettingsView: View {
                     }
                     .onChange(of: tz) { _, n in TZ.id = n }
                     Text("全 App 的时间（成交、K 线、引擎结论里的时间）统一按此时区显示。当前 " + TZ.label + "，现在是 " + TZ.format(Date()) + "。").font(.caption).foregroundStyle(.secondary)
+                }
+                Section("AI 触发方式") {
+                    Picker("触发方式", selection: $aiAuto) {
+                        Text("自动").tag(true)
+                        Text("手动").tag(false)
+                    }
+                    .pickerStyle(.segmented)
+                    Text("自动：查币、查钱包、停在 K 线上都自动请求 AI。手动：只在点按钮时请求，省 Groq 额度。").font(.caption).foregroundStyle(.secondary)
                 }
                 Section("计价货币") {
                     NavigationLink {

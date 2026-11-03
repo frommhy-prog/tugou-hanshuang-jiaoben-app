@@ -131,6 +131,7 @@ struct UnifiedTokenRoot: View {
             KLineCard(vm: vm)
             statsGrid
             insightsCard
+            PromoCard(vm: vm)
         }
         Group {
             flowCard
