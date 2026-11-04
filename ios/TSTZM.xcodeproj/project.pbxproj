@@ -8,11 +8,13 @@
 
 /* Begin PBXBuildFile section */
 		0788CAAB571C220FB1C31E04 /* Prefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C607B8AF9C14501FAD6CA44 /* Prefs.swift */; };
+		0EEB2CA979653D66D23F0E02 /* WalletIntel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01247A761DF811FA18EEC166 /* WalletIntel.swift */; };
 		0F6DA54AE7C2F2B2EB21F0AB /* UnifiedToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D294844D3A702F3E3CC5550 /* UnifiedToken.swift */; };
 		1397B5ABD5A1D2721DCF016C /* TokenSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CD3F7B2F8BFE53078DB1157 /* TokenSnapshot.swift */; };
 		1E8E6B05AD6504D475488FF4 /* CexView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 884E52722EC4D62516527D9C /* CexView.swift */; };
 		2360CB964AD6CAD1D0525C66 /* Promo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C7E5C7130E884980F0BBF26 /* Promo.swift */; };
 		2649D50BF50F25B9823F3F67 /* chart.html in Resources */ = {isa = PBXBuildFile; fileRef = B1BD507992F961D1AD75B3F9 /* chart.html */; };
+		2EA27FB6AA28785F05D6E353 /* Dashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA14215030933CB3BB6FFC0 /* Dashboard.swift */; };
 		3B9524882CEB35F2E8BCEFC0 /* lwc.js in Resources */ = {isa = PBXBuildFile; fileRef = D8A594C95EF6EDFBF18C0067 /* lwc.js */; };
 		3DFBB4807F647FA43FCBE011 /* SolTokenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21D1990718F8B7A8B8202812 /* SolTokenView.swift */; };
 		41FF92558FEBE5FA4C1E01F2 /* ReportCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9D0E3038C9645E32C7BD4A3 /* ReportCard.swift */; };
@@ -69,6 +71,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		01247A761DF811FA18EEC166 /* WalletIntel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletIntel.swift; sourceTree = "<group>"; };
 		0C7E5C7130E884980F0BBF26 /* Promo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Promo.swift; sourceTree = "<group>"; };
 		1238E4067C47CA7EDD28A501 /* WalletsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletsView.swift; sourceTree = "<group>"; };
 		1B100768069027F9D63BD539 /* WosRedeem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WosRedeem.swift; sourceTree = "<group>"; };
@@ -102,6 +105,7 @@
 		CEF11CB1436FD6731D6C75C4 /* Widget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Widget.swift; sourceTree = "<group>"; };
 		D8A594C95EF6EDFBF18C0067 /* lwc.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = lwc.js; sourceTree = "<group>"; };
 		D9D0E3038C9645E32C7BD4A3 /* ReportCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportCard.swift; sourceTree = "<group>"; };
+		EAA14215030933CB3BB6FFC0 /* Dashboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dashboard.swift; sourceTree = "<group>"; };
 		ED3DE87E29C3A948998C5EFE /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -133,6 +137,7 @@
 				884E52722EC4D62516527D9C /* CexView.swift */,
 				673CC854C3F5AED8B597D392 /* Components.swift */,
 				BAF80D0410C51109C5A3073B /* Connectors.swift */,
+				EAA14215030933CB3BB6FFC0 /* Dashboard.swift */,
 				C3E715496EC8426F387DE67C /* Engine.swift */,
 				CE7637A10277EAFDC835A549 /* EvmToken.swift */,
 				7DEF8DDF4366EB760D952288 /* EvmWallet.swift */,
@@ -151,6 +156,7 @@
 				796A91B016E60A9852B7B81D /* TSTZMApp.swift */,
 				9D294844D3A702F3E3CC5550 /* UnifiedToken.swift */,
 				7BBD9E775574F446AF172EE2 /* UnifiedTokenModel.swift */,
+				01247A761DF811FA18EEC166 /* WalletIntel.swift */,
 				1238E4067C47CA7EDD28A501 /* WalletsView.swift */,
 				1B100768069027F9D63BD539 /* WosRedeem.swift */,
 				F7426E74087289F943666BAE /* Web */,
@@ -298,6 +304,7 @@
 				780A7CA3AD6FBBFBA8719AA7 /* Components.swift in Sources */,
 				7AA33C7EBF9F7590857E2258 /* Connectors.swift in Sources */,
 				A4F064E14FD4508649706F31 /* Core.swift in Sources */,
+				2EA27FB6AA28785F05D6E353 /* Dashboard.swift in Sources */,
 				D1EE2C8788EECC8A57067ECC /* Engine.swift in Sources */,
 				44BDE24088A9E3DAE74930FC /* EvmToken.swift in Sources */,
 				52F72A582A1A930236831A71 /* EvmWallet.swift in Sources */,
@@ -317,6 +324,7 @@
 				57945635B26BB416A23D1C24 /* TokenView.swift in Sources */,
 				0F6DA54AE7C2F2B2EB21F0AB /* UnifiedToken.swift in Sources */,
 				76E78B0A229CA05528844E57 /* UnifiedTokenModel.swift in Sources */,
+				0EEB2CA979653D66D23F0E02 /* WalletIntel.swift in Sources */,
 				B067178EEEF1DB77AE457B5E /* WalletsView.swift in Sources */,
 				C55B501FEB4B3D7C85026BD5 /* WosRedeem.swift in Sources */,
 			);

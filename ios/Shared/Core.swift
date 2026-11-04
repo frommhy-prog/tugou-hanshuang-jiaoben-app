@@ -276,7 +276,29 @@ enum APIError: LocalizedError {
 enum Net {
     // 在独立任务里发请求：切页、下拉刷新、界面重绘导致上层任务被取消时，请求不会被中途掐断
     //（否则会出现「网络失败：已取消」）。超时、断网等瞬时错误自动重试，最多 3 次。
+    static var onLog: (@Sendable (String, String, Int, Int, String?) -> Void)?
+    static var blocked: Set<String> = []
+
     static func fetch(_ req: URLRequest) async throws -> (Data, URLResponse) {
+        let host = req.url?.host ?? "?"
+        let path = req.url?.path ?? ""
+        if blocked.contains(host) {
+            onLog?(host, path, 0, 0, "已在控制台切断（测试兜底）")
+            throw URLError(.cannotConnectToHost)
+        }
+        let t0 = Date()
+        do {
+            let r = try await fetchRaw(req)
+            let code = (r.1 as? HTTPURLResponse)?.statusCode ?? 0
+            onLog?(host, path, code, Int(Date().timeIntervalSince(t0) * 1000), nil)
+            return r
+        } catch {
+            onLog?(host, path, 0, Int(Date().timeIntervalSince(t0) * 1000), message(error))
+            throw error
+        }
+    }
+
+    static func fetchRaw(_ req: URLRequest) async throws -> (Data, URLResponse) {
         let task = Task.detached(priority: .userInitiated) { () throws -> (Data, URLResponse) in
             var lastError: Error = URLError(.unknown)
             for i in 0..<3 {

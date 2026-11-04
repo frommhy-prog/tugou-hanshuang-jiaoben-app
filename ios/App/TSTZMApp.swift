@@ -8,7 +8,7 @@ struct TSTZMApp: App {
     @AppStorage("theme") private var theme = "system"
     @Environment(\.scenePhase) private var phase
 
-    init() { TZ.apply() } // 启动即应用统一时区
+    init() { TZ.apply(); SourceHub.install() } // 启动即应用统一时区，并开启请求日志
 
     var body: some Scene {
         WindowGroup {
@@ -84,9 +84,15 @@ struct RootView: View {
             WalletsRoot() // 钱包页：链上钱包 / 交易所 / 查询任意地址
                 .tabItem { Label("钱包", systemImage: "wallet.pass") }
                 .tag(1)
+            IntelRoot() // 情报：钱包标签 + 行为信号 + 持有人全查
+                .tabItem { Label("情报", systemImage: "person.crop.rectangle.stack") }
+                .tag(5)
             FrostView()
                 .tabItem { Label("寒霜", systemImage: "snowflake") }
                 .tag(2)
+            DashboardView() // 仪表盘 + 控制台
+                .tabItem { Label("仪表盘", systemImage: "gauge.with.dots.needle.67percent") }
+                .tag(6)
             AlertsView()
                 .tabItem { Label("提醒", systemImage: "bell.badge") }
                 .tag(3)

@@ -7,6 +7,9 @@ ai_msgfn
 ai_msgline
 ai_types
 aifold_dedupe
+app_install
+app_tab_dash
+app_tab_intel
 kl_cache_load
 kl_cache_save
 kl_loadmore
@@ -37,6 +40,7 @@ m_startrun
 m_tick
 m_trades_defer
 m_trades_stamp
+net_hook
 promo_guard
 promo_state
 tok_cards
