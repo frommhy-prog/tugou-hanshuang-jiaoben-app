@@ -10,3 +10,6 @@ def register(rep, cut):
     rep('ae_social', A,
         '                b.add("ok", 0, "已登记官方链接：" + (names.isEmpty ? "" : names + "，") + (webs.isEmpty ? "无官网" : "有官网"), "Dexscreener 代币资料（只说明登记了链接，不代表真实可信）")\n',
         '                let namesPart: String = names.isEmpty ? "" : names + "，"\n                let webPart: String = webs.isEmpty ? "无官网" : "有官网"\n                b.add("ok", 0, "已登记官方链接：" + namesPart + webPart, "Dexscreener 代币资料（只说明登记了链接，不代表真实可信）")\n')
+    rep('ae_top', A,
+        '        let all = dims.flatMap { $0.finds }.filter { $0.level == "risk" || $0.level == "warn" }.sorted { (order[$0.level] ?? 9) < (order[$1.level] ?? 9) }\n        return AnalysisReport(score: score, grade: grade, color: color, stage: st.0, stageBasis: st.1, dims: dims, hard: hard, unknown: unknown, top: Array(all.prefix(4)))\n',
+        '        var serious: [DimFind] = []\n        for d in dims {\n            for f in d.finds where f.level == "risk" { serious.append(f) }\n        }\n        for d in dims {\n            for f in d.finds where f.level == "warn" { serious.append(f) }\n        }\n        let topFinds: [DimFind] = Array(serious.prefix(4))\n        return AnalysisReport(score: score, grade: grade, color: color, stage: st.0, stageBasis: st.1, dims: dims, hard: hard, unknown: unknown, top: topFinds)\n')
