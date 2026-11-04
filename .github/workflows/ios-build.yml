@@ -9,6 +9,7 @@ on:
       - 'ios/Widget/**'
       - 'ios/project.yml'
       - 'ios/tools/**'
+      - '.github/patches/**'
       - '.github/workflows/ios-build.yml'
   workflow_dispatch:
 
@@ -25,6 +26,13 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
+
+      - name: Apply source patches
+        continue-on-error: true
+        run: |
+          mkdir -p ios/ci
+          python3 .github/patches/apply.py > ios/ci/patch-result.txt 2>&1 || echo "PATCH_SCRIPT_ERROR" >> ios/ci/patch-result.txt
+          cat ios/ci/patch-result.txt
 
       - name: Select newest Xcode
         run: |
@@ -122,10 +130,11 @@ jobs:
           PY
 
       - name: Commit generated files
+        if: success() || failure()
         run: |
           git config user.name "ci-bot"
           git config user.email "ci-bot@users.noreply.github.com"
-          git add -f ios/TSTZM.xcodeproj ios/Config ios/ci/build-result.txt ios/ci/build-errors.txt ios/ci/build-tail.txt ios/ci/bundle-check.txt ios/App/Web/lwc.js ios/App/Assets.xcassets/AppIcon.appiconset/icon.png sidestore || true
+          git add -f ios/TSTZM.xcodeproj ios/Config ios/ci/build-result.txt ios/ci/build-errors.txt ios/ci/build-tail.txt ios/ci/bundle-check.txt ios/ci/patch-result.txt ios/App ios/Shared ios/Widget .github/patches/applied.txt ios/App/Web/lwc.js ios/App/Assets.xcassets/AppIcon.appiconset/icon.png sidestore || true
           if ! git diff --cached --quiet; then
             git commit -m "ci: build result [skip ci]"
             git pull --rebase origin main
