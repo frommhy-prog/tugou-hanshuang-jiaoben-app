@@ -1,3 +1,6 @@
+ae_score
+ae_social
+ae_wash
 ai_footnote
 ai_msgfn
 ai_msgline

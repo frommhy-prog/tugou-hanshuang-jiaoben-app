@@ -156,8 +156,13 @@ enum AnalysisEngine {
                 let top5 = ad.prefix(5).reduce(0) { $0 + $1.total } / gross
                 if top5 > 0.5 { b.add("warn", 10, String(format: "前 5 个交易地址贡献了最近成交额的 %.0f%%，成交高度集中", top5 * 100), "最近 " + String(vm.trades.count) + " 笔成交、" + String(ad.count) + " 个地址（交易发起方，可能是机器人或聚合器）") }
             }
-            let wash = ad.filter { $0.nb >= 3 && $0.ns >= 3 && abs($0.buy - $0.sell) / max(1, $0.buy + $0.sell) < 0.15 }
-            if !wash.isEmpty { b.add("warn", 10, String(wash.count) + " 个地址买卖各 ≥3 笔且买卖额接近，可能是套利机器人，也可能是对敲刷量（链上无法区分）", "买卖额差额 < 15%") }
+            var washN = 0
+            for x in ad where x.nb >= 3 && x.ns >= 3 {
+                let tot: Double = max(1.0, x.buy + x.sell)
+                let diff: Double = abs(x.buy - x.sell)
+                if diff / tot < 0.15 { washN += 1 }
+            }
+            if washN > 0 { b.add("warn", 10, String(washN) + " 个地址买卖各 ≥3 笔且买卖额接近，可能是套利机器人，也可能是对敲刷量（链上无法区分）", "买卖额差额 < 15%") }
             if let tx = m.txns?["h24"], let bu = tx.buys, let se = tx.sells, bu + se >= 50, Double(se) > Double(bu) * 1.3 {
                 b.add("warn", 8, "24 小时卖出笔数（" + String(se) + "）明显多于买入笔数（" + String(bu) + "）", "Dexscreener 24h 笔数")
             }
@@ -218,7 +223,9 @@ enum AnalysisEngine {
             if socials.isEmpty && webs.isEmpty { b.add("warn", 15, "没有登记任何官方社交或网站链接", "Dexscreener 代币资料") }
             else {
                 let names = socials.compactMap { $0.type }.joined(separator: "、")
-                b.add("ok", 0, "已登记官方链接：" + (names.isEmpty ? "" : names + "，") + (webs.isEmpty ? "无官网" : "有官网"), "Dexscreener 代币资料（只说明登记了链接，不代表真实可信）")
+                let namesPart: String = names.isEmpty ? "" : names + "，"
+                let webPart: String = webs.isEmpty ? "无官网" : "有官网"
+                b.add("ok", 0, "已登记官方链接：" + namesPart + webPart, "Dexscreener 代币资料（只说明登记了链接，不代表真实可信）")
             }
             dims.append(Dim(id: "social", title: "官方信息", icon: "link", weight: 0.06, score: b.value, finds: b.finds, source: "Dexscreener 代币资料"))
         } else {
@@ -227,8 +234,13 @@ enum AnalysisEngine {
 
         var score: Int? = nil
         if dims.count >= 3 {
-            let wsum = dims.reduce(0.0) { $0 + $1.weight }
-            let s = dims.reduce(0.0) { $0 + Double($1.score) * $1.weight } / wsum
+            var wsum = 0.0
+            var wtot = 0.0
+            for d in dims {
+                wsum += d.weight
+                wtot += Double(d.score) * d.weight
+            }
+            let s: Double = wtot / wsum
             var v = Int(s.rounded())
             if !hard.isEmpty { v = min(v, 25) }
             score = v

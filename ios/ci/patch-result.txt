@@ -1,1 +1,1 @@
-PATCH_OK ai_types ai_footnote ai_msgline ai_msgfn m_codable_dtok m_codable_dtx m_codable_dliq m_codable_dsoc m_codable_dweb m_codable_dinfo m_codable_dpair m_codable_utrade m_codable_uholder m_fields m_startrun m_trades_defer m_trades_stamp m_tick m_h_sol m_h_evm m_h_defer m_h_stamp m_sec_stamp m_analyze m_one_done m_runai tok_shared tok_cards kl_vars kl_loop kl_sleep kl_more_flag kl_loadmore kl_cache_load kl_cache_save kl_marks aifold_dedupe wr_state wr_switch promo_state promo_guard
+PATCH_OK ae_score ae_wash ae_social
