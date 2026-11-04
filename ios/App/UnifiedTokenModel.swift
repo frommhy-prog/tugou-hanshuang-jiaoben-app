@@ -2,32 +2,32 @@ import SwiftUI
 import Charts
 
 // MARK: - 行情与成交数据源（手机直连公共接口，避免引擎云出口 IP 被限速）
-struct DexTok: Decodable {
+struct DexTok: Codable {
     var address: String?
     var name: String?
     var symbol: String?
 }
-struct DexTx: Decodable {
+struct DexTx: Codable {
     var buys: Int?
     var sells: Int?
 }
-struct DexLiq: Decodable {
+struct DexLiq: Codable {
     var usd: Double?
 }
-struct DexSocial: Decodable {
+struct DexSocial: Codable {
     var type: String?
     var url: String?
 }
-struct DexWeb: Decodable {
+struct DexWeb: Codable {
     var url: String?
     var label: String?
 }
-struct DexInfo: Decodable {
+struct DexInfo: Codable {
     var imageUrl: String?
     var websites: [DexWeb]?
     var socials: [DexSocial]?
 }
-struct DexPair: Decodable, Identifiable {
+struct DexPair: Codable, Identifiable {
     var chainId: String?
     var dexId: String?
     var pairAddress: String?
@@ -60,7 +60,7 @@ struct Candle: Identifiable {
     var color: Color { c >= o ? Color.green : Color.red }
 }
 
-struct UTrade: Identifiable {
+struct UTrade: Identifiable, Codable {
     let id: String
     let t: Double
     let buy: Bool
@@ -317,7 +317,7 @@ struct UHolderAnalysis: Codable {
     var detail: String?
 }
 
-struct UHolder: Identifiable {
+struct UHolder: Identifiable, Codable {
     let rank: Int
     let owner: String
     let kind: String
@@ -378,7 +378,25 @@ final class UTokenVM: ObservableObject {
     @Published var aiMsg: String?
     @Published var insights: [Finding] = []
     @Published var shareItems: [Any] = []
+    @Published var stamps = Stamps()
+    @Published var refreshing = false
+    @Published var refreshNote: String?
+    @Published var analyzedDone = 0
+    @Published var analyzeTotal = 0
     private var runID = 0
+    private var tradesDone = false
+    private var holdersDone = false
+    private var aiUsed = 0
+    private var persistTask: Task<Void, Never>?
+
+    static let shared = UTokenVM()
+
+    init() {
+        if let a = Cfg.defaults.string(forKey: "lastTokenAddr"), !a.isEmpty, let s = TokenStore.load(a) {
+            apply(s)
+            input = s.address
+        }
+    }
 
     var main: DexPair? { pairs.first }
     var symbol: String { main?.baseToken?.symbol ?? "未知代币" }
@@ -396,42 +414,105 @@ final class UTokenVM: ObservableObject {
         }
         runID += 1
         let id = runID
+        let same = addr.lowercased() == address.lowercased() && !pairs.isEmpty
+        if !same {
+            resetState()
+            if let s = TokenStore.load(addr) { apply(s) } // 先显示上次的旧数据（带时间），后台再刷新
+        }
         address = addr
         input = addr
-        pairs = []; candles = []; trades = []; holders = []; conc = nil; holderNote = nil; holderFindings = []
-        analyses = [:]; analysisErr = [:]; security = nil; ai = nil; aiMsg = nil; insights = []; error = nil
-        chartNote = nil; tradesNote = nil; authorities = nil; holderComplete = true; holderPages = 3
-        loading = true
+        error = nil
+        loading = pairs.isEmpty
+        refreshing = true
+        Cfg.defaults.set(addr, forKey: "lastTokenAddr")
         Task { await run(addr, id) }
     }
 
+    private func resetState() {
+        pairs = []; candles = []; trades = []; holders = []; conc = nil; holderNote = nil; holderFindings = []
+        analyses = [:]; analysisErr = [:]; security = nil; ai = nil; aiMsg = nil; insights = []; error = nil
+        chartNote = nil; tradesNote = nil; authorities = nil; holderComplete = true; holderPages = 3
+        stamps = Stamps(); refreshNote = nil; analyzedDone = 0; analyzeTotal = 0; aiUsed = 0
+    }
+
+    private func apply(_ s: TokenSnapshot) {
+        address = s.address
+        chain = Chain(rawValue: s.chain) ?? chain
+        pairs = s.pairs
+        trades = s.trades
+        holders = s.holders
+        conc = s.conc
+        holderNote = s.holderNote
+        holderFindings = s.holderFindings
+        holderComplete = s.holderComplete
+        authorities = s.authorities
+        analyses = s.analyses
+        security = s.security
+        ai = s.ai
+        stamps = s.stamps
+        rebuild()
+    }
+
+    func schedulePersist() {
+        persistTask?.cancel()
+        persistTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            if Task.isCancelled { return }
+            self?.persist()
+        }
+    }
+
+    func persist() {
+        guard !address.isEmpty, !pairs.isEmpty else { return }
+        TokenStore.save(TokenSnapshot(address: address, chain: chain.rawValue, pairs: pairs, trades: Array(trades.prefix(300)), holders: holders, conc: conc, holderNote: holderNote, holderFindings: holderFindings, holderComplete: holderComplete, authorities: authorities, analyses: analyses, security: security, ai: ai, stamps: stamps, savedAt: Date()))
+    }
+
+    // 一次请求同时拿到链和池子；成交、持有人、安全、AI 全部并行，AI 不等大户拆解
     private func run(_ addr: String, _ id: Int) async {
-        let c = await MarketAPI.detect(addr) ?? (Addr.isEVM(addr) ? .bsc : .solana)
-        guard id == runID else { return }
-        chain = c
         do {
-            let ps = try await MarketAPI.pairs(c, addr)
+            let (c, ps) = try await MarketAPI.resolve(addr)
             guard id == runID else { return }
+            if ps.isEmpty {
+                if pairs.isEmpty { error = "这条链上没有找到该代币的交易池（Dexscreener 无数据）。可能是新币尚未被收录，或地址/链不对。" } else { refreshNote = "池子数据刷新为空，显示的是旧数据" }
+                loading = false; refreshing = false
+                return
+            }
+            chain = c
             pairs = ps
-            if ps.isEmpty { error = "这条链上没有找到该代币的交易池（Dexscreener 无数据）。可能是新币尚未被收录，或地址/链不对。"; loading = false; return }
+            stamps.pairs = Date()
+            refreshNote = nil
             QueryHistory.add(kind: "token", chain: c.rawValue, address: addr, title: ps[0].baseToken?.symbol ?? Addr.short(addr))
         } catch {
             guard id == runID else { return }
-            self.error = error.localizedDescription
-            loading = false
+            if pairs.isEmpty { self.error = error.localizedDescription } else { refreshNote = "刷新失败，显示的是旧数据：" + Net.message(error) }
+            loading = false; refreshing = false
             return
         }
         loading = false
         rebuild()
-        async let a: Void = loadCandles(id)
-        async let b: Void = loadTrades(id)
-        async let h: Void = loadHolders(id)
-        async let s: Void = loadSecurity(id)
-        _ = await (a, b, h, s)
+        tradesDone = false
+        holdersDone = false
+        await withTaskGroup(of: Void.self) { g in
+            g.addTask { await self.loadTrades(id) }
+            g.addTask { await self.loadSecurity(id) }
+            g.addTask { await self.loadHolders(id); await self.analyzeHolders(id) }
+            g.addTask { await self.autoAI(id) }
+        }
         guard id == runID else { return }
-        await analyzeHolders(id)
+        refreshing = false
+        persist()
+        if AIMode.auto, analyses.count >= 2, analyses.count > aiUsed { await runAI(id, fresh: false) } // 拆解完成后补一版 AI
+    }
+
+    private func autoAI(_ id: Int) async {
+        guard AIMode.auto else { return }
+        var waited = 0.0
+        while waited < 25, id == runID, !(tradesDone && holdersDone) {
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            waited += 0.3
+        }
         guard id == runID else { return }
-        if AIMode.auto { await runAI(id, fresh: false) } // 设置里可改为手动
+        await runAI(id, fresh: false)
     }
 
     func loadCandles(_ id: Int) async {
@@ -448,13 +529,16 @@ final class UTokenVM: ObservableObject {
     }
 
     func loadTrades(_ id: Int) async {
+        defer { tradesDone = true }
         guard let p = main?.pairAddress else { return }
         do {
             let ts = try await MarketAPI.trades(chain, p, address)
             guard id == runID else { return }
             trades = ts
             tradesNote = ts.isEmpty ? "最近没有成交记录" : nil
+            stamps.trades = Date()
             rebuild()
+            schedulePersist()
         } catch {
             guard id == runID else { return }
             tradesNote = trades.isEmpty ? error.localizedDescription : nil
@@ -471,17 +555,16 @@ final class UTokenVM: ObservableObject {
     func tick() async {
         let id = runID
         guard !address.isEmpty, id == runID else { return }
-        if let ps = try? await MarketAPI.pairs(chain, address), !ps.isEmpty, id == runID { pairs = ps }
-        await loadCandles(id)
+        if let ps = try? await MarketAPI.pairs(chain, address), !ps.isEmpty, id == runID { pairs = ps; stamps.pairs = Date() }
         await loadTrades(id)
     }
 
     func loadHolders(_ id: Int) async {
         holderLoading = true
-        defer { holderLoading = false }
+        defer { holderLoading = false; holdersDone = true }
         do {
             if chain == .solana {
-                let r: SolToken = try await Engine.get("/e/sol/token", ["mint": address, "fresh": "1"])
+                let r: SolToken = try await Engine.get("/e/sol/token", ["mint": address])
                 guard id == runID else { return }
                 if let e = r.error { holderNote = e + (r.detail.map { "：" + $0 } ?? ""); return }
                 holders = (r.holders ?? []).map { UHolder(rank: $0.rank, owner: $0.owner, kind: $0.kind, pct: $0.pct) }
@@ -491,7 +574,7 @@ final class UTokenVM: ObservableObject {
                 holderComplete = true
                 holderNote = (r.notes ?? []).first
             } else if EvmDetailVM.supported.contains(chain.rawValue) {
-                let r: EvmTokenResp = try await Engine.get("/e/evm/token", ["chain": chain.rawValue, "token": address, "pages": String(holderPages), "fresh": "1"])
+                let r: EvmTokenResp = try await Engine.get("/e/evm/token", ["chain": chain.rawValue, "token": address, "pages": String(holderPages)])
                 guard id == runID else { return }
                 if let e = r.error { holderNote = EvmFmt.errorText(e, r.detail); return }
                 holders = (r.holders ?? []).enumerated().map { UHolder(rank: $0.element.rank ?? ($0.offset + 1), owner: $0.element.owner, kind: $0.element.kind ?? "unknown", pct: $0.element.pct) }
@@ -505,7 +588,9 @@ final class UTokenVM: ObservableObject {
             } else {
                 holderNote = "该链暂不支持持有人榜单"
             }
+            if !holders.isEmpty { stamps.holders = Date() }
             rebuild()
+            schedulePersist()
         } catch {
             guard id == runID else { return }
             holderNote = error.localizedDescription
@@ -522,17 +607,21 @@ final class UTokenVM: ObservableObject {
         guard chain != .solana, chain.tokenSupported else { return }
         if let r: TokenResponse = try? await API.get("/api/token", ["chain": chain.rawValue, "address": address]), id == runID, r.error == nil {
             security = r
+            stamps.security = Date()
             rebuild()
         }
     }
 
-    // 最多 10 个普通钱包，两路并行，边出结果边显示
+    // 最多 10 个普通钱包，三路并行，边出结果边显示；10 分钟内拆解过的不重复请求
     func analyzeHolders(_ id: Int) async {
-        let targets = holders.filter { $0.kind == "wallet" }.prefix(10).map { $0.owner }.filter { analyses[$0] == nil }
+        let recent = stamps.analyses.map { Date().timeIntervalSince($0) < 600 } ?? false
+        let targets = holders.filter { $0.kind == "wallet" }.prefix(10).map { $0.owner }.filter { analyses[$0] == nil || !recent }
         if targets.isEmpty { return }
         analyzing = true
+        analyzedDone = 0
+        analyzeTotal = targets.count
         defer { analyzing = false }
-        let lanes = 2
+        let lanes = 3
         await withTaskGroup(of: Void.self) { group in
             for lane in 0..<lanes {
                 group.addTask { [weak self] in
@@ -544,7 +633,10 @@ final class UTokenVM: ObservableObject {
                 }
             }
         }
+        guard id == runID else { return }
+        stamps.analyses = Date()
         rebuild()
+        schedulePersist()
     }
 
     func analyzeOne(_ owner: String, _ id: Int) async {
@@ -556,6 +648,7 @@ final class UTokenVM: ObservableObject {
             guard id == runID else { return }
             analysisErr[owner] = error.localizedDescription
         }
+        analyzedDone += 1
         rebuild()
     }
 
@@ -713,15 +806,17 @@ final class UTokenVM: ObservableObject {
         guard id == runID, main != nil else { return }
         aiLoading = true
         aiMsg = nil
+        aiUsed = analyses.count
         defer { aiLoading = false }
-        do {
-            let r: AIResult = try await Engine.post("/e/v2/ai", AIPayload(kind: "代币综合分析（行情、成交流向、池子、持有人成本与盈亏、安全）", facts: buildFacts(), fresh: fresh ? true : nil))
-            guard id == runID else { return }
-            if let m = aiMessage(r) { aiMsg = m; ai = nil } else { ai = r }
-        } catch {
-            guard id == runID else { return }
-            aiMsg = "AI 暂时不可用（" + Net.message(error) + "），规则分析不受影响"
+        let r = await AIChain.run(kind: "代币综合分析（行情、成交流向、池子、持有人成本与盈亏、安全）", facts: buildFacts(), fresh: fresh)
+        guard id == runID else { return }
+        if let m = aiMessage(r) {
+            aiMsg = m + (ai != nil ? "（下方仍是上次的 AI 结果）" : "")
+        } else {
+            ai = r
+            stamps.ai = r.generatedAt.map { Date(timeIntervalSince1970: $0 / 1000) } ?? Date()
         }
+        schedulePersist()
     }
 
     func reAI() {

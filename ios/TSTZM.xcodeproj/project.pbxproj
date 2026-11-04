@@ -9,11 +9,13 @@
 /* Begin PBXBuildFile section */
 		0788CAAB571C220FB1C31E04 /* Prefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C607B8AF9C14501FAD6CA44 /* Prefs.swift */; };
 		0F6DA54AE7C2F2B2EB21F0AB /* UnifiedToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D294844D3A702F3E3CC5550 /* UnifiedToken.swift */; };
+		1397B5ABD5A1D2721DCF016C /* TokenSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CD3F7B2F8BFE53078DB1157 /* TokenSnapshot.swift */; };
 		1E8E6B05AD6504D475488FF4 /* CexView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 884E52722EC4D62516527D9C /* CexView.swift */; };
 		2360CB964AD6CAD1D0525C66 /* Promo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C7E5C7130E884980F0BBF26 /* Promo.swift */; };
 		2649D50BF50F25B9823F3F67 /* chart.html in Resources */ = {isa = PBXBuildFile; fileRef = B1BD507992F961D1AD75B3F9 /* chart.html */; };
 		3B9524882CEB35F2E8BCEFC0 /* lwc.js in Resources */ = {isa = PBXBuildFile; fileRef = D8A594C95EF6EDFBF18C0067 /* lwc.js */; };
 		3DFBB4807F647FA43FCBE011 /* SolTokenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21D1990718F8B7A8B8202812 /* SolTokenView.swift */; };
+		41FF92558FEBE5FA4C1E01F2 /* ReportCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9D0E3038C9645E32C7BD4A3 /* ReportCard.swift */; };
 		44BDE24088A9E3DAE74930FC /* EvmToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE7637A10277EAFDC835A549 /* EvmToken.swift */; };
 		487DE13F75AF4CC4BE0DE4C2 /* AlertsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B7F096839FC46B047B6C59E /* AlertsView.swift */; };
 		52F72A582A1A930236831A71 /* EvmWallet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DEF8DDF4366EB760D952288 /* EvmWallet.swift */; };
@@ -25,6 +27,7 @@
 		780A7CA3AD6FBBFBA8719AA7 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 673CC854C3F5AED8B597D392 /* Components.swift */; };
 		7AA33C7EBF9F7590857E2258 /* Connectors.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAF80D0410C51109C5A3073B /* Connectors.swift */; };
 		93266E944C65DEF7CE1FF743 /* Core.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F8DB1833F2D784C2C5EFAF3 /* Core.swift */; };
+		9996C3148700EC20225DE269 /* AnalysisEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BFD9C0F8353AD8D9C21B711 /* AnalysisEngine.swift */; };
 		A04EB3F1BBC022869D9BC3F9 /* FrostView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71C2648C8FD1DC4AB56A148F /* FrostView.swift */; };
 		A4F064E14FD4508649706F31 /* Core.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F8DB1833F2D784C2C5EFAF3 /* Core.swift */; };
 		A7CB6EE8C7F3501432AC81A6 /* ShareKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D40EE1C47297AFBEF15AD6F /* ShareKit.swift */; };
@@ -32,6 +35,8 @@
 		B067178EEEF1DB77AE457B5E /* WalletsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1238E4067C47CA7EDD28A501 /* WalletsView.swift */; };
 		BD5C3CFF9C2C099E94F67FD1 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 411CE31D7810F32D59BBDB21 /* Models.swift */; };
 		C55B501FEB4B3D7C85026BD5 /* WosRedeem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B100768069027F9D63BD539 /* WosRedeem.swift */; };
+		CE2EA463C691448BDE17CD2E /* AIChain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72BB888BB8FE9BBC2D8CEF64 /* AIChain.swift */; };
+		CE3541393879104177E73605 /* Lossy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D76E75436A979E7708A3F5B /* Lossy.swift */; };
 		D1EE2C8788EECC8A57067ECC /* Engine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E715496EC8426F387DE67C /* Engine.swift */; };
 		D6FFDE35CA1A7EFF4BB41D2B /* TSTZMApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 796A91B016E60A9852B7B81D /* TSTZMApp.swift */; };
 		E5E0B890A072623FD3396116 /* Widget.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF11CB1436FD6731D6C75C4 /* Widget.swift */; };
@@ -70,14 +75,18 @@
 		1D643379E866F39F21887438 /* Narrative.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Narrative.swift; sourceTree = "<group>"; };
 		1F8DB1833F2D784C2C5EFAF3 /* Core.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core.swift; sourceTree = "<group>"; };
 		21D1990718F8B7A8B8202812 /* SolTokenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SolTokenView.swift; sourceTree = "<group>"; };
+		2BFD9C0F8353AD8D9C21B711 /* AnalysisEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisEngine.swift; sourceTree = "<group>"; };
 		3C096B22068077AC8FF966D7 /* ProChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProChart.swift; sourceTree = "<group>"; };
 		411CE31D7810F32D59BBDB21 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		4B7F096839FC46B047B6C59E /* AlertsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertsView.swift; sourceTree = "<group>"; };
+		5CD3F7B2F8BFE53078DB1157 /* TokenSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenSnapshot.swift; sourceTree = "<group>"; };
 		5D40EE1C47297AFBEF15AD6F /* ShareKit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareKit.swift; sourceTree = "<group>"; };
+		5D76E75436A979E7708A3F5B /* Lossy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Lossy.swift; sourceTree = "<group>"; };
 		5DC50D9B92745A36D1438B59 /* TSTZMWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = TSTZMWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		673CC854C3F5AED8B597D392 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 		6C607B8AF9C14501FAD6CA44 /* Prefs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Prefs.swift; sourceTree = "<group>"; };
 		71C2648C8FD1DC4AB56A148F /* FrostView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrostView.swift; sourceTree = "<group>"; };
+		72BB888BB8FE9BBC2D8CEF64 /* AIChain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIChain.swift; sourceTree = "<group>"; };
 		796A91B016E60A9852B7B81D /* TSTZMApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TSTZMApp.swift; sourceTree = "<group>"; };
 		7BBD9E775574F446AF172EE2 /* UnifiedTokenModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedTokenModel.swift; sourceTree = "<group>"; };
 		7DEF8DDF4366EB760D952288 /* EvmWallet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EvmWallet.swift; sourceTree = "<group>"; };
@@ -92,6 +101,7 @@
 		CE7637A10277EAFDC835A549 /* EvmToken.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EvmToken.swift; sourceTree = "<group>"; };
 		CEF11CB1436FD6731D6C75C4 /* Widget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Widget.swift; sourceTree = "<group>"; };
 		D8A594C95EF6EDFBF18C0067 /* lwc.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = lwc.js; sourceTree = "<group>"; };
+		D9D0E3038C9645E32C7BD4A3 /* ReportCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportCard.swift; sourceTree = "<group>"; };
 		ED3DE87E29C3A948998C5EFE /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -116,7 +126,9 @@
 		5582C3074156F1C68C86B6CA /* App */ = {
 			isa = PBXGroup;
 			children = (
+				72BB888BB8FE9BBC2D8CEF64 /* AIChain.swift */,
 				4B7F096839FC46B047B6C59E /* AlertsView.swift */,
+				2BFD9C0F8353AD8D9C21B711 /* AnalysisEngine.swift */,
 				ED3DE87E29C3A948998C5EFE /* Assets.xcassets */,
 				884E52722EC4D62516527D9C /* CexView.swift */,
 				673CC854C3F5AED8B597D392 /* Components.swift */,
@@ -125,13 +137,16 @@
 				CE7637A10277EAFDC835A549 /* EvmToken.swift */,
 				7DEF8DDF4366EB760D952288 /* EvmWallet.swift */,
 				71C2648C8FD1DC4AB56A148F /* FrostView.swift */,
+				5D76E75436A979E7708A3F5B /* Lossy.swift */,
 				1D643379E866F39F21887438 /* Narrative.swift */,
 				6C607B8AF9C14501FAD6CA44 /* Prefs.swift */,
 				3C096B22068077AC8FF966D7 /* ProChart.swift */,
 				0C7E5C7130E884980F0BBF26 /* Promo.swift */,
+				D9D0E3038C9645E32C7BD4A3 /* ReportCard.swift */,
 				BE73CF7AA13A5E168372E867 /* SettingsView.swift */,
 				5D40EE1C47297AFBEF15AD6F /* ShareKit.swift */,
 				21D1990718F8B7A8B8202812 /* SolTokenView.swift */,
+				5CD3F7B2F8BFE53078DB1157 /* TokenSnapshot.swift */,
 				B5157A34444D3CBAA16F1DC8 /* TokenView.swift */,
 				796A91B016E60A9852B7B81D /* TSTZMApp.swift */,
 				9D294844D3A702F3E3CC5550 /* UnifiedToken.swift */,
@@ -276,7 +291,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CE2EA463C691448BDE17CD2E /* AIChain.swift in Sources */,
 				487DE13F75AF4CC4BE0DE4C2 /* AlertsView.swift in Sources */,
+				9996C3148700EC20225DE269 /* AnalysisEngine.swift in Sources */,
 				1E8E6B05AD6504D475488FF4 /* CexView.swift in Sources */,
 				780A7CA3AD6FBBFBA8719AA7 /* Components.swift in Sources */,
 				7AA33C7EBF9F7590857E2258 /* Connectors.swift in Sources */,
@@ -285,15 +302,18 @@
 				44BDE24088A9E3DAE74930FC /* EvmToken.swift in Sources */,
 				52F72A582A1A930236831A71 /* EvmWallet.swift in Sources */,
 				A04EB3F1BBC022869D9BC3F9 /* FrostView.swift in Sources */,
+				CE3541393879104177E73605 /* Lossy.swift in Sources */,
 				F55D2AEA54F08B49124CA190 /* Models.swift in Sources */,
 				69F46EE989CF1C563F28313B /* Narrative.swift in Sources */,
 				0788CAAB571C220FB1C31E04 /* Prefs.swift in Sources */,
 				F4CDC6EA97CD0A1AE3F3B7BB /* ProChart.swift in Sources */,
 				2360CB964AD6CAD1D0525C66 /* Promo.swift in Sources */,
+				41FF92558FEBE5FA4C1E01F2 /* ReportCard.swift in Sources */,
 				ACA59C68EDA15C8FDDB89F6C /* SettingsView.swift in Sources */,
 				A7CB6EE8C7F3501432AC81A6 /* ShareKit.swift in Sources */,
 				3DFBB4807F647FA43FCBE011 /* SolTokenView.swift in Sources */,
 				D6FFDE35CA1A7EFF4BB41D2B /* TSTZMApp.swift in Sources */,
+				1397B5ABD5A1D2721DCF016C /* TokenSnapshot.swift in Sources */,
 				57945635B26BB416A23D1C24 /* TokenView.swift in Sources */,
 				0F6DA54AE7C2F2B2EB21F0AB /* UnifiedToken.swift in Sources */,
 				76E78B0A229CA05528844E57 /* UnifiedTokenModel.swift in Sources */,

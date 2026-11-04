@@ -152,6 +152,9 @@ final class KLineVM: ObservableObject {
     @Published var extraErr: [String: String] = [:]
 
     var dark = true
+    static let autoPages = 1
+    @Published var histMore = false
+    var extraMarks: [[Double]] = []
     private var trades: [UTrade] = []
     private var createdMs: Double?
     private var chain: Chain = .solana
@@ -191,6 +194,14 @@ final class KLineVM: ObservableObject {
         reload()
     }
 
+    func loadMore() {
+        if loadingHist || histDone || candles.isEmpty { return }
+        let g = gen
+        let b = (candles.first?.t ?? 0) - 1
+        histMore = false
+        Task { await loadHistory(g, startBefore: b) }
+    }
+
     func retry() { reload() }
 
     func resume() {
@@ -218,7 +229,8 @@ final class KLineVM: ObservableObject {
     private func reload() {
         gen += 1
         let g = gen
-        candles = []
+        candles = KLineCache.load(chain.rawValue + ":" + pair + ":" + tf.rawValue)
+        if !candles.isEmpty { rebuild() }
         note = nil
         histDone = false
         histCapped = false
@@ -258,7 +270,7 @@ final class KLineVM: ObservableObject {
         loadingHist = true
         var before = startBefore
         var pages = 0
-        while g == gen && pages < 12 {
+        while g == gen && pages < KLineVM.autoPages {
             do {
                 let page = try await fetchPage(before, g)
                 if g != gen { return }
@@ -268,7 +280,7 @@ final class KLineVM: ObservableObject {
                 pages += 1
                 if page.count < 1000 { histDone = true; break }
                 before = (page.first?.t ?? 0) - 1
-                try? await Task.sleep(nanoseconds: 2_300_000_000)
+                if pages < KLineVM.autoPages { try? await Task.sleep(nanoseconds: 2_300_000_000) }
             } catch {
                 if g != gen { return }
                 if candles.isEmpty { note = error.localizedDescription } else { histPaused = true; resumeBefore = before }
@@ -277,7 +289,7 @@ final class KLineVM: ObservableObject {
             }
         }
         if g != gen { return }
-        if !histDone && pages >= 12 { histCapped = true }
+        if !histDone && pages >= KLineVM.autoPages { histMore = true }
         if candles.isEmpty && note == nil { note = "该池子暂无 K 线数据" }
         loadingHist = false
     }
@@ -326,6 +338,10 @@ final class KLineVM: ObservableObject {
             for it in items.prefix(14) { mk.append([it[0] + off, it[1], it[2]]) }
         }
 
+        for m in extraMarks where m.count >= 4 {
+            let b = (m[0] / sec).rounded(.down) * sec
+            if let f = candles.first?.t, let l = candles.last?.t, b >= f, b <= l { mk.append([b + off, m[1], m[2], m[3]]) }
+        }
         var created: Any = NSNull()
         if let cm = createdMs {
             let b = ((cm / 1000) / sec).rounded(.down) * sec
@@ -347,6 +363,7 @@ final class KLineVM: ObservableObject {
             payload = s
             seq += 1
         }
+        KLineCache.save(key: chain.rawValue + ":" + pair + ":" + tf.rawValue, candles)
     }
 
     // 任意地址的拆解（成本、盈亏、入场时点、状态），同一地址只拆一次
@@ -865,7 +882,6 @@ struct AIFoldCard: View {
                     Text(aiAuto ? "自动：查一个币后自动出 AI 研判与叙事。" : "手动：不自动请求，点下面卡片里的按钮才请求，省 Groq 额度。").font(.caption2).foregroundStyle(.secondary)
                 }
             }
-            AIResultCard(title: "AI 研判", result: vm.ai, loading: vm.aiLoading, message: vm.aiMsg, onRun: vm.reAI)
             NarrativeCard(chain: vm.chain, address: vm.address, main: vm.main)
         }
     }

@@ -4,7 +4,7 @@ import UIKit
 
 // MARK: - 统一代币页：一个入口自动识别 Solana / EVM
 struct UnifiedTokenRoot: View {
-    @StateObject private var vm = UTokenVM()
+    @ObservedObject private var vm = UTokenVM.shared
     @State private var selDate: Date?
     @State private var hist: [HistoryItem] = QueryHistory.items.filter { $0.kind == "token" }
     @State private var expanded: Set<String> = []
@@ -128,7 +128,9 @@ struct UnifiedTokenRoot: View {
     private var content: some View {
         Group {
             headerCard
+            FreshnessRow(vm: vm)
             KLineCard(vm: vm)
+            ReportCard(vm: vm)
             statsGrid
             insightsCard
             PromoCard(vm: vm)

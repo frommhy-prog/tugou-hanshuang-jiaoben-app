@@ -295,6 +295,7 @@ struct AIPoint: Codable {
     var basis: String?
 }
 
+// 解码对模型输出的各种怪形状全部容错：数组里混进空字符串、字段是数组/对象/数字，都不会让整份结果失败
 struct AIAnalysis: Codable {
     var headline: String?
     var stance: String?
@@ -304,14 +305,86 @@ struct AIAnalysis: Codable {
     var risks: [String]?
     var watch: [String]?
     var unknown: [String]?
+
+    init(headline: String? = nil, stance: String? = nil, summary: String? = nil, judgement: String? = nil, points: [AIPoint]? = nil, risks: [String]? = nil, watch: [String]? = nil, unknown: [String]? = nil) {
+        self.headline = headline
+        self.stance = stance
+        self.summary = summary
+        self.judgement = judgement
+        self.points = points
+        self.risks = risks
+        self.watch = watch
+        self.unknown = unknown
+    }
+
+    enum CodingKeys: String, CodingKey { case headline, stance, summary, judgement, points, risks, watch, unknown }
+
+    private static func pick(_ o: [String: JV], _ keys: [String]) -> String? {
+        for k in keys { if let t = o[k]?.text { return t } }
+        return nil
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        headline = c.jv(.headline).text
+        stance = c.jv(.stance).text
+        summary = c.jv(.summary).text
+        judgement = c.jv(.judgement).text
+        var pts: [AIPoint] = []
+        for p in c.jv(.points).array ?? [] {
+            if let o = p.object {
+                guard let claim = AIAnalysis.pick(o, ["claim", "point", "title"]) else { continue }
+                pts.append(AIPoint(claim: claim, why: AIAnalysis.pick(o, ["why", "reason"]), evidence: AIAnalysis.pick(o, ["evidence"]), basis: AIAnalysis.pick(o, ["basis"])))
+            } else if let s = p.text {
+                pts.append(AIPoint(claim: s, why: nil, evidence: nil, basis: nil))
+            }
+        }
+        points = pts.isEmpty ? nil : pts
+        let r = c.jv(.risks).strings
+        risks = r.isEmpty ? nil : r
+        let w = c.jv(.watch).strings
+        watch = w.isEmpty ? nil : w
+        let u = c.jv(.unknown).strings
+        unknown = u.isEmpty ? nil : u
+    }
+
+    var isUsable: Bool { !(points ?? []).isEmpty || !((headline ?? judgement ?? "").isEmpty) }
 }
 
 struct AIResult: Codable {
     var analysis: AIAnalysis?
     var model: String?
+    var provider: String?
     var cached: Bool?
+    var generatedAt: Double?
     var error: String?
     var detail: String?
+    var note: String?
+
+    init(analysis: AIAnalysis? = nil, model: String? = nil, provider: String? = nil, cached: Bool? = nil, generatedAt: Double? = nil, error: String? = nil, detail: String? = nil, note: String? = nil) {
+        self.analysis = analysis
+        self.model = model
+        self.provider = provider
+        self.cached = cached
+        self.generatedAt = generatedAt
+        self.error = error
+        self.detail = detail
+        self.note = note
+    }
+
+    enum CodingKeys: String, CodingKey { case analysis, model, provider, cached, generatedAt, error, detail, note }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        analysis = try? c.decodeIfPresent(AIAnalysis.self, forKey: .analysis)
+        model = c.jv(.model).text
+        provider = c.jv(.provider).text
+        cached = try? c.decodeIfPresent(Bool.self, forKey: .cached)
+        generatedAt = try? c.decodeIfPresent(Double.self, forKey: .generatedAt)
+        error = c.jv(.error).text
+        detail = c.jv(.detail).text
+        note = c.jv(.note).text
+    }
 }
 
 struct AIPayload<F: Encodable>: Encodable {
@@ -513,10 +586,11 @@ struct AIResultCard: View {
                         ForEach(Array(u.enumerated()), id: \.offset) { _, s in Text("· " + s).font(.caption2).foregroundStyle(.secondary) }
                     }
                     HStack {
-                        Text("AI 只解读程序算出的数据，不引入外部信息；不构成投资建议" + ((result?.cached ?? false) ? "（缓存结果）" : "")).font(.caption2).foregroundStyle(.secondary)
+                        Text(AIStyle.footnote(result)).font(.caption2).foregroundStyle(.secondary)
                         Spacer()
                         Button("重新分析", action: onRun).font(.caption2)
                     }
+                    if let m = message { Text(m).font(.caption2).foregroundStyle(Color.orange) }
                 } else if let m = message {
                     Text(m).font(.footnote).foregroundStyle(.secondary)
                     Button("重试", action: onRun).font(.footnote.weight(.semibold))
@@ -529,8 +603,11 @@ struct AIResultCard: View {
 }
 
 func aiMessage(_ r: AIResult) -> String? {
-    guard let e = r.error else { return nil }
-    if e == "no_groq_key" { return "未绑定 Groq 密钥：设置 → API 密钥与额度" }
-    if e.hasPrefix("groq_429") { return "Groq 已限额，稍后自动恢复（设置里有倒计时）；规则分析不受影响" }
-    return "AI 暂时不可用（" + e + (r.detail.map { "：" + $0.prefix(60) } ?? "") + "），规则分析不受影响"
+    if r.error == nil, let a = r.analysis, a.isUsable { return nil }
+    guard let e = r.error else { return "AI 返回了空内容" }
+    let d = r.detail.map { "：" + String($0.prefix(80)) } ?? ""
+    if e == "no_groq_key" { return "未绑定 Groq 密钥（设置 → API 密钥与额度），规则分析不受影响" }
+    if e == "ai_all_failed" { return "云端 AI 各模型均未返回可用内容" + d }
+    if e.hasPrefix("groq_429") { return "Groq 已限额，稍后自动恢复；规则分析不受影响" }
+    return "AI 暂时不可用（" + e + d + "）"
 }

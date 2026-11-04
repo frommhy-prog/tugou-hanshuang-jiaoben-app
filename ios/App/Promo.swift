@@ -106,6 +106,7 @@ struct PromoCard: View {
     @State private var devAnErr: String?
     @State private var devLoading = false
     @State private var payer = ""
+    @State private var loadedKey = ""
 
     private var key: String { vm.chain.rawValue + ":" + vm.address + ":" + (vm.main?.pairAddress ?? "") }
 
@@ -125,6 +126,8 @@ struct PromoCard: View {
 
     private func load() async {
         if vm.address.isEmpty || vm.main == nil { return }
+        if loadedKey == key && orders != nil { return }
+        loadedKey = key
         let chain = vm.chain
         let token = vm.address
         orders = nil

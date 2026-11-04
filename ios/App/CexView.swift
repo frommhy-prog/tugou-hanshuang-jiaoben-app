@@ -4,6 +4,7 @@ import Charts
 // MARK: - 钱包页外壳：链上钱包 / 交易所 / 查询任意地址
 struct WalletsRoot: View {
     @State private var seg = 0
+    @State private var visited: Set<Int> = [0]
     var body: some View {
         VStack(spacing: 0) {
             Picker("", selection: $seg) {
@@ -14,11 +15,12 @@ struct WalletsRoot: View {
             .pickerStyle(.segmented)
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
-            switch seg {
-            case 0: WalletsView()
-            case 1: CexView()
-            default: AdHocWalletRoot()
+            ZStack {
+                if visited.contains(0) { WalletsView().opacity(seg == 0 ? 1 : 0).allowsHitTesting(seg == 0) }
+                if visited.contains(1) { CexView().opacity(seg == 1 ? 1 : 0).allowsHitTesting(seg == 1) }
+                if visited.contains(2) { AdHocWalletRoot().opacity(seg == 2 ? 1 : 0).allowsHitTesting(seg == 2) }
             }
+            .onChange(of: seg) { _, v in visited.insert(v) }
         }
     }
 }
