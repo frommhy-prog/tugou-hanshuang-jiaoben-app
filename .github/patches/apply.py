@@ -49,10 +49,11 @@ def cut(tag, p, start, end, new):
     done.setdefault(p, []).append(tag)
 
 
-spec = importlib.util.spec_from_file_location('plist', str(ROOT / '.github' / 'patches' / 'plist.py'))
-mod = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(mod)
-mod.register(rep, cut)
+for f in sorted((ROOT / '.github' / 'patches').glob('plist*.py')):
+    spec = importlib.util.spec_from_file_location(f.stem, str(f))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    mod.register(rep, cut)
 
 ok_tags = []
 for p, t in files.items():
