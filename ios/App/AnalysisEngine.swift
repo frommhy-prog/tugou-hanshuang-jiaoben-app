@@ -255,8 +255,15 @@ enum AnalysisEngine {
         }
         let st = stage(m, ageH)
         let order: [String: Int] = ["risk": 0, "warn": 1, "info": 2, "ok": 3]
-        let all = dims.flatMap { $0.finds }.filter { $0.level == "risk" || $0.level == "warn" }.sorted { (order[$0.level] ?? 9) < (order[$1.level] ?? 9) }
-        return AnalysisReport(score: score, grade: grade, color: color, stage: st.0, stageBasis: st.1, dims: dims, hard: hard, unknown: unknown, top: Array(all.prefix(4)))
+        var serious: [DimFind] = []
+        for d in dims {
+            for f in d.finds where f.level == "risk" { serious.append(f) }
+        }
+        for d in dims {
+            for f in d.finds where f.level == "warn" { serious.append(f) }
+        }
+        let topFinds: [DimFind] = Array(serious.prefix(4))
+        return AnalysisReport(score: score, grade: grade, color: color, stage: st.0, stageBasis: st.1, dims: dims, hard: hard, unknown: unknown, top: topFinds)
     }
 
     static func stage(_ m: DexPair, _ ageH: Double?) -> (String, String) {
