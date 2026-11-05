@@ -97,8 +97,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          TAG=build-${{ github.run_number }}
+          gh release delete "$TAG" --yes --cleanup-tag || true
+          gh release create "$TAG" ios/TSTZ-M.ipa --title "TSTZ-M build ${{ github.run_number }}" --notes "build ${{ github.run_number }} / ${{ github.sha }}" --target ${{ github.sha }}
+          # 旧的固定地址 latest 会导致 SideStore 缓存的构建号与实际安装包不一致，删掉
           gh release delete latest --yes --cleanup-tag || true
-          gh release create latest ios/TSTZ-M.ipa --title "TSTZ-M 最新构建" --notes "build ${{ github.run_number }} / ${{ github.sha }}" --target ${{ github.sha }}
+          # 每个构建一个固定地址，只保留最近 6 个
+          gh release list --limit 100 --json tagName --jq '.[].tagName' | grep '^build-' | sort -t- -k2 -n -r | tail -n +7 | while read t; do gh release delete "$t" --yes --cleanup-tag || true; done
 
       - name: SideStore source
         if: hashFiles('ios/TSTZ-M.ipa') != ''
@@ -114,7 +119,7 @@ jobs:
           repo = os.environ["REPO"]; run = os.environ["RUN"]; size = int(os.environ["SIZE"])
           now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
           raw = "https://raw.githubusercontent.com/" + repo + "/main"
-          dl = "https://github.com/" + repo + "/releases/download/latest/TSTZ-M.ipa"
+          dl = "https://github.com/" + repo + "/releases/download/build-" + run + "/TSTZ-M.ipa"
           ver = "1.0." + run
           app = {
             "name": "TSTZ-M", "bundleIdentifier": "com.Hao-Yi-Miao.TSTZ-M", "developerName": "TSTZ-M",
