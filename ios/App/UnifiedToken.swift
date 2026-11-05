@@ -131,6 +131,8 @@ struct UnifiedTokenRoot: View {
             FreshnessRow(vm: vm)
             KLineCard(vm: vm)
             ReportCard(vm: vm)
+            LifecycleCard(vm: vm)
+            SocialCard(vm: vm)
             statsGrid
             insightsCard
             PromoCard(vm: vm)

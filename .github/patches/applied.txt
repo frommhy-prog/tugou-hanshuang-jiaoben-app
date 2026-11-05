@@ -52,6 +52,7 @@ net_hook
 promo_guard
 promo_state
 tok_cards
+tok_life_social
 tok_shared
 wr_state
 wr_switch

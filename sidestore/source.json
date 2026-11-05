@@ -13,17 +13,17 @@
       "localizedDescription": "土狗合约体检、多链钱包、寒霜启示录兑换码、到价提醒、小组件与灵动岛。",
       "iconURL": "https://raw.githubusercontent.com/frommhy-prog/tugou-hanshuang-jiaoben-app/main/sidestore/icon.png",
       "tintColor": "001C44",
-      "version": "1.0.48",
-      "versionDate": "2026-11-05T05:06:49Z",
+      "version": "1.0.50",
+      "versionDate": "2026-11-05T10:59:26Z",
       "downloadURL": "https://github.com/frommhy-prog/tugou-hanshuang-jiaoben-app/releases/download/latest/TSTZ-M.ipa",
-      "size": 2444876,
+      "size": 2498877,
       "versions": [
         {
-          "version": "1.0.48",
-          "buildVersion": "48",
-          "date": "2026-11-05T05:06:49Z",
+          "version": "1.0.50",
+          "buildVersion": "50",
+          "date": "2026-11-05T10:59:26Z",
           "downloadURL": "https://github.com/frommhy-prog/tugou-hanshuang-jiaoben-app/releases/download/latest/TSTZ-M.ipa",
-          "size": 2444876,
+          "size": 2498877,
           "minOSVersion": "17.0"
         }
       ]
