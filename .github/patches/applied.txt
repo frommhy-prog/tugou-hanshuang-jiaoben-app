@@ -10,6 +10,14 @@ aifold_dedupe
 app_install
 app_tab_dash
 app_tab_intel
+av_block
+av_coord
+av_loop
+av_obj
+av_onweb
+av_state
+av_task
+av_vars
 kl_cache_load
 kl_cache_save
 kl_loadmore

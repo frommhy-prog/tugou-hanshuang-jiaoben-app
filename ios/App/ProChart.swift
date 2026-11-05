@@ -126,6 +126,7 @@ struct KLineWeb: UIViewRepresentable {
             guard let d = message.body as? [String: Any], let type = d["type"] as? String else { return }
             if type == "sel", let t = d["t"] as? Double { onWeb(t) }
             else if type == "clear" { onWeb(nil) }
+            else if type == "more" { onWeb(-1) }
         }
     }
 }
@@ -155,6 +156,10 @@ final class KLineVM: ObservableObject {
     static let autoPages = 1
     @Published var histMore = false
     var extraMarks: [[Double]] = []
+    var cfgMain = "MA,SUPER"
+    var cfgSub = "MACD"
+    var cfgMcap = false
+    var cfgMult = 1.0
     private var trades: [UTrade] = []
     private var createdMs: Double?
     private var chain: Chain = .solana
@@ -218,6 +223,7 @@ final class KLineVM: ObservableObject {
     }
 
     func onWeb(_ t: Double?) {
+        if let t = t, t < 0 { loadMore(); return } // 网页向左滚到头 → 补历史
         if let t = t { selT = t - tzOff } else { selT = nil }
     }
 
@@ -358,6 +364,10 @@ final class KLineVM: ObservableObject {
             "sel": sel,
             "prec": prec,
             "dark": dark,
+            "main": cfgMain,
+            "sub": cfgSub,
+            "mcap": cfgMcap,
+            "mult": (cfgMult.isFinite && cfgMult > 0) ? cfgMult : 1.0,
         ]
         if let d = try? JSONSerialization.data(withJSONObject: obj), let s = String(data: d, encoding: .utf8) {
             payload = s
@@ -387,6 +397,9 @@ struct KLineCard: View {
     @ObservedObject var vm: UTokenVM
     @StateObject private var cvm = KLineVM()
     @Environment(\.colorScheme) private var scheme
+    @AppStorage("kMain", store: Cfg.defaults) private var mainSet = "MA,SUPER"
+    @AppStorage("kSub", store: Cfg.defaults) private var subInd = "MACD"
+    @AppStorage("kMcap", store: Cfg.defaults) private var mcap = false
 
     private var key: String { vm.chain.rawValue + ":" + (vm.main?.pairAddress ?? "") + ":" + vm.address }
 
@@ -397,11 +410,13 @@ struct KLineCard: View {
         }
         .task(id: key) {
             cvm.dark = (scheme == .dark)
+            applyCfg()
             cvm.sync(trades: vm.trades, createdMs: vm.main?.pairCreatedAt)
             cvm.begin(chain: vm.chain, pair: vm.main?.pairAddress, token: vm.address)
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 20_000_000_000)
                 if Task.isCancelled { break }
+                applyCfg()
                 await cvm.refreshLatest()
             }
         }
@@ -412,19 +427,84 @@ struct KLineCard: View {
         }
     }
 
+    private var mainList: [String] { mainSet.split(separator: ",").map { String($0) } }
+
+    private func toggleMain(_ n: String) {
+        var s = Set(mainList)
+        if s.contains(n) { s.remove(n) } else { s.insert(n) }
+        mainSet = ["MA", "EMA", "BOLL", "SAR", "SUPER"].filter { s.contains($0) }.joined(separator: ",")
+    }
+
+    private func applyCfg() {
+        cvm.cfgMain = mainSet
+        cvm.cfgSub = subInd
+        cvm.cfgMcap = mcap
+        var mult = 1.0
+        if let m = vm.main, let p = m.price, p > 0, let mc = m.marketCap ?? m.fdv, mc > 0 { mult = mc / p }
+        cvm.cfgMult = mult
+        var marks: [[Double]] = []
+        for (owner, an) in vm.analyses {
+            let rank = vm.holders.first(where: { kNorm($0.owner) == kNorm(owner) })?.rank ?? 0
+            for t in an.trades ?? [] {
+                guard let u = t.usd, u > 0 else { continue }
+                marks.append([t.t, t.side == "buy" ? 1 : -1, u, Double(rank)])
+            }
+        }
+        marks.sort { $0[2] > $1[2] }
+        cvm.extraMarks = Array(marks.prefix(40))
+    }
+
+    private var periodBar: some View {
+        let main: [TF] = [.m1, .m5, .h1, .h4, .d1]
+        return HStack(spacing: 4) {
+            ForEach(main) { t in
+                Button { cvm.setTF(t) } label: {
+                    Text(t.title).font(.footnote.weight(cvm.tf == t ? .bold : .regular)).padding(.horizontal, 8).padding(.vertical, 4).background(cvm.tf == t ? Color.accentColor.opacity(0.18) : Color.clear, in: Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+            Menu {
+                ForEach(TF.allCases.filter { !main.contains($0) }) { t in Button(t.title) { cvm.setTF(t) } }
+            } label: {
+                Text(main.contains(cvm.tf) ? "更多 ▾" : cvm.tf.title + " ▾").font(.footnote.weight(main.contains(cvm.tf) ? .regular : .bold))
+            }
+            Spacer()
+            Button { mcap.toggle() } label: {
+                Text(mcap ? "市值 ⇄" : "价格 ⇄").font(.footnote.weight(.semibold))
+            }
+        }
+    }
+
+    private var indicatorBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 16) {
+                ForEach(["MA", "EMA", "BOLL", "SAR", "SUPER"], id: \.self) { n in
+                    Button { toggleMain(n) } label: {
+                        Text(n).font(.footnote.weight(mainList.contains(n) ? .bold : .regular)).foregroundStyle(mainList.contains(n) ? Color.primary : Color.secondary)
+                    }
+                    .buttonStyle(.plain)
+                }
+                Divider().frame(height: 14)
+                ForEach(["VOL", "MACD", "KDJ", "RSI", "ROC"], id: \.self) { n in
+                    Button { subInd = (subInd == n ? "" : n) } label: {
+                        Text(n).font(.footnote.weight(subInd == n ? .bold : .regular)).foregroundStyle(subInd == n ? Color.primary : Color.secondary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
     @ViewBuilder
     private var chartBlock: some View {
         Card {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Label("K 线（全量）", systemImage: "chart.xyaxis.line").font(.headline)
+                    Label("K 线", systemImage: "chart.xyaxis.line").font(.headline)
                     Spacer()
                     Text(cvm.statusText).font(.caption2).foregroundStyle(.secondary)
                 }
-                Picker("周期", selection: Binding(get: { cvm.tf }, set: { cvm.setTF($0) })) {
-                    ForEach(TF.allCases) { t in Text(t.title).tag(t) }
-                }
-                .pickerStyle(.segmented)
+                periodBar
                 if cvm.payload.isEmpty {
                     if let n = cvm.note {
                         Text(n).font(.footnote).foregroundStyle(.secondary)
@@ -434,14 +514,19 @@ struct KLineCard: View {
                     }
                 } else {
                     KLineWeb(payload: cvm.payload, seq: cvm.seq, clearToken: cvm.clearToken) { t in cvm.onWeb(t) }
-                        .frame(height: 380)
+                        .frame(height: 460)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
+                    indicatorBar
                     if cvm.histPaused {
                         Button("历史加载被限速打断，点这里继续补全") { cvm.resume() }.font(.footnote.weight(.semibold))
                     }
-                    Text("来源 GeckoTerminal 最深池子 · 绿箭头/红箭头 = 该根里的大额买/卖 · 长按或点选一根 K 线，下方切到那一根的分析，光标离开回到全量 · 图表引擎 TradingView Lightweight Charts").font(.caption2).foregroundStyle(.secondary)
+                    Text("来源 GeckoTerminal 最深池子 · 主图可叠加多个指标，副图单选 · 绿/红箭头 = 该根里的大额买/卖，圆点 #n = 已拆解的第 n 大持有人的成交 · 市值 = 价格 × 当前供应量（按现在的市值÷现价折算）· 点一根 K 线选中，再点取消 · 往左拖自动补历史").font(.caption2).foregroundStyle(.secondary)
                 }
             }
+            .onChange(of: mainSet) { _, _ in applyCfg(); cvm.rebuild() }
+            .onChange(of: subInd) { _, _ in applyCfg(); cvm.rebuild() }
+            .onChange(of: mcap) { _, _ in applyCfg(); cvm.rebuild() }
+            .onChange(of: vm.stamps.analyses) { _, _ in applyCfg(); cvm.rebuild() }
         }
     }
 }
