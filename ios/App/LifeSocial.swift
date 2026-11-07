@@ -94,9 +94,9 @@ struct LifecycleCard: View {
     @State private var at: Date?
     @State private var err: String?
     @State private var loading = false
-    private static var store: [String: (LifeReport, Date)] = [:]
+    static var store: [String: (LifeReport, Date)] = [:]
 
-    private var key: String { cat(vm.chain.rawValue, ":", vm.main?.pairAddress ?? "") }
+    private var key: String { cat(vm.chain.rawValue, ":", vm.main?.pairAddress ?? "", "#", String(vm.refreshToken)) }
 
     private func col(_ l: String) -> Color { l == "risk" ? .red : (l == "warn" ? .orange : .blue) }
 
@@ -251,7 +251,6 @@ enum SocialEngine {
         if linkCount == 0 && xHandle == nil && tgHandle == nil {
             items.append(SocialItem(level: "warn", text: "没有登记任何官方社交或网站链接", basis: "Dexscreener 与 GeckoTerminal 均无记录"))
         } else {
-            facts.append(["官方链接", cat(types.isEmpty ? "无社交" : types, "；", webs.isEmpty ? "无官网" : cat(String(webs.count), " 个网站"))])
         }
         if let s = gtScore { facts.append(["GeckoTerminal 评分", String(format: "%.1f / 100", s)]) }
         if let h = gtHolders { facts.append(["GeckoTerminal 持有人数", String(Int(h))]) }
@@ -319,9 +318,9 @@ struct SocialCard: View {
     @ObservedObject var vm: UTokenVM
     @State private var report: SocialReport?
     @State private var loading = false
-    private static var store: [String: SocialReport] = [:]
+    static var store: [String: SocialReport] = [:]
 
-    private var key: String { cat(vm.chain.rawValue, ":", vm.address) }
+    private var key: String { cat(vm.chain.rawValue, ":", vm.address, "#", String(vm.refreshToken)) }
     private func col(_ l: String) -> Color { l == "risk" ? .red : (l == "warn" ? .orange : (l == "ok" ? .green : .blue)) }
 
     var body: some View {
@@ -331,7 +330,6 @@ struct SocialCard: View {
                     Label("社交与官方信息", systemImage: "bubble.left.and.bubble.right").font(.headline)
                     Spacer()
                     if let r = report { Text(cat("查询于 ", r.at.formatted(date: .omitted, time: .standard))).font(.caption2).foregroundStyle(.secondary) }
-                    Button("刷新") { Task { await load(force: true) } }.font(.caption)
                 }
                 if loading { HStack(spacing: 8) { ProgressView(); Text("读取 X / Telegram / 域名…").font(.footnote).foregroundStyle(.secondary) } }
                 if let r = report {
@@ -369,5 +367,6 @@ struct SocialCard: View {
         Self.store[key] = r
         report = r
         loading = false
+        vm.objectWillChange.send()
     }
 }

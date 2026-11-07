@@ -144,15 +144,18 @@ enum NarrEngine {
         let me = (pair.chainId ?? "") + ":" + address
         for t in terms {
             for p in await search(t) {
-                guard let s = tok(p), s.liq >= 1_000 else { continue }
+                guard let s = tok(p) else { continue }
                 let b = (s.sym + " " + s.name).lowercased()
                 if !b.contains(t.lowercased()) { continue }
                 if let old = seen[s.id], old.liq >= s.liq { continue }
                 seen[s.id] = s
             }
         }
-        var others: [SimTok] = []
-        for (k, v) in seen where k.lowercased() != me.lowercased() { others.append(v) }
+        var allOthers: [SimTok] = []
+        for (k, v) in seen where k.lowercased() != me.lowercased() { allOthers.append(v) }
+        let deadN = allOthers.filter { $0.liq < 1_000 }.count
+        let aliveN = allOthers.filter { $0.liq >= 20_000 }.count
+        var others = allOthers.filter { $0.liq >= 1_000 }
         others.sort { $0.mc > $1.mc }
         let top = Array(others.prefix(12))
         if top.isEmpty { notes.append("Dexscreener 没搜到同名/同主题的其它代币（样本为空，不代表没有）") }
@@ -210,6 +213,7 @@ enum NarrEngine {
         if let m = mch { items.append(["同类 24h 涨跌中位数", String(format: "%+.1f%%", m)]) }
         if vol > 0 { items.append(["本币占同类成交额", String(format: "%.0f%%", (myTok.vol / vol) * 100)]) }
         if bu + se > 0 { items.append(["同类 24h 买/卖笔数", cat(String(bu), " / ", String(se))]) }
+        if !allOthers.isEmpty { items.append(["同名/同主题代币存活", cat("搜到 ", String(allOthers.count), " 个：", String(deadN), " 个流动性低于 $1,000（基本归零），", String(aliveN), " 个仍有 $20,000 以上（只统计当前还搜得到的，存活比例会被高估）")]) }
         var heat = "平稳"
         if group.count < 3 { heat = "样本太少，无法判断" }
         else if new24 >= 5 && (mch ?? 0) > 0 { heat = "升温（有人在批量跟风，价格也在涨）" }
@@ -233,18 +237,17 @@ struct NarrativeRulesCard: View {
     @ObservedObject var vm: UTokenVM
     @State private var report: NarrReport?
     @State private var loading = false
-    private static var store: [String: NarrReport] = [:]
+    static var store: [String: NarrReport] = [:]
 
-    private var key: String { cat(vm.chain.rawValue, ":", vm.address) }
+    private var key: String { cat(vm.chain.rawValue, ":", vm.address, "#", String(vm.refreshToken)) }
 
     var body: some View {
         Card {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Label("叙事分析", systemImage: "text.book.closed").font(.headline)
+                    Label("叙事 · 规则分析", systemImage: "text.book.closed").font(.headline)
                     Text("不依赖 AI").font(.caption2.bold()).padding(.horizontal, 6).padding(.vertical, 2).background(Color.blue.opacity(0.14), in: Capsule()).foregroundStyle(Color.blue)
                     Spacer()
-                    Button("刷新") { Task { await load(force: true) } }.font(.caption)
                 }
                 if loading { HStack(spacing: 8) { ProgressView(); Text("搜索同类叙事代币…").font(.footnote).foregroundStyle(.secondary) } }
                 if let r = report {

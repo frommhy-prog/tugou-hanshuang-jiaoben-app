@@ -98,7 +98,7 @@ struct DashboardView: View {
     private func rate(_ s: SourceStat) -> Double { s.n == 0 ? 0 : Double(s.okN) / Double(s.n) }
 
     var body: some View {
-        NavigationStack {
+        Group {
             ScrollView {
                 VStack(spacing: 14) {
                     Card {

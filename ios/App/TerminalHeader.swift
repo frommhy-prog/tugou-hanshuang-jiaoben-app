@@ -57,6 +57,8 @@ struct TerminalHeader: View {
         if let p = pa, let u = URL(string: cat("https://dexscreener.com/", cid, "/", p)) { out.append(("Dexscreener", u)) }
         let gm: [String: String] = ["solana": "sol", "bsc": "bsc", "ethereum": "eth", "base": "base", "tron": "tron"]
         if let s = gm[cid], let u = URL(string: cat("https://gmgn.ai/", s, "/token/", a)) { out.append(("GMGN", u)) }
+        if let u = URL(string: cat("https://ave.ai/token/", a, "-", vm.chain == .eth ? "eth" : vm.chain.rawValue)) { out.append(("Ave", u)) }
+        if let u = URL(string: cat("https://x.com/search?q=", a)) { out.append(("X 搜索", u)) }
         let bd: Set<String> = ["solana", "ethereum", "bsc", "base", "arbitrum", "optimism", "polygon", "avalanche"]
         if bd.contains(cid), let u = URL(string: cat("https://birdeye.so/token/", a, "?chain=", cid)) { out.append(("Birdeye", u)) }
         return out
@@ -71,6 +73,12 @@ struct TerminalHeader: View {
         }
         .frame(width: 46, height: 46)
         .clipShape(Circle())
+    }
+
+    private func liqRatio(_ m: DexPair) -> String {
+        let mc: Double = m.marketCap ?? m.fdv ?? 0
+        if mc <= 0 || m.liq <= 0 { return "—" }
+        return String(format: "%.1f%%", m.liq / mc * 100)
     }
 
     private func dexName(_ m: DexPair) -> String? {
@@ -124,8 +132,6 @@ struct TerminalHeader: View {
                 }
                 HStack(alignment: .firstTextBaseline) {
                     Text(m.price.map { Money.price($0) } ?? "—").font(.system(size: 34, weight: .bold, design: .rounded)).foregroundStyle(col(h24)).minimumScaleFactor(0.6).lineLimit(1)
-                    Spacer()
-                    Text(pct(h24)).font(.title3.bold()).foregroundStyle(col(h24))
                 }
                 HStack(spacing: 8) {
                     ForEach([("5分", "m5"), ("1时", "h1"), ("6时", "h6"), ("24时", "h24")], id: \.1) { it in
@@ -147,7 +153,7 @@ struct TerminalHeader: View {
                     stat("24h 买/卖", cat(String(tx?.buys ?? 0), "/", String(tx?.sells ?? 0)))
                     stat("池龄", created.map { Fmt2.dur(Date().timeIntervalSince1970 - $0 / 1000) } ?? "—")
                     stat("池子数", String(vm.pairs.count))
-                    stat("前 10 持仓", vm.conc?.wallets10.map { String(format: "%.1f%%", Double($0)) } ?? "—")
+                    stat("流动性/市值", liqRatio(m))
                 }
                 let chips = safetyChips()
                 if !chips.isEmpty {

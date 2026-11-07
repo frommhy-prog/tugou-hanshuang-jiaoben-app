@@ -11,6 +11,7 @@ struct UnifiedTokenRoot: View {
     @State private var shareSheet = false
     @State private var shareItems: [Any] = []
     @State private var showAlert = false
+    @State private var showDash = false
 
     var body: some View {
         NavigationStack {
@@ -25,6 +26,7 @@ struct UnifiedTokenRoot: View {
                 .padding(16)
             }
             .background(Color.page)
+            .refreshable { vm.refreshAll(); try? await Task.sleep(nanoseconds: 800_000_000) }
             .navigationTitle("代币")
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
@@ -34,6 +36,12 @@ struct UnifiedTokenRoot: View {
                     }
                 }
             }
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button { showDash = true } label: { Image(systemName: "gauge.with.dots.needle.67percent") }
+                }
+            }
+            .sheet(isPresented: $showDash) { DashboardView() }
             .sheet(isPresented: $shareSheet) { ShareSheet(items: shareItems) }
             .sheet(isPresented: $showAlert) { AlertEditor(prefill: alertPrefill) { } }
             .task(id: vm.address) {
@@ -73,9 +81,6 @@ struct UnifiedTokenRoot: View {
                     .buttonStyle(.borderedProminent)
                     .controlSize(.small)
                     Spacer()
-                    if vm.main != nil {
-                        Pill(text: vm.chain.title, color: Color.blue)
-                    }
                     Menu {
                         if hist.isEmpty { Text("还没有查询记录") }
                         ForEach(hist.prefix(15)) { h in
@@ -134,8 +139,6 @@ struct UnifiedTokenRoot: View {
             ReportCard(vm: vm)
             LifecycleCard(vm: vm)
             SocialCard(vm: vm)
-            statsGrid
-            insightsCard
             PromoCard(vm: vm)
         }
         Group {
@@ -143,7 +146,6 @@ struct UnifiedTokenRoot: View {
             poolsCard
             holdersCard
             securityCard
-            linksCard
             AIFoldCard(vm: vm)
         }
     }

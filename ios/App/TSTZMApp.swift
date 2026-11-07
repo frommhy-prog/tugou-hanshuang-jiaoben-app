@@ -87,9 +87,6 @@ struct RootView: View {
             FrostView()
                 .tabItem { Label("寒霜", systemImage: "snowflake") }
                 .tag(2)
-            DashboardView() // 仪表盘 + 控制台
-                .tabItem { Label("仪表盘", systemImage: "gauge.with.dots.needle.67percent") }
-                .tag(6)
             AlertsView()
                 .tabItem { Label("提醒", systemImage: "bell.badge") }
                 .tag(3)

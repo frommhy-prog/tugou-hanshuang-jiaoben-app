@@ -383,6 +383,7 @@ final class UTokenVM: ObservableObject {
     @Published var refreshNote: String?
     @Published var analyzedDone = 0
     @Published var analyzeTotal = 0
+    @Published var refreshToken = 0
     private var runID = 0
     private var tradesDone = false
     private var holdersDone = false
@@ -407,6 +408,16 @@ final class UTokenVM: ObservableObject {
         guard !address.isEmpty, !pairs.isEmpty else { return }
         let age = stamps.pairs.map { Date().timeIntervalSince($0) } ?? 9999
         if age > 45 { start(address) }
+    }
+
+    // 一个「全部刷新」：行情、成交、持有人、安全、AI 一起重读；叙事 / 社交 / 生命周期卡片也重新取
+    func refreshAll() {
+        guard !address.isEmpty else { return }
+        SocialCard.store = [:]
+        NarrativeRulesCard.store = [:]
+        LifecycleCard.store = [:]
+        refreshToken += 1
+        start(address)
     }
 
     var main: DexPair? { pairs.first }

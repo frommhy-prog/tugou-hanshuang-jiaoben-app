@@ -19,6 +19,8 @@ struct FreshnessRow: View {
                     if vm.analyzing {
                         Text("大户拆解 " + String(vm.analyzedDone) + "/" + String(vm.analyzeTotal)).font(.caption2).foregroundStyle(.secondary)
                     }
+                    Spacer()
+                    Button("全部刷新") { vm.refreshAll() }.font(.caption2.weight(.semibold))
                 }
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 6) {
@@ -98,13 +100,6 @@ struct ReportCard: View {
                                 ScoreBar(score: s, color: r.color)
                                 Text("安全分（越高越安全）· 这是风险评估，不是买卖建议").font(.caption2).foregroundStyle(.secondary)
                             }
-                        }
-                    }
-                    HStack(alignment: .top, spacing: 8) {
-                        Text("阶段").font(.caption).foregroundStyle(.secondary)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(r.stage).font(.subheadline.bold())
-                            if !r.stageBasis.isEmpty { Text(r.stageBasis).font(.caption2).foregroundStyle(.secondary) }
                         }
                     }
                     if !r.hard.isEmpty {

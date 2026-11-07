@@ -227,7 +227,10 @@ enum AnalysisEngine {
                 let webPart: String = webs.isEmpty ? "无官网" : "有官网"
                 b.add("ok", 0, "已登记官方链接：" + namesPart + webPart, "Dexscreener 代币资料（只说明登记了链接，不代表真实可信）")
             }
-            dims.append(Dim(id: "social", title: "官方信息", icon: "link", weight: 0.06, score: b.value, finds: b.finds, source: "Dexscreener 代币资料"))
+            if let sr = SocialCard.store[cat(vm.chain.rawValue, ":", vm.address, "#", String(vm.refreshToken))] {
+                for it in sr.items where it.level == "warn" { b.add("warn", 8, it.text, it.basis) }
+            }
+            dims.append(Dim(id: "social", title: "官方信息", icon: "link", weight: 0.06, score: b.value, finds: b.finds, source: "Dexscreener 资料 + X / Telegram / 域名"))
         } else {
             unknown.append("没有收录官方资料（Dexscreener 未登记社交与官网）")
         }

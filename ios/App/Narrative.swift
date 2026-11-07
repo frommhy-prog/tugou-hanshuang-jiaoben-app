@@ -104,7 +104,6 @@ final class NarrativeVM: ObservableObject {
             let t = w.trimmingCharacters(in: .whitespacesAndNewlines)
             if t.count >= 3 && !qs.contains(where: { $0.lowercased() == t.lowercased() }) { qs.append(t) }
         }
-        await findSimilar(qs: Array(qs.prefix(3)), selfAddr: address)
     }
 
     private func findSimilar(qs: [String], selfAddr: String) async {
@@ -148,7 +147,7 @@ struct NarrativeCard: View {
         Card {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Label("代币叙事", systemImage: "text.book.closed").font(.headline)
+                    Label("叙事 · AI 归纳", systemImage: "sparkles").font(.headline)
                     Spacer()
                     if vm.loading { ProgressView() }
                 }
@@ -178,15 +177,6 @@ struct NarrativeCard: View {
                     Text("读取公开资料并归纳…").font(.footnote).foregroundStyle(.secondary)
                 } else if !AIMode.auto {
                     Button { Task { await vm.load(chain: chain, address: address, main: main) } } label: { Label("生成叙事与同类对比（手动）", systemImage: "sparkles") }.buttonStyle(.bordered)
-                }
-                Divider()
-                Text("历史相似叙事：同名/同主题代币现在怎么样").font(.subheadline.weight(.semibold))
-                if vm.similar.isEmpty {
-                    Text(vm.simNote ?? (vm.loading ? "搜索中…" : "暂无")).font(.footnote).foregroundStyle(.secondary)
-                } else {
-                    summary
-                    ForEach(vm.similar.prefix(8)) { s in row(s) }
-                    Text("只统计 Dexscreener 当前还能搜到的代币，已下架或被清理的看不到，所以存活比例会被高估；这里没有历史最高价，不能据此推算峰值收益。").font(.caption2).foregroundStyle(.secondary)
                 }
             }
         }
