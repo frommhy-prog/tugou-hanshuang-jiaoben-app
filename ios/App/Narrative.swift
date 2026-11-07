@@ -118,6 +118,7 @@ final class NarrativeVM: ObservableObject {
                 guard let b = p["baseToken"] as? [String: Any], let addr = b["address"] as? String, addr.lowercased() != selfAddr.lowercased() else { continue }
                 let n = (b["name"] as? String) ?? ""
                 let s = (b["symbol"] as? String) ?? ""
+                if s.count > 14 || n.count > 48 { continue } // 垃圾币：符号或名称塞满一长串其它币的代号
                 if !(n.lowercased().contains(ql) || s.lowercased().contains(ql)) { continue }
                 let cid = (p["chainId"] as? String) ?? ""
                 let key = cid + addr.lowercased()
@@ -207,7 +208,7 @@ struct NarrativeCard: View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
-                    Text(s.sym).font(.subheadline.weight(.semibold))
+                    Text(s.sym).font(.subheadline.weight(.semibold)).lineLimit(1)
                     Pill(text: s.chain, color: Color.blue)
                 }
                 Text(s.name).font(.caption2).foregroundStyle(.secondary).lineLimit(1)

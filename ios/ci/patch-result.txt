@@ -1,1 +1,2 @@
-PATCH_OK tok_header tok_narr app_tab_intel_rm cex_detail_intel cex_mywallets_var cex_mywallets_sec cex_hint kl_marks_limit kl_footnote model_stale_refresh narr_guard th_pair th_dex th_dexfn th_task
+PATCH_FAILED ios/App/NarrativeEngine.swift ne_spam: 锚点匹配 2 次（需要 1 次）:: '        if a.isEmpty { return nil }\n'
+PATCH_OK nv_spam nv_row rc_ts rc_hn kl_attr ch_logo ch_scale ch_st ch_range ch_vol ch_lab1 ch_lab2 ch_lab3 ch_lab4

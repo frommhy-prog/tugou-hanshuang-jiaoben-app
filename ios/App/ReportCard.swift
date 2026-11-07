@@ -26,6 +26,7 @@ struct FreshnessRow: View {
                     }
                 }
                 if let n = vm.refreshNote { Text(n).font(.caption2).foregroundStyle(Color.orange) }
+                if let hn = vm.holderNote, !hn.isEmpty, (vm.stamps.holders.map { Date().timeIntervalSince($0) > 900 } ?? true) { Text(cat("持有人刷新失败：", hn)).font(.caption2).foregroundStyle(Color.orange) }
             }
         }
     }
@@ -42,7 +43,8 @@ struct FreshnessRow: View {
         if let d = d {
             let age = now.timeIntervalSince(d)
             let stale = age > limit
-            text = name + " " + d.formatted(date: .omitted, time: .standard) + (stale ? "（旧 " + ago(age) + "）" : "")
+            let ts: String = age > 43_200 ? d.formatted(date: .abbreviated, time: .shortened) : d.formatted(date: .omitted, time: .standard)
+            text = name + " " + ts + (stale ? "（旧 " + ago(age) + "）" : "")
             col = stale ? .orange : .green
         }
         return Text(text).font(.caption2).padding(.horizontal, 7).padding(.vertical, 3).background(col.opacity(0.14), in: Capsule()).foregroundStyle(col)

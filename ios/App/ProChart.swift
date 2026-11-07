@@ -520,7 +520,7 @@ struct KLineCard: View {
                     if cvm.histPaused {
                         Button("历史加载被限速打断，点这里继续补全") { cvm.resume() }.font(.footnote.weight(.semibold))
                     }
-                    Text("来源 GeckoTerminal · 箭头 = 大额买卖，圆点 #n = 第 n 大持有人的成交 · 点 K 线选中，再点取消").font(.caption2).foregroundStyle(.secondary)
+                    Text("来源 GeckoTerminal · 箭头 = 大额买卖，圆点 #n = 第 n 大持有人的成交 · 点 K 线选中，再点取消 · 图表 TradingView Lightweight Charts™").font(.caption2).foregroundStyle(.secondary)
                 }
             }
             .onChange(of: mainSet) { _, _ in applyCfg(); cvm.rebuild() }
