@@ -102,7 +102,9 @@ enum NarrEngine {
     }
 
     static func tok(_ p: DexPair) -> SimTok? {
-        guard let b = p.baseToken, let a = b.address, !a.isEmpty else { return nil }
+        guard let b = p.baseToken else { return nil }
+        let a: String = p.baseToken?.address ?? ""
+        if a.isEmpty { return nil }
         let mc = p.marketCap ?? p.fdv ?? 0
         let tx = p.txns?["h24"]
         return SimTok(id: (p.chainId ?? "") + ":" + a, sym: b.symbol ?? "?", name: b.name ?? "", chainId: p.chainId ?? "", address: a, mc: mc, liq: p.liq, vol: p.volume?["h24"] ?? 0, ch24: p.priceChange?["h24"], created: p.pairCreatedAt, buys: tx?.buys ?? 0, sells: tx?.sells ?? 0)

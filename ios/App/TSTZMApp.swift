@@ -84,9 +84,6 @@ struct RootView: View {
             WalletsRoot() // 钱包页：链上钱包 / 交易所 / 查询任意地址
                 .tabItem { Label("钱包", systemImage: "wallet.pass") }
                 .tag(1)
-            IntelRoot() // 情报：钱包标签 + 行为信号 + 持有人全查
-                .tabItem { Label("情报", systemImage: "person.crop.rectangle.stack") }
-                .tag(5)
             FrostView()
                 .tabItem { Label("寒霜", systemImage: "snowflake") }
                 .tag(2)

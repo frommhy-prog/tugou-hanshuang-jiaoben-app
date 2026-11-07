@@ -127,9 +127,10 @@ struct UnifiedTokenRoot: View {
     @ViewBuilder
     private var content: some View {
         Group {
-            headerCard
+            TerminalHeader(vm: vm)
             FreshnessRow(vm: vm)
             KLineCard(vm: vm)
+            NarrativeRulesCard(vm: vm)
             ReportCard(vm: vm)
             LifecycleCard(vm: vm)
             SocialCard(vm: vm)

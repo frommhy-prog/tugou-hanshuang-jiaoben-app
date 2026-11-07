@@ -451,7 +451,7 @@ struct KLineCard: View {
             }
         }
         marks.sort { $0[2] > $1[2] }
-        cvm.extraMarks = Array(marks.prefix(40))
+        cvm.extraMarks = Array(marks.prefix(16))
     }
 
     private var periodBar: some View {
@@ -520,7 +520,7 @@ struct KLineCard: View {
                     if cvm.histPaused {
                         Button("历史加载被限速打断，点这里继续补全") { cvm.resume() }.font(.footnote.weight(.semibold))
                     }
-                    Text("来源 GeckoTerminal 最深池子 · 主图可叠加多个指标，副图单选 · 绿/红箭头 = 该根里的大额买/卖，圆点 #n = 已拆解的第 n 大持有人的成交 · 市值 = 价格 × 当前供应量（按现在的市值÷现价折算）· 点一根 K 线选中，再点取消 · 往左拖自动补历史").font(.caption2).foregroundStyle(.secondary)
+                    Text("来源 GeckoTerminal · 箭头 = 大额买卖，圆点 #n = 第 n 大持有人的成交 · 点 K 线选中，再点取消").font(.caption2).foregroundStyle(.secondary)
                 }
             }
             .onChange(of: mainSet) { _, _ in applyCfg(); cvm.rebuild() }

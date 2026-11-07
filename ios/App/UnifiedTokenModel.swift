@@ -395,7 +395,18 @@ final class UTokenVM: ObservableObject {
         if let a = Cfg.defaults.string(forKey: "lastTokenAddr"), !a.isEmpty, let s = TokenStore.load(a) {
             apply(s)
             input = s.address
+            Task { @MainActor [weak self] in
+                try? await Task.sleep(nanoseconds: 800_000_000)
+                self?.refreshIfStale()
+            }
         }
+    }
+
+    // 打开 App 时，如果恢复出来的是旧数据，立刻在后台刷新（旧数据先显示，带时间）
+    func refreshIfStale() {
+        guard !address.isEmpty, !pairs.isEmpty else { return }
+        let age = stamps.pairs.map { Date().timeIntervalSince($0) } ?? 9999
+        if age > 45 { start(address) }
     }
 
     var main: DexPair? { pairs.first }

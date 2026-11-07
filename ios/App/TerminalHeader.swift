@@ -53,7 +53,8 @@ struct TerminalHeader: View {
         var out: [(String, URL)] = []
         let cid = m.chainId ?? ""
         let a = vm.address
-        if let p = m.pairAddress, let u = URL(string: cat("https://dexscreener.com/", cid, "/", p)) { out.append(("Dexscreener", u)) }
+        let pa: String? = m.pairAddress
+        if let p = pa, let u = URL(string: cat("https://dexscreener.com/", cid, "/", p)) { out.append(("Dexscreener", u)) }
         let gm: [String: String] = ["solana": "sol", "bsc": "bsc", "ethereum": "eth", "base": "base", "tron": "tron"]
         if let s = gm[cid], let u = URL(string: cat("https://gmgn.ai/", s, "/token/", a)) { out.append(("GMGN", u)) }
         let bd: Set<String> = ["solana", "ethereum", "bsc", "base", "arbitrum", "optimism", "polygon", "avalanche"]
@@ -70,6 +71,11 @@ struct TerminalHeader: View {
         }
         .frame(width: 46, height: 46)
         .clipShape(Circle())
+    }
+
+    private func dexName(_ m: DexPair) -> String? {
+        let d: String? = m.dexId
+        return d
     }
 
     private func safetyChips() -> [(String, Color)] {
@@ -113,7 +119,7 @@ struct TerminalHeader: View {
                     Spacer()
                     VStack(alignment: .trailing, spacing: 4) {
                         chip((m.chainId ?? "").uppercased(), Color.blue)
-                        if let d = m.dexId { chip(d, Color.gray) }
+                        if let d = dexName(m) { chip(d, Color.gray) }
                     }
                 }
                 HStack(alignment: .firstTextBaseline) {
@@ -255,7 +261,7 @@ struct HoldersIntelView: View {
             .sheet(item: $picked) { p in
                 NavigationStack { ScrollView { IntelReportView(r: p.r).padding() }.navigationTitle("钱包情报") }
             }
-            .task { if vm.rows.isEmpty || vm.rows.first.map({ _ in false }) ?? true { await vm.runBatch(holders: tok.holders) } }
+            .task { if vm.rows.isEmpty { await vm.runBatch(holders: tok.holders) } }
         }
     }
 }

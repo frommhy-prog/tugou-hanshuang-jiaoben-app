@@ -36,6 +36,8 @@ struct AdHocWalletRoot: View {
     @State private var hist: [HistoryItem] = QueryHistory.items.filter { $0.kind == "wallet" }
     @State private var path: [AdHocTarget] = []
 
+    private var myWallets: [Wallet] { Cfg.wallets }
+
     private func chainsFor(_ a: String) -> [String] {
         Addr.isEVM(a) ? Chain.evmDefault.map { $0.rawValue } : [Chain.solana.rawValue]
     }
@@ -51,7 +53,7 @@ struct AdHocWalletRoot: View {
     var body: some View {
         NavigationStack(path: $path) {
             List {
-                Section("查询任意钱包地址（Solana / EVM 自动识别）") {
+                Section("查询任意钱包地址（Solana / EVM 自动识别；Solana 结果页右上角有「情报」）") {
                     TextField("粘贴钱包地址", text: $input)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
@@ -62,6 +64,19 @@ struct AdHocWalletRoot: View {
                         Button("查询") { open(input) }
                             .buttonStyle(.borderedProminent)
                             .disabled(!(Addr.isEVM(input.trimmingCharacters(in: .whitespacesAndNewlines)) || Addr.isSolana(input.trimmingCharacters(in: .whitespacesAndNewlines))))
+                    }
+                }
+                if !myWallets.isEmpty {
+                    Section("我的钱包（点一下查询）") {
+                        ForEach(myWallets) { w in
+                            Button { open(w.address) } label: {
+                                HStack {
+                                    Text(w.label.isEmpty ? "钱包" : w.label).foregroundStyle(Color.primary)
+                                    Spacer()
+                                    Text(Addr.short(w.address)).font(.caption.monospaced()).foregroundStyle(.secondary)
+                                }
+                            }
+                        }
                     }
                 }
                 Section {
@@ -102,6 +117,13 @@ struct AdHocDetail: View {
     var body: some View {
         let w = Wallet(address: target.address, label: "查询", chains: target.chains)
         WalletDetailView(wallet: w, result: result)
+            .toolbar {
+                if Addr.isSolana(target.address) && !Addr.isEVM(target.address) {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        NavigationLink { SolIntelPage(address: target.address) } label: { Label("情报", systemImage: "person.crop.rectangle.stack") }
+                    }
+                }
+            }
             .task {
                 if result == nil { result = await WalletsVM.fetch(w) }
             }
