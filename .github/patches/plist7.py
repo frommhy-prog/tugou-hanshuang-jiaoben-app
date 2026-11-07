@@ -8,14 +8,6 @@ def register(rep, cut):
         '                    Text(s.sym).font(.subheadline.weight(.semibold))\n                    Pill(text: s.chain, color: Color.blue)\n',
         '                    Text(s.sym).font(.subheadline.weight(.semibold)).lineLimit(1)\n                    Pill(text: s.chain, color: Color.blue)\n')
 
-    E = 'ios/App/NarrativeEngine.swift'
-    rep('ne_spam', E,
-        '        if a.isEmpty { return nil }\n',
-        '        if a.isEmpty { return nil }\n        if (b.symbol ?? "").count > 14 || (b.name ?? "").count > 48 { return nil }\n')
-    rep('ne_row', E,
-        'Text(s.sym).font(.subheadline.weight(.semibold)).foregroundStyle(Color.primary)',
-        'Text(s.sym).font(.subheadline.weight(.semibold)).foregroundStyle(Color.primary).lineLimit(1)')
-
     R = 'ios/App/ReportCard.swift'
     rep('rc_ts', R,
         '            text = name + " " + d.formatted(date: .omitted, time: .standard) + (stale ? "（旧 " + ago(age) + "）" : "")\n',
