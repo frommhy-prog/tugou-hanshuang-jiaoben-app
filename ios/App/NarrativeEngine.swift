@@ -105,6 +105,7 @@ enum NarrEngine {
         guard let b = p.baseToken else { return nil }
         let a: String = p.baseToken?.address ?? ""
         if a.isEmpty { return nil }
+        if (b.symbol ?? "").count > 14 || (b.name ?? "").count > 48 { return nil }
         let mc = p.marketCap ?? p.fdv ?? 0
         let tx = p.txns?["h24"]
         return SimTok(id: (p.chainId ?? "") + ":" + a, sym: b.symbol ?? "?", name: b.name ?? "", chainId: p.chainId ?? "", address: a, mc: mc, liq: p.liq, vol: p.volume?["h24"] ?? 0, ch24: p.priceChange?["h24"], created: p.pairCreatedAt, buys: tx?.buys ?? 0, sells: tx?.sells ?? 0)
@@ -260,7 +261,7 @@ struct NarrativeRulesCard: View {
                             Button { vm.start(s.address) } label: {
                                 HStack {
                                     VStack(alignment: .leading, spacing: 1) {
-                                        Text(s.sym).font(.subheadline.weight(.semibold)).foregroundStyle(Color.primary)
+                                        Text(s.sym).font(.subheadline.weight(.semibold)).foregroundStyle(Color.primary).lineLimit(1)
                                         Text(cat(s.chainId, " · ", s.created.map { Fmt2.dur(Date().timeIntervalSince1970 - $0 / 1000) } ?? "池龄未知")).font(.caption2).foregroundStyle(.secondary)
                                     }
                                     Spacer()

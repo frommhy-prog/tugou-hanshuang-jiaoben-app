@@ -67,6 +67,8 @@ m_trades_defer
 m_trades_stamp
 model_stale_refresh
 narr_guard
+ne_row2
+ne_spam2
 net_hook
 nv_row
 nv_spam
