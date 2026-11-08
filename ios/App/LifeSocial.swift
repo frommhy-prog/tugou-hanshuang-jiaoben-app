@@ -17,6 +17,10 @@ struct LifeReport {
     var stageBasis: String
     var n: Int
     var tfTitle: String
+    var dd: Double = 0
+    var ratio: Double = 0
+    var mult: Double = 1
+    var athAgoH: Double = 0
 }
 
 enum LifeEngine {
@@ -84,7 +88,7 @@ enum LifeEngine {
         else if dd >= -0.15 && last.t - ath.t <= 86_400 * 2 { stage = "顶部区（新高附近）" }
         else if ageH < 6 { stage = "发射期" }
         phases.append(LifePhase(title: "现状", text: stage, basis: sb, level: dd <= -0.7 ? "risk" : (dd <= -0.4 ? "warn" : "info")))
-        return LifeReport(phases: phases, stage: stage, stageBasis: sb, n: cs.count, tfTitle: tf.title)
+        return LifeReport(phases: phases, stage: stage, stageBasis: sb, n: cs.count, tfTitle: tf.title, dd: dd, ratio: ratio, mult: mult, athAgoH: (last.t - ath.t) / 3600)
     }
 }
 
@@ -141,6 +145,7 @@ struct LifecycleCard: View {
                 report = r
                 at = Date()
                 Self.store[key] = (r, Date())
+                vm.objectWillChange.send()
             } else {
                 err = "K 线不足 5 根，无法判断生命周期"
             }

@@ -1,1 +1,1 @@
-PATCH_OK (none new)
+PATCH_OK ls_lifereport_fields ls_lifereport_return ls_life_notify ne_notify tok_verdict

@@ -134,6 +134,7 @@ struct UnifiedTokenRoot: View {
         Group {
             TerminalHeader(vm: vm)
             FreshnessRow(vm: vm)
+            VerdictCard(vm: vm)
             KLineCard(vm: vm)
             NarrativeRulesCard(vm: vm)
             ReportCard(vm: vm)

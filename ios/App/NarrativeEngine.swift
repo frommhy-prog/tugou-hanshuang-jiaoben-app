@@ -303,5 +303,6 @@ struct NarrativeRulesCard: View {
         Self.store[key] = r
         report = r
         loading = false
+        vm.objectWillChange.send()
     }
 }
