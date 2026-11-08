@@ -1,6 +1,6 @@
 import SwiftUI
 
-// 数据新鲜度：每块数据各自的更新时间，超时标「旧」，旧数据照样显示
+// 数据新鲜度：每块数据各自的更新时间，超时标「旧」（超过 12 小时带日期），旧数据照样显示；右侧一个「全部刷新」
 struct FreshnessRow: View {
     @ObservedObject var vm: UTokenVM
 
@@ -28,7 +28,9 @@ struct FreshnessRow: View {
                     }
                 }
                 if let n = vm.refreshNote { Text(n).font(.caption2).foregroundStyle(Color.orange) }
-                if let hn = vm.holderNote, !hn.isEmpty, (vm.stamps.holders.map { Date().timeIntervalSince($0) > 900 } ?? true) { Text(cat("持有人刷新失败：", hn)).font(.caption2).foregroundStyle(Color.orange) }
+                if let hn = vm.holderNote, !hn.isEmpty, (vm.stamps.holders.map { Date().timeIntervalSince($0) > 900 } ?? true) {
+                    Text(cat("持有人刷新失败：", hn)).font(.caption2).foregroundStyle(Color.orange)
+                }
             }
         }
     }
@@ -67,7 +69,7 @@ struct ScoreBar: View {
     }
 }
 
-// 规则分析（不依赖 AI）与 AI 研判并排：两条轨道同时工作，任何一条失败另一条照常出结果
+// 分项明细（规则引擎的 7 个维度，每条结论带依据）+ AI 研判。结论、利空利好、盯盘阈值在上方「综合研判」。
 struct ReportCard: View {
     @ObservedObject var vm: UTokenVM
 
@@ -88,19 +90,9 @@ struct ReportCard: View {
             Card {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(alignment: .firstTextBaseline) {
-                        Text("规则分析引擎").font(.headline)
-                        Text("不依赖 AI").font(.caption2.bold()).padding(.horizontal, 6).padding(.vertical, 2).background(Color.blue.opacity(0.14), in: Capsule()).foregroundStyle(Color.blue)
+                        Text("分项明细").font(.headline)
+                        Text("规则 · 不依赖 AI").font(.caption2.bold()).padding(.horizontal, 6).padding(.vertical, 2).background(Color.blue.opacity(0.14), in: Capsule()).foregroundStyle(Color.blue)
                         Spacer()
-                        Text(r.grade).font(.subheadline.bold()).foregroundStyle(r.color)
-                    }
-                    if let s = r.score {
-                        HStack(spacing: 10) {
-                            Text(String(s)).font(.system(size: 34, weight: .bold, design: .rounded)).foregroundStyle(r.color)
-                            VStack(alignment: .leading, spacing: 4) {
-                                ScoreBar(score: s, color: r.color)
-                                Text("安全分（越高越安全）· 这是风险评估，不是买卖建议").font(.caption2).foregroundStyle(.secondary)
-                            }
-                        }
                     }
                     if !r.hard.isEmpty {
                         VStack(alignment: .leading, spacing: 4) {
@@ -109,21 +101,6 @@ struct ReportCard: View {
                             }
                         }
                     }
-                    if !r.top.isEmpty {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("结论要点").font(.caption).foregroundStyle(.secondary)
-                            ForEach(r.top) { f in
-                                VStack(alignment: .leading, spacing: 1) {
-                                    HStack(alignment: .top, spacing: 6) {
-                                        Circle().fill(levelColor(f.level)).frame(width: 7, height: 7).padding(.top, 5)
-                                        Text(f.text).font(.subheadline)
-                                    }
-                                    Text("依据：" + f.basis).font(.caption2).foregroundStyle(.secondary).padding(.leading, 13)
-                                }
-                            }
-                        }
-                    }
-                    Divider()
                     ForEach(r.dims) { d in
                         DisclosureGroup {
                             VStack(alignment: .leading, spacing: 6) {
