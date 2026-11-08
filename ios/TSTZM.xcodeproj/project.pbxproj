@@ -28,6 +28,7 @@
 		57945635B26BB416A23D1C24 /* TokenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5157A34444D3CBAA16F1DC8 /* TokenView.swift */; };
 		69F46EE989CF1C563F28313B /* Narrative.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D643379E866F39F21887438 /* Narrative.swift */; };
 		725909C0DDDE5C505819596A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = ED3DE87E29C3A948998C5EFE /* Assets.xcassets */; };
+		76101FE88B7D3BDB0EA7343F /* CompactHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD67627B36911E4C1900ADB3 /* CompactHeader.swift */; };
 		76E78B0A229CA05528844E57 /* UnifiedTokenModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BBD9E775574F446AF172EE2 /* UnifiedTokenModel.swift */; };
 		780A7CA3AD6FBBFBA8719AA7 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 673CC854C3F5AED8B597D392 /* Components.swift */; };
 		7AA33C7EBF9F7590857E2258 /* Connectors.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAF80D0410C51109C5A3073B /* Connectors.swift */; };
@@ -115,6 +116,7 @@
 		E1B273DC40BF3C1A28998310 /* LifeSocial.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeSocial.swift; sourceTree = "<group>"; };
 		EAA14215030933CB3BB6FFC0 /* Dashboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dashboard.swift; sourceTree = "<group>"; };
 		ED3DE87E29C3A948998C5EFE /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		FD67627B36911E4C1900ADB3 /* CompactHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompactHeader.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -143,6 +145,7 @@
 				2BFD9C0F8353AD8D9C21B711 /* AnalysisEngine.swift */,
 				ED3DE87E29C3A948998C5EFE /* Assets.xcassets */,
 				884E52722EC4D62516527D9C /* CexView.swift */,
+				FD67627B36911E4C1900ADB3 /* CompactHeader.swift */,
 				673CC854C3F5AED8B597D392 /* Components.swift */,
 				BAF80D0410C51109C5A3073B /* Connectors.swift */,
 				EAA14215030933CB3BB6FFC0 /* Dashboard.swift */,
@@ -313,6 +316,7 @@
 				487DE13F75AF4CC4BE0DE4C2 /* AlertsView.swift in Sources */,
 				9996C3148700EC20225DE269 /* AnalysisEngine.swift in Sources */,
 				1E8E6B05AD6504D475488FF4 /* CexView.swift in Sources */,
+				76101FE88B7D3BDB0EA7343F /* CompactHeader.swift in Sources */,
 				780A7CA3AD6FBBFBA8719AA7 /* Components.swift in Sources */,
 				7AA33C7EBF9F7590857E2258 /* Connectors.swift in Sources */,
 				A4F064E14FD4508649706F31 /* Core.swift in Sources */,
