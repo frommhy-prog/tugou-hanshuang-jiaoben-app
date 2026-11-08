@@ -1,1 +1,1 @@
-PATCH_OK u_rm_stats u_rm_links u_rm_pill u_dash_state u_dash_toolbar u_refreshable app_tab_dash_rm dash_nostack m_refresh_field m_refresh_fn ls_life_store ls_life_key ls_soc_store ls_soc_key ls_soc_btn ls_soc_fact ls_soc_notify ne_store ne_key ne_btn ne_title ne_allliq ne_others ne_survive nv_title nv_nosim nv_cutsim rc_stage_rm rc_refresh_btn ae_social_merge th_nopct th_ratio_stat th_ratio_fn th_externals
+PATCH_OK (none new)

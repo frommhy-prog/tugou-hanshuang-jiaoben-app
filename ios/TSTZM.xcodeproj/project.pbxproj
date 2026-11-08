@@ -44,6 +44,7 @@
 		CE3541393879104177E73605 /* Lossy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D76E75436A979E7708A3F5B /* Lossy.swift */; };
 		D1EE2C8788EECC8A57067ECC /* Engine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E715496EC8426F387DE67C /* Engine.swift */; };
 		D6FFDE35CA1A7EFF4BB41D2B /* TSTZMApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 796A91B016E60A9852B7B81D /* TSTZMApp.swift */; };
+		E10B010F4BB4A9C908A96FC8 /* Verdict.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6C512444FD7F931BB2884D2 /* Verdict.swift */; };
 		E5E0B890A072623FD3396116 /* Widget.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF11CB1436FD6731D6C75C4 /* Widget.swift */; };
 		F4CDC6EA97CD0A1AE3F3B7BB /* ProChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C096B22068077AC8FF966D7 /* ProChart.swift */; };
 		F55D2AEA54F08B49124CA190 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 411CE31D7810F32D59BBDB21 /* Models.swift */; };
@@ -106,6 +107,7 @@
 		BE73CF7AA13A5E168372E867 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		C3E715496EC8426F387DE67C /* Engine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Engine.swift; sourceTree = "<group>"; };
 		C419FA3298537E0C98468B55 /* TSTZM.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = TSTZM.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C6C512444FD7F931BB2884D2 /* Verdict.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Verdict.swift; sourceTree = "<group>"; };
 		CE7637A10277EAFDC835A549 /* EvmToken.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EvmToken.swift; sourceTree = "<group>"; };
 		CEF11CB1436FD6731D6C75C4 /* Widget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Widget.swift; sourceTree = "<group>"; };
 		D8A594C95EF6EDFBF18C0067 /* lwc.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = lwc.js; sourceTree = "<group>"; };
@@ -165,6 +167,7 @@
 				796A91B016E60A9852B7B81D /* TSTZMApp.swift */,
 				9D294844D3A702F3E3CC5550 /* UnifiedToken.swift */,
 				7BBD9E775574F446AF172EE2 /* UnifiedTokenModel.swift */,
+				C6C512444FD7F931BB2884D2 /* Verdict.swift */,
 				01247A761DF811FA18EEC166 /* WalletIntel.swift */,
 				1238E4067C47CA7EDD28A501 /* WalletsView.swift */,
 				1B100768069027F9D63BD539 /* WosRedeem.swift */,
@@ -336,6 +339,7 @@
 				57945635B26BB416A23D1C24 /* TokenView.swift in Sources */,
 				0F6DA54AE7C2F2B2EB21F0AB /* UnifiedToken.swift in Sources */,
 				76E78B0A229CA05528844E57 /* UnifiedTokenModel.swift in Sources */,
+				E10B010F4BB4A9C908A96FC8 /* Verdict.swift in Sources */,
 				0EEB2CA979653D66D23F0E02 /* WalletIntel.swift in Sources */,
 				B067178EEEF1DB77AE457B5E /* WalletsView.swift in Sources */,
 				C55B501FEB4B3D7C85026BD5 /* WosRedeem.swift in Sources */,
