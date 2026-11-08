@@ -124,5 +124,9 @@ u_refreshable
 u_rm_links
 u_rm_pill
 u_rm_stats
+vd_fn
+vd_ret1
+vd_ret2
+vd_type
 wr_state
 wr_switch

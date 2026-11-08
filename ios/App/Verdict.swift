@@ -15,7 +15,7 @@ struct VerdictDelta: Identifiable {
     var good: Bool?
 }
 
-struct Verdict {
+struct TokenVerdict {
     var score: Int?
     var grade: String
     var color: Color
@@ -73,10 +73,10 @@ enum VerdictEngine {
 
     static func pctText(_ c: Double) -> String { String(format: "%+.0f%%", c * 100) }
 
-    static func build(_ vm: UTokenVM) -> Verdict {
+    static func build(_ vm: UTokenVM) -> TokenVerdict {
         let r = AnalysisEngine.build(vm)
         guard let m = vm.main else {
-            return Verdict(score: nil, grade: "数据不足", color: .gray, headline: "还没有行情数据", stage: "未知", risks: [], goods: [], watch: [], deltas: [], deltaTitle: "", completeness: "", conflict: nil)
+            return TokenVerdict(score: nil, grade: "数据不足", color: .gray, headline: "还没有行情数据", stage: "未知", risks: [], goods: [], watch: [], deltas: [], deltaTitle: "", completeness: "", conflict: nil)
         }
         let life = LifecycleCard.store[pairKey(vm)]?.0
         let narr = NarrativeRulesCard.store[tokenKey(vm)]
@@ -216,7 +216,7 @@ enum VerdictEngine {
             let rules = s >= 75 ? 2 : (s >= 55 ? 1 : 0)
             if ai >= 0 && abs(ai - rules) >= 2 { conflict = cat("AI 判断「", st, "」，规则判断「", g.0, "」，两边冲突。以各项依据里的真实数据为准，AI 只是辅助。") }
         }
-        return Verdict(score: score, grade: g.0, color: g.1, headline: headline, stage: stage, risks: Array(risks.prefix(6)), goods: Array(goods.prefix(4)), watch: Array(watch.prefix(5)), deltas: deltas, deltaTitle: deltaTitle, completeness: comp, conflict: conflict)
+        return TokenVerdict(score: score, grade: g.0, color: g.1, headline: headline, stage: stage, risks: Array(risks.prefix(6)), goods: Array(goods.prefix(4)), watch: Array(watch.prefix(5)), deltas: deltas, deltaTitle: deltaTitle, completeness: comp, conflict: conflict)
     }
 }
 

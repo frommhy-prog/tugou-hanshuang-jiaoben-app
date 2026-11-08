@@ -1,1 +1,1 @@
-PATCH_OK ls_lifereport_fields ls_lifereport_return ls_life_notify ne_notify tok_verdict
+PATCH_OK vd_type vd_fn vd_ret1 vd_ret2
