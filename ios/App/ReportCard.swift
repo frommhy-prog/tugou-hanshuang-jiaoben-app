@@ -134,7 +134,6 @@ struct ReportCard: View {
                     }
                 }
             }
-            AIResultCard(title: "AI 研判（与规则并行）", result: vm.ai, loading: vm.aiLoading, message: vm.aiMsg, onRun: vm.reAI)
         }
     }
 }

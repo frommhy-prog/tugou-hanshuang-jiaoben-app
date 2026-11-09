@@ -101,9 +101,14 @@ nv_title
 promo_guard
 promo_state
 rc_hn
+rc_noai
 rc_refresh_btn
 rc_stage_rm
 rc_ts
+tab_g1
+tab_g2
+tab_nav
+tab_state
 th_dex
 th_dexfn
 th_externals
