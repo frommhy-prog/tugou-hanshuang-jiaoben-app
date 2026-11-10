@@ -39,7 +39,6 @@
 		ACA59C68EDA15C8FDDB89F6C /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE73CF7AA13A5E168372E867 /* SettingsView.swift */; };
 		B067178EEEF1DB77AE457B5E /* WalletsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1238E4067C47CA7EDD28A501 /* WalletsView.swift */; };
 		BD5C3CFF9C2C099E94F67FD1 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 411CE31D7810F32D59BBDB21 /* Models.swift */; };
-		C55B501FEB4B3D7C85026BD5 /* WosRedeem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B100768069027F9D63BD539 /* WosRedeem.swift */; };
 		CE2EA463C691448BDE17CD2E /* AIChain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72BB888BB8FE9BBC2D8CEF64 /* AIChain.swift */; };
 		CE3541393879104177E73605 /* Lossy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D76E75436A979E7708A3F5B /* Lossy.swift */; };
 		D1EE2C8788EECC8A57067ECC /* Engine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E715496EC8426F387DE67C /* Engine.swift */; };
@@ -78,7 +77,6 @@
 		01247A761DF811FA18EEC166 /* WalletIntel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletIntel.swift; sourceTree = "<group>"; };
 		0C7E5C7130E884980F0BBF26 /* Promo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Promo.swift; sourceTree = "<group>"; };
 		1238E4067C47CA7EDD28A501 /* WalletsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletsView.swift; sourceTree = "<group>"; };
-		1B100768069027F9D63BD539 /* WosRedeem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WosRedeem.swift; sourceTree = "<group>"; };
 		1D643379E866F39F21887438 /* Narrative.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Narrative.swift; sourceTree = "<group>"; };
 		1F8DB1833F2D784C2C5EFAF3 /* Core.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core.swift; sourceTree = "<group>"; };
 		21D1990718F8B7A8B8202812 /* SolTokenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SolTokenView.swift; sourceTree = "<group>"; };
@@ -170,7 +168,6 @@
 				C6C512444FD7F931BB2884D2 /* Verdict.swift */,
 				01247A761DF811FA18EEC166 /* WalletIntel.swift */,
 				1238E4067C47CA7EDD28A501 /* WalletsView.swift */,
-				1B100768069027F9D63BD539 /* WosRedeem.swift */,
 				F7426E74087289F943666BAE /* Web */,
 			);
 			path = App;
@@ -342,7 +339,6 @@
 				E10B010F4BB4A9C908A96FC8 /* Verdict.swift in Sources */,
 				0EEB2CA979653D66D23F0E02 /* WalletIntel.swift in Sources */,
 				B067178EEEF1DB77AE457B5E /* WalletsView.swift in Sources */,
-				C55B501FEB4B3D7C85026BD5 /* WosRedeem.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
