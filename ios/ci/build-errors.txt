@@ -1,1 +1,0 @@
-/Users/runner/work/tugou-hanshuang-jiaoben-app/tugou-hanshuang-jiaoben-app/ios/App/TSTZMApp.swift:87:13: error: cannot find 'FrostView' in scope

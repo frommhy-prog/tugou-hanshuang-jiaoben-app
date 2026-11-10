@@ -185,7 +185,6 @@ struct UnifiedTokenRoot: View {
     @ViewBuilder
     private var content: some View {
         Group {
-            CompactHeader(vm: vm)
             KLineCard(vm: vm)
             FreshnessRow(vm: vm)
             tabBar

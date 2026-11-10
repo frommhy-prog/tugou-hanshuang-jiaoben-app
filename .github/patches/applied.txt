@@ -35,6 +35,9 @@ ch_scale
 ch_st
 ch_vol
 dash_nostack
+frost_deeplink_rm
+frost_router_rm
+frost_tab_rm
 kl_attr
 kl_cache_load
 kl_cache_save
@@ -80,6 +83,11 @@ m_startrun
 m_tick
 m_trades_defer
 m_trades_stamp
+merge_header_a
+merge_header_b
+merge_header_c1
+merge_header_c2
+merge_header_c3
 model_stale_refresh
 narr_guard
 ne_allliq

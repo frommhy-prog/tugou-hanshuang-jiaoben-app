@@ -4,6 +4,7 @@ import SwiftUI
 // 更多数据（FDV、买卖笔数、池子数、安全标签、链接、地址）点「更多数据」展开，默认收起，页面不再拖得很长。
 struct CompactHeader: View {
     @ObservedObject var vm: UTokenVM
+    var embedded: Bool = false
     @State private var expanded = false
     @State private var copied = false
 
@@ -108,12 +109,17 @@ struct CompactHeader: View {
     }
 
     @ViewBuilder
+    private func wrap<C: View>(@ViewBuilder _ c: () -> C) -> some View {
+        if embedded { c() } else { Card { c() } }
+    }
+
+    @ViewBuilder
     private func content(_ m: DexPair) -> some View {
         let h24 = m.priceChange?["h24"]
         let tx = m.txns?["h24"]
         let dex: String? = m.dexId
         let ls = links(m) + externals(m)
-        Card {
+        wrap {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 10) {
                     logo(m)

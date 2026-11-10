@@ -499,12 +499,10 @@ struct KLineCard: View {
     private var chartBlock: some View {
         Card {
             VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Label("K 线", systemImage: "chart.xyaxis.line").font(.headline)
-                    Spacer()
-                    Text(cvm.statusText).font(.caption2).foregroundStyle(.secondary)
-                }
+                CompactHeader(vm: vm, embedded: true)
+                Divider()
                 periodBar
+                Text(cvm.statusText).font(.caption2).foregroundStyle(.secondary)
                 if cvm.payload.isEmpty {
                     if let n = cvm.note {
                         Text(n).font(.footnote).foregroundStyle(.secondary)
