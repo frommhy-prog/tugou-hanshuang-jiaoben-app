@@ -123,8 +123,8 @@ jobs:
           ver = "1.0." + run
           app = {
             "name": "TSTZ-M", "bundleIdentifier": "com.Hao-Yi-Miao.TSTZ-M", "developerName": "TSTZ-M",
-            "subtitle": "土狗体检 / 钱包 / 寒霜启示录",
-            "localizedDescription": "土狗合约体检、多链钱包、寒霜启示录兑换码、到价提醒、小组件与灵动岛。",
+            "subtitle": "土狗体检 / 钱包 / 盯盘看板",
+            "localizedDescription": "土狗合约体检、多链钱包、盯盘看板、到价提醒、小组件与灵动岛。",
             "iconURL": raw + "/sidestore/icon.png", "tintColor": "001C44",
             "version": ver, "versionDate": now, "downloadURL": dl, "size": size,
             "versions": [{"version": ver, "buildVersion": run, "date": now, "downloadURL": dl, "size": size, "minOSVersion": "17.0"}]
