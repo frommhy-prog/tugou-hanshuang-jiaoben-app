@@ -334,7 +334,10 @@ struct WalletDetailView: View {
                     Text("分析").tag(2)
                 }
                 .pickerStyle(.segmented)
-                if seg == 0 { holdingsSection }
+                if seg == 0 {
+                    HoldingsDeepCard(result: result)
+                    holdingsSection
+                }
                 else if seg == 1 { tradesSection }
                 else { analysisSection }
             }
@@ -458,6 +461,7 @@ struct WalletDetailView: View {
                 EvmAnalysisBody(wallet: wallet, vm: evm) // 新增：EVM 钱包分析
             } else if let w = vm.w {
                 VStack(spacing: 14) {
+                    WalletIntelInline(address: wallet.address)
                     if let s = w.stats {
                         Card {
                             VStack(alignment: .leading, spacing: 10) {

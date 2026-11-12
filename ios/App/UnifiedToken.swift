@@ -45,13 +45,16 @@ struct UnifiedTokenRoot: View {
         switch tokTab {
         case 0:
             VerdictCard(vm: vm)
+            TokenDeepCard(vm: vm)
             AIResultCard(title: "AI 研判（与规则并行）", result: vm.ai, loading: vm.aiLoading, message: vm.aiMsg, onRun: vm.reAI)
             LifecycleCard(vm: vm)
         case 1:
+            TradeDeepCard(vm: vm)
             flowCard
             poolsCard
         case 2:
             HoldersIntelButton(vm: vm)
+            HolderDeepCard(vm: vm)
             holdersCard
         case 3:
             ReportCard(vm: vm)

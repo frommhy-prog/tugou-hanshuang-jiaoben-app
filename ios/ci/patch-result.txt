@@ -1,1 +1,1 @@
-PATCH_OK (none new)
+PATCH_OK h15_tab0 h15_tab1 h15_tab2 h15_wv_hold h15_wv_intel h15_slice

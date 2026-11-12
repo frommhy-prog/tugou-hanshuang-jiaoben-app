@@ -802,6 +802,7 @@ struct KLineDetailCard: View {
                         .font(.subheadline.monospacedDigit())
                         if s.buy + s.sell > 0 { Text(String(format: "买盘占本根成交额 %.0f%%", s.buy / (s.buy + s.sell) * 100)).font(.footnote) }
                         if let b = big { Text("最大一笔：" + (b.buy ? "买入 " : "卖出 ") + Fmt2.usd(b.usd) + " · " + Addr.short(b.who)).font(.footnote) }
+                        Text(KDeep.sliceExtra(s.inWin)).font(.footnote)
                     }
                 }
             }

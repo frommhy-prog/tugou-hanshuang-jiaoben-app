@@ -76,6 +76,12 @@ h14_web_c
 h14_webuse
 h14_wv_head
 h14_wv_row
+h15_slice
+h15_tab0
+h15_tab1
+h15_tab2
+h15_wv_hold
+h15_wv_intel
 kl_attr
 kl_cache_load
 kl_cache_save
