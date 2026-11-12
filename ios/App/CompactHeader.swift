@@ -1,12 +1,13 @@
 import SwiftUI
 
-// 交易所风格的紧凑头部：一屏内看到 代币 + 价格 + 涨跌 + 核心 4 项数据，紧接着就是 K 线。
-// 更多数据（FDV、买卖笔数、池子数、安全标签、链接、地址）点「更多数据」展开，默认收起，页面不再拖得很长。
+// 交易所风格头部：头像（带链徽章）+ 代币 / 报价币 + 叙事标签；价格与涨跌；核心 4 项数据。
+// 更多数据（FDV、买卖笔数、池子数、安全标签、地址）点「更多数据」展开，默认收起。
 struct CompactHeader: View {
     @ObservedObject var vm: UTokenVM
     var embedded: Bool = false
     @State private var expanded = false
     @State private var copied = false
+    @State private var narr: NarrReport?
 
     private func col(_ v: Double?) -> Color {
         guard let v = v else { return .secondary }
@@ -67,14 +68,7 @@ struct CompactHeader: View {
     }
 
     private func logo(_ m: DexPair) -> some View {
-        let url = infoJV(m)?.at("imageUrl")?.text.flatMap { URL(string: $0) }
-        return AsyncImage(url: url) { img in
-            img.resizable().scaledToFill()
-        } placeholder: {
-            Circle().fill(Color.secondary.opacity(0.2)).overlay(Text(String((m.baseToken?.symbol ?? "?").prefix(1))).font(.subheadline))
-        }
-        .frame(width: 38, height: 38)
-        .clipShape(Circle())
+        AvTokenLogo(chain: vm.chain, address: vm.address, symbol: m.baseToken?.symbol ?? vm.symbol, hint: m.info?.imageUrl, size: 52)
     }
 
     private func safetyChips() -> [(String, Color)] {
@@ -108,97 +102,174 @@ struct CompactHeader: View {
         return String(format: "%.1f%%", m.liq / mc * 100)
     }
 
+    // MARK: 叙事标签（紧挨头像）：主题词命中 + 热度；点一下跳到「叙事」页
+    private var nKey: String { cat(vm.chain.rawValue, ":", vm.address, "#", String(vm.refreshToken)) }
+
+    private func narrText(_ m: DexPair) -> (String, Color) {
+        let rep: NarrReport? = NarrativeRulesCard.store[nKey] ?? narr
+        if let r = rep {
+            let theme: String = r.hits.first?.title ?? "无命中主题词"
+            var heat: String = r.heat
+            if let i = heat.firstIndex(of: "（") { heat = String(heat[heat.startIndex..<i]) }
+            let tail: String = (heat.isEmpty || heat.hasPrefix("样本")) ? "" : " · " + heat
+            return ("叙事 · " + theme + tail, r.hits.isEmpty ? Color.gray : Color.purple)
+        }
+        let ws = NarrLex.words(cat(m.baseToken?.name ?? "", " ", m.baseToken?.symbol ?? ""))
+        if let h = NarrLex.match(ws).first { return ("叙事 · " + h.title, Color.purple) }
+        return ("叙事 · 分析中", Color.gray)
+    }
+
+    private func narrChip(_ m: DexPair) -> some View {
+        let t = narrText(m)
+        return Button {
+            Cfg.defaults.set(4, forKey: "tokTab")
+        } label: {
+            Text(t.0)
+                .font(.caption2.bold())
+                .lineLimit(1)
+                .padding(.horizontal, 7)
+                .padding(.vertical, 3)
+                .background(t.1.opacity(0.16), in: Capsule())
+                .foregroundStyle(t.1)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func loadNarr() async {
+        guard let p = vm.main, !vm.address.isEmpty else { return }
+        let k = nKey
+        if NarrativeRulesCard.store[k] != nil { return }
+        let r = await NarrEngine.run(pair: p, chain: vm.chain, address: vm.address)
+        NarrativeRulesCard.store[k] = r
+        narr = r
+    }
+
+    // MARK: 布局
     @ViewBuilder
     private func wrap<C: View>(@ViewBuilder _ c: () -> C) -> some View {
         if embedded { c() } else { Card { c() } }
+    }
+
+    private func titleRow(_ m: DexPair, _ ls: [(String, URL)]) -> some View {
+        let quote: String = m.quoteToken?.symbol ?? ""
+        let sub: String = cat(vm.chain.title, " · ", m.dexId ?? "?", " · ", m.baseToken?.name ?? "")
+        return HStack(alignment: .center, spacing: 12) {
+            logo(m)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(m.baseToken?.symbol ?? vm.symbol).font(.title3.bold()).lineLimit(1)
+                    if !quote.isEmpty { Text("/" + quote).font(.subheadline).foregroundStyle(.secondary).lineLimit(1) }
+                }
+                narrChip(m)
+                Text(sub).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+            }
+            Spacer(minLength: 4)
+            Menu {
+                ForEach(ls.indices, id: \.self) { i in
+                    Link(ls[i].0, destination: ls[i].1)
+                }
+                Button("复制合约地址") { UIPasteboard.general.string = vm.address }
+            } label: {
+                Image(systemName: "ellipsis.circle").font(.title3)
+            }
+        }
+    }
+
+    private func priceRow(_ m: DexPair, _ h24: Double?) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text(m.price.map { Money.price($0) } ?? "—")
+                .font(.system(size: 30, weight: .bold, design: .rounded))
+                .foregroundStyle(col(h24))
+                .minimumScaleFactor(0.6)
+                .lineLimit(1)
+            Text(pct(h24)).font(.headline).foregroundStyle(col(h24))
+            Spacer()
+        }
+    }
+
+    private func changeRow(_ m: DexPair) -> some View {
+        HStack(spacing: 6) {
+            ForEach([("5分", "m5"), ("1时", "h1"), ("6时", "h6"), ("24时", "h24")], id: \.1) { it in
+                let v = m.priceChange?[it.1]
+                HStack(spacing: 4) {
+                    Text(it.0).font(.caption2).foregroundStyle(.secondary)
+                    Text(pct(v)).font(.caption.bold()).foregroundStyle(col(v))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 5)
+                .background(Color.secondary.opacity(0.1), in: RoundedRectangle(cornerRadius: 7))
+            }
+        }
+    }
+
+    private func statGrid(_ m: DexPair) -> some View {
+        let cols = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
+        let age: String = m.pairCreatedAt.map { Fmt2.dur(Date().timeIntervalSince1970 - $0 / 1000) } ?? "—"
+        return LazyVGrid(columns: cols, alignment: .leading, spacing: 8) {
+            stat("市值", Fmt2.usd(m.marketCap))
+            stat("流动性", Fmt2.usd(m.liq))
+            stat("24h 成交", Fmt2.usd(m.volume?["h24"]))
+            stat("池龄", age)
+        }
+    }
+
+    private func moreBlock(_ m: DexPair, _ tx: DexTx?) -> some View {
+        let cols = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
+        let chips = safetyChips()
+        return VStack(alignment: .leading, spacing: 10) {
+            LazyVGrid(columns: cols, alignment: .leading, spacing: 8) {
+                stat("FDV", Fmt2.usd(m.fdv))
+                stat("24h 买/卖", cat(String(tx?.buys ?? 0), "/", String(tx?.sells ?? 0)))
+                stat("池子数", String(vm.pairs.count))
+                stat("流动性/市值", liqRatio(m))
+            }
+            if !chips.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) { ForEach(chips.indices, id: \.self) { i in chip(chips[i].0, chips[i].1) } }
+                }
+            }
+            HStack {
+                Text(Addr.short(vm.address)).font(.system(.caption, design: .monospaced)).foregroundStyle(.secondary)
+                Button {
+                    UIPasteboard.general.string = vm.address
+                    copied = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { copied = false }
+                } label: {
+                    Image(systemName: copied ? "checkmark" : "doc.on.doc").font(.caption)
+                }
+                Spacer()
+                Text("每 20 秒自动刷新").font(.caption2).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var toggleButton: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.2)) { expanded.toggle() }
+        } label: {
+            HStack(spacing: 4) {
+                Text(expanded ? "收起" : "更多数据").font(.caption)
+                Image(systemName: expanded ? "chevron.up" : "chevron.down").font(.caption2)
+            }
+            .frame(maxWidth: .infinity)
+            .foregroundStyle(.secondary)
+        }
+        .buttonStyle(.plain)
     }
 
     @ViewBuilder
     private func content(_ m: DexPair) -> some View {
         let h24 = m.priceChange?["h24"]
         let tx = m.txns?["h24"]
-        let dex: String? = m.dexId
         let ls = links(m) + externals(m)
         wrap {
             VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 10) {
-                    logo(m)
-                    VStack(alignment: .leading, spacing: 2) {
-                        HStack(spacing: 6) {
-                            Text(m.baseToken?.symbol ?? vm.symbol).font(.headline).lineLimit(1)
-                            chip((m.chainId ?? "").uppercased(), Color.blue)
-                            if let d = dex { chip(d, Color.gray) }
-                        }
-                        Text(m.baseToken?.name ?? "").font(.caption).foregroundStyle(.secondary).lineLimit(1)
-                    }
-                    Spacer()
-                    Menu {
-                        ForEach(ls.indices, id: \.self) { i in
-                            Link(ls[i].0, destination: ls[i].1)
-                        }
-                        Button("复制合约地址") { UIPasteboard.general.string = vm.address }
-                    } label: {
-                        Image(systemName: "ellipsis.circle").font(.title3)
-                    }
-                }
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(m.price.map { Money.price($0) } ?? "—").font(.system(size: 30, weight: .bold, design: .rounded)).foregroundStyle(col(h24)).minimumScaleFactor(0.6).lineLimit(1)
-                    Text(pct(h24)).font(.headline).foregroundStyle(col(h24))
-                    Spacer()
-                }
-                HStack(spacing: 6) {
-                    ForEach([("5分", "m5"), ("1时", "h1"), ("6时", "h6"), ("24时", "h24")], id: \.1) { it in
-                        let v = m.priceChange?[it.1]
-                        HStack(spacing: 4) {
-                            Text(it.0).font(.caption2).foregroundStyle(.secondary)
-                            Text(pct(v)).font(.caption.bold()).foregroundStyle(col(v))
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 5)
-                        .background(Color.secondary.opacity(0.1), in: RoundedRectangle(cornerRadius: 7))
-                    }
-                }
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], alignment: .leading, spacing: 8) {
-                    stat("市值", Fmt2.usd(m.marketCap))
-                    stat("流动性", Fmt2.usd(m.liq))
-                    stat("24h 成交", Fmt2.usd(m.volume?["h24"]))
-                    stat("池龄", m.pairCreatedAt.map { Fmt2.dur(Date().timeIntervalSince1970 - $0 / 1000) } ?? "—")
-                }
-                if expanded {
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], alignment: .leading, spacing: 8) {
-                        stat("FDV", Fmt2.usd(m.fdv))
-                        stat("24h 买/卖", cat(String(tx?.buys ?? 0), "/", String(tx?.sells ?? 0)))
-                        stat("池子数", String(vm.pairs.count))
-                        stat("流动性/市值", liqRatio(m))
-                    }
-                    let chips = safetyChips()
-                    if !chips.isEmpty {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 6) { ForEach(chips.indices, id: \.self) { i in chip(chips[i].0, chips[i].1) } }
-                        }
-                    }
-                    HStack {
-                        Text(Addr.short(vm.address)).font(.system(.caption, design: .monospaced)).foregroundStyle(.secondary)
-                        Button {
-                            UIPasteboard.general.string = vm.address
-                            copied = true
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { copied = false }
-                        } label: {
-                            Image(systemName: copied ? "checkmark" : "doc.on.doc").font(.caption)
-                        }
-                        Spacer()
-                        Text("每 20 秒自动刷新").font(.caption2).foregroundStyle(.secondary)
-                    }
-                }
-                Button { withAnimation(.easeInOut(duration: 0.2)) { expanded.toggle() } } label: {
-                    HStack(spacing: 4) {
-                        Text(expanded ? "收起" : "更多数据").font(.caption)
-                        Image(systemName: expanded ? "chevron.up" : "chevron.down").font(.caption2)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
+                titleRow(m, ls)
+                priceRow(m, h24)
+                changeRow(m)
+                statGrid(m)
+                if expanded { moreBlock(m, tx) }
+                toggleButton
             }
         }
     }
@@ -207,6 +278,7 @@ struct CompactHeader: View {
         Group {
             if let m = vm.main { content(m) }
         }
+        .task(id: nKey) { await loadNarr() }
     }
 }
 
