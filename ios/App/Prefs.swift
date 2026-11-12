@@ -96,6 +96,7 @@ struct HistoryItem: Codable, Identifiable, Hashable {
     var address: String
     var title: String
     var at: Date
+    var logo: String? = nil
 }
 
 enum QueryHistory {
@@ -106,9 +107,10 @@ enum QueryHistory {
         }
         set { Cfg.defaults.set(try? JSONEncoder().encode(newValue), forKey: "qhist") }
     }
-    static func add(kind: String, chain: String, address: String, title: String) {
+    static func add(kind: String, chain: String, address: String, title: String, logo: String? = nil) {
         var list = items.filter { !($0.kind == kind && $0.address.lowercased() == address.lowercased()) }
-        list.insert(HistoryItem(kind: kind, chain: chain, address: address, title: title, at: Date()), at: 0)
+        let keepLogo = logo ?? items.first(where: { $0.kind == kind && $0.address.lowercased() == address.lowercased() })?.logo
+        list.insert(HistoryItem(kind: kind, chain: chain, address: address, title: title, at: Date(), logo: keepLogo), at: 0)
         items = Array(list.prefix(40))
     }
     static func remove(_ id: UUID) { items = items.filter { $0.id != id } }

@@ -160,7 +160,8 @@ struct WalletsView: View {
 
     private func row(_ w: Wallet) -> some View {
         let r = vm.results.first { $0.wallet.id == w.id }
-        return HStack {
+        return HStack(spacing: 12) {
+            AvWalletIcon(address: w.address, chain: avWalletChain(w.address, w.chains), size: 40)
             VStack(alignment: .leading, spacing: 3) {
                 Text(w.label.isEmpty ? "钱包" : w.label).font(.headline)
                 Text(Addr.short(w.address)).font(.caption.monospaced()).foregroundStyle(.secondary)
@@ -348,7 +349,8 @@ struct WalletDetailView: View {
     private var headerCard: some View {
         Card {
             VStack(alignment: .leading, spacing: 8) {
-                HStack {
+                HStack(spacing: 10) {
+                    AvWalletIcon(address: wallet.address, chain: avWalletChain(wallet.address, wallet.chains), size: 36)
                     Text(Addr.short(wallet.address)).font(.subheadline.monospaced())
                     Button { UIPasteboard.general.string = wallet.address } label: { Image(systemName: "doc.on.doc") }.font(.caption)
                     Spacer()

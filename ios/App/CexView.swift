@@ -35,6 +35,7 @@ struct AdHocWalletRoot: View {
     @State private var input = ""
     @State private var hist: [HistoryItem] = QueryHistory.items.filter { $0.kind == "wallet" }
     @State private var path: [AdHocTarget] = []
+    @State private var showAllHist = false
 
     private var myWallets: [Wallet] { Cfg.wallets }
 
@@ -70,7 +71,8 @@ struct AdHocWalletRoot: View {
                     Section("我的钱包（点一下查询）") {
                         ForEach(myWallets) { w in
                             Button { open(w.address) } label: {
-                                HStack {
+                                HStack(spacing: 10) {
+                                    AvWalletIcon(address: w.address, chain: avWalletChain(w.address, w.chains), size: 30)
                                     Text(w.label.isEmpty ? "钱包" : w.label).foregroundStyle(Color.primary)
                                     Spacer()
                                     Text(Addr.short(w.address)).font(.caption.monospaced()).foregroundStyle(.secondary)
@@ -79,32 +81,20 @@ struct AdHocWalletRoot: View {
                         }
                     }
                 }
-                Section {
-                    if hist.isEmpty { Text("还没有查询记录").foregroundStyle(.secondary) }
-                    ForEach(hist) { h in
-                        Button { open(h.address) } label: {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(Addr.short(h.address)).font(.subheadline.monospaced()).foregroundStyle(Color.primary)
-                                    Text(h.chain == "solana" ? "Solana" : "EVM").font(.caption2).foregroundStyle(.secondary)
-                                }
-                                Spacer()
-                                Text(TZ.short(h.at)).font(.caption2).foregroundStyle(.secondary)
-                            }
+                if !hist.isEmpty {
+                    Section {
+                        AvRecentStrip(items: Array(hist.prefix(12)), showTitle: false) { h in open(h.address) }
+                            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                    } header: {
+                        HStack {
+                            Text("最近查询")
+                            Spacer()
+                            Button("全部记录") { showAllHist = true }.font(.caption)
                         }
-                    }
-                    .onDelete { idx in
-                        for i in idx { QueryHistory.remove(hist[i].id) }
-                        hist = QueryHistory.items.filter { $0.kind == "wallet" }
-                    }
-                } header: {
-                    HStack {
-                        Text("查询记录")
-                        Spacer()
-                        if !hist.isEmpty { Button("清空") { QueryHistory.clear(kind: "wallet"); hist = [] }.font(.caption) }
                     }
                 }
             }
+            .sheet(isPresented: $showAllHist) { AvHistorySheet(kind: "wallet") { h in open(h.address) } }
             .navigationTitle("查询地址")
             .navigationDestination(for: AdHocTarget.self) { t in AdHocDetail(target: t) }
         }

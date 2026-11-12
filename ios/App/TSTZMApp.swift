@@ -45,13 +45,13 @@ extension Notification.Name {
     static let cfgChanged = Notification.Name("tstzm.cfgChanged")
 }
 
-// 全局路由：深链可切换标签页，并把兑换码交给寒霜页
+// 全局路由：深链可切换标签页
 final class AppRouter: ObservableObject {
     static let shared = AppRouter()
     @Published var tab = 0
 }
 
-// tstzm://setup?token=xxxx 一键写入令牌；tstzm://frost?code=XXXX 跳到寒霜页并带上兑换码
+// tstzm://setup?token=xxxx 一键写入令牌
 enum Deeplink {
     static func handle(_ url: URL) {
         guard url.scheme == "tstzm" else { return }

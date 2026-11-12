@@ -21,6 +21,8 @@ extension TF {
         case .h1: return 3600
         case .h4: return 14400
         case .d1: return 86400
+        case .w1: return 604800
+        case .mo1: return 2592000
         }
     }
 }
@@ -65,8 +67,9 @@ struct KLineWeb: UIViewRepresentable {
     let seq: Int
     let clearToken: Int
     let onWeb: (Double?) -> Void
+    var onFail: (() -> Void)? = nil
 
-    func makeCoordinator() -> Coord { Coord(onWeb) }
+    func makeCoordinator() -> Coord { Coord(onWeb, onFail) }
 
     func makeUIView(context: Context) -> WKWebView {
         let cfg = WKWebViewConfiguration()
@@ -79,13 +82,14 @@ struct KLineWeb: UIViewRepresentable {
         wv.scrollView.bounces = false
         wv.navigationDelegate = context.coordinator
         context.coordinator.web = wv
-        wv.loadHTMLString(KLineHTML.page(), baseURL: nil)
+        context.coordinator.reloadPage()
         return wv
     }
 
     func updateUIView(_ wv: WKWebView, context: Context) {
         let c = context.coordinator
         c.onWeb = onWeb
+        c.onFail = onFail
         c.push(payload, seq: seq)
         if clearToken != c.lastClear {
             c.lastClear = clearToken
@@ -94,32 +98,73 @@ struct KLineWeb: UIViewRepresentable {
     }
 
     static func dismantleUIView(_ uiView: WKWebView, coordinator: Coord) {
+        coordinator.stop()
         uiView.configuration.userContentController.removeScriptMessageHandler(forName: "chart")
     }
 
+    // 带自愈的网页桥：页面加载后推数据，3.5 秒内没收到「已渲染」就重载页面（最多 2 次），仍失败则通知上层退回基础图表
     final class Coord: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         var onWeb: (Double?) -> Void
+        var onFail: (() -> Void)?
         weak var web: WKWebView?
         var loaded = false
-        var pending: String?
+        var lastPayload = ""
         var lastSeq = -1
         var lastClear = 0
+        var gotOK = false
+        var tries = 0
+        var gen = 0
 
-        init(_ onWeb: @escaping (Double?) -> Void) { self.onWeb = onWeb }
+        init(_ onWeb: @escaping (Double?) -> Void, _ onFail: (() -> Void)?) {
+            self.onWeb = onWeb
+            self.onFail = onFail
+        }
+
+        func reloadPage() {
+            loaded = false
+            gotOK = false
+            gen += 1
+            web?.loadHTMLString(KLineHTML.page(), baseURL: nil)
+        }
+
+        func stop() { gen += 1 }
 
         func push(_ payload: String, seq: Int) {
             if payload.isEmpty || seq == lastSeq { return }
             lastSeq = seq
-            if loaded { web?.evaluateJavaScript("window.pushData(" + payload + ")", completionHandler: nil) }
-            else { pending = payload }
+            lastPayload = payload
+            if loaded { send() }
+        }
+
+        private func send() {
+            guard let wv = web, !lastPayload.isEmpty else { return }
+            let g = gen
+            wv.evaluateJavaScript("window.pushData(" + lastPayload + ")") { [weak self] _, err in
+                if err != nil { self?.failSoon(g) }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) { [weak self] in
+                guard let s = self, s.gen == g, !s.gotOK else { return }
+                s.failSoon(g)
+            }
+        }
+
+        private func failSoon(_ g: Int) {
+            if g != gen || gotOK { return }
+            if tries < 2 {
+                tries += 1
+                reloadPage()
+            } else {
+                onFail?()
+            }
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             loaded = true
-            if let p = pending {
-                pending = nil
-                webView.evaluateJavaScript("window.pushData(" + p + ")", completionHandler: nil)
-            }
+            send()
+        }
+
+        func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+            reloadPage()
         }
 
         func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
@@ -127,6 +172,8 @@ struct KLineWeb: UIViewRepresentable {
             if type == "sel", let t = d["t"] as? Double { onWeb(t) }
             else if type == "clear" { onWeb(nil) }
             else if type == "more" { onWeb(-1) }
+            else if type == "ok" { gotOK = true }
+            else if type == "err" { failSoon(gen) }
         }
     }
 }
@@ -168,6 +215,7 @@ final class KLineVM: ObservableObject {
     private var key = ""
     private var gen = 0
     private var resumeBefore: Double?
+    private var base: [Candle] = []   // 拉到的原始 K 线（周线月线用日线汇总）
 
     var tzOff: Double { Double(TZ.current.secondsFromGMT()) }
 
@@ -202,7 +250,7 @@ final class KLineVM: ObservableObject {
     func loadMore() {
         if loadingHist || histDone || candles.isEmpty { return }
         let g = gen
-        let b = (candles.first?.t ?? 0) - 1
+        let b = (base.first?.t ?? 0) - 1
         histMore = false
         Task { await loadHistory(g, startBefore: b) }
     }
@@ -235,7 +283,7 @@ final class KLineVM: ObservableObject {
     private func reload() {
         gen += 1
         let g = gen
-        candles = KLineCache.load(chain.rawValue + ":" + pair + ":" + tf.rawValue)
+        setCandles(KLineCache.load(chain.rawValue + ":" + pair + ":" + tf.rawValue))
         if !candles.isEmpty { rebuild() }
         note = nil
         histDone = false
@@ -247,6 +295,12 @@ final class KLineVM: ObservableObject {
         aiLoading = []
         loadingHist = false
         Task { await loadHistory(g, startBefore: nil) }
+    }
+
+    private func setCandles(_ raw: [Candle]) {
+        base = raw
+        candles = tf.rolled(raw)
+        KLineShared.shared.update(chain: chain, pair: pair, tf: tf, candles: candles)
     }
 
     private func merged(_ base: [Candle], _ over: [Candle]) -> [Candle] {
@@ -281,7 +335,7 @@ final class KLineVM: ObservableObject {
                 let page = try await fetchPage(before, g)
                 if g != gen { return }
                 if page.isEmpty { histDone = true; break }
-                candles = merged(page, candles)
+                setCandles(merged(page, base))
                 rebuild()
                 pages += 1
                 if page.count < 1000 { histDone = true; break }
@@ -304,7 +358,7 @@ final class KLineVM: ObservableObject {
         if pair.isEmpty || candles.isEmpty { return }
         let g = gen
         if let page = try? await MarketAPI.candlesPage(chain, pair, tf, before: nil, limit: 60), g == gen, !page.isEmpty {
-            candles = merged(candles, page)
+            setCandles(merged(base, page))
             rebuild()
         }
     }
@@ -329,7 +383,7 @@ final class KLineVM: ObservableObject {
         if !trades.isEmpty, let first = candles.first?.t, let last = candles.last?.t {
             var buckets: [Double: [Double]] = [:]
             for t in trades {
-                let b = (t.t / sec).rounded(.down) * sec
+                let b = kBucket(t.t, tf)
                 if b < first || b > last { continue }
                 var e = buckets[b] ?? [0, 0]
                 if t.buy { e[0] += t.usd } else { e[1] += t.usd }
@@ -345,12 +399,12 @@ final class KLineVM: ObservableObject {
         }
 
         for m in extraMarks where m.count >= 4 {
-            let b = (m[0] / sec).rounded(.down) * sec
+            let b = kBucket(m[0], tf)
             if let f = candles.first?.t, let l = candles.last?.t, b >= f, b <= l { mk.append([b + off, m[1], m[2], m[3]]) }
         }
         var created: Any = NSNull()
         if let cm = createdMs {
-            let b = ((cm / 1000) / sec).rounded(.down) * sec
+            let b = kBucket(cm / 1000, tf)
             created = b + off
         }
         var sel: Any = NSNull()
@@ -373,7 +427,7 @@ final class KLineVM: ObservableObject {
             payload = s
             seq += 1
         }
-        KLineCache.save(key: chain.rawValue + ":" + pair + ":" + tf.rawValue, candles)
+        KLineCache.save(key: chain.rawValue + ":" + pair + ":" + tf.rawValue, base)
     }
 
     // 任意地址的拆解（成本、盈亏、入场时点、状态），同一地址只拆一次
@@ -400,6 +454,8 @@ struct KLineCard: View {
     @AppStorage("kMain", store: Cfg.defaults) private var mainSet = "MA,SUPER"
     @AppStorage("kSub", store: Cfg.defaults) private var subInd = "MACD"
     @AppStorage("kMcap", store: Cfg.defaults) private var mcap = false
+    @State private var webFailed = false
+    @State private var fallbackSel: Date?
 
     private var key: String { vm.chain.rawValue + ":" + (vm.main?.pairAddress ?? "") + ":" + vm.address }
 
@@ -409,6 +465,7 @@ struct KLineCard: View {
             KLineDetailCard(vm: vm, cvm: cvm)
         }
         .task(id: key) {
+            webFailed = false
             cvm.dark = (scheme == .dark)
             applyCfg()
             cvm.sync(trades: vm.trades, createdMs: vm.main?.pairCreatedAt)
@@ -455,23 +512,44 @@ struct KLineCard: View {
     }
 
     private var periodBar: some View {
-        let main: [TF] = [.m1, .m5, .h1, .h4, .d1]
-        return HStack(spacing: 4) {
-            ForEach(main) { t in
-                Button { cvm.setTF(t) } label: {
-                    Text(t.title).font(.footnote.weight(cvm.tf == t ? .bold : .regular)).padding(.horizontal, 8).padding(.vertical, 4).background(cvm.tf == t ? Color.accentColor.opacity(0.18) : Color.clear, in: Capsule())
+        HStack(spacing: 6) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 2) {
+                    ForEach(TF.allCases) { t in
+                        Button { cvm.setTF(t) } label: {
+                            Text(t.title)
+                                .font(.footnote.weight(cvm.tf == t ? .bold : .regular))
+                                .padding(.horizontal, 9)
+                                .padding(.vertical, 5)
+                                .background(cvm.tf == t ? Color.accentColor.opacity(0.18) : Color.clear, in: Capsule())
+                                .foregroundStyle(cvm.tf == t ? Color.accentColor : Color.secondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
-                .buttonStyle(.plain)
             }
-            Menu {
-                ForEach(TF.allCases.filter { !main.contains($0) }) { t in Button(t.title) { cvm.setTF(t) } }
-            } label: {
-                Text(main.contains(cvm.tf) ? "更多 ▾" : cvm.tf.title + " ▾").font(.footnote.weight(main.contains(cvm.tf) ? .regular : .bold))
-            }
-            Spacer()
             Button { mcap.toggle() } label: {
                 Text(mcap ? "市值 ⇄" : "价格 ⇄").font(.footnote.weight(.semibold))
             }
+        }
+    }
+
+    // 高级图表（TradingView Lightweight Charts）渲染失败时自动退回系统自带的基础 K 线图，不再出现空白
+    @ViewBuilder
+    private var chartArea: some View {
+        if webFailed {
+            VStack(alignment: .leading, spacing: 6) {
+                CandleChartView(candles: cvm.candles, selected: $fallbackSel)
+                HStack {
+                    Text("高级图表没能加载，已切换为基础图表").font(.caption2).foregroundStyle(.secondary)
+                    Spacer()
+                    Button("重试高级图表") { webFailed = false }.font(.caption2.weight(.semibold))
+                }
+            }
+        } else {
+            KLineWeb(payload: cvm.payload, seq: cvm.seq, clearToken: cvm.clearToken, onWeb: { t in cvm.onWeb(t) }, onFail: { webFailed = true })
+                .frame(height: 460)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
         }
     }
 
@@ -511,9 +589,7 @@ struct KLineCard: View {
                         HStack(spacing: 8) { ProgressView(); Text("加载 K 线…").font(.footnote).foregroundStyle(.secondary) }
                     }
                 } else {
-                    KLineWeb(payload: cvm.payload, seq: cvm.seq, clearToken: cvm.clearToken) { t in cvm.onWeb(t) }
-                        .frame(height: 460)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                    chartArea
                     indicatorBar
                     if cvm.histPaused {
                         Button("历史加载被限速打断，点这里继续补全") { cvm.resume() }.font(.footnote.weight(.semibold))

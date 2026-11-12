@@ -88,7 +88,7 @@ struct ProbeResult: Identifiable {
     var note: String
 }
 
-struct DashboardView: View {
+struct DiagnosticsView: View {
     @ObservedObject private var hub = SourceHub.shared
     @State private var ai: [AITestRow] = []
     @State private var aiBusy = false
@@ -165,7 +165,7 @@ struct DashboardView: View {
                 }
                 .padding()
             }
-            .navigationTitle("仪表盘")
+            .navigationTitle("系统诊断")
             .onAppear { snaps = TokenStore.list() }
         }
     }

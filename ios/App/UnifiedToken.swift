@@ -115,38 +115,7 @@ struct UnifiedTokenRoot: View {
 
     // MARK: 输入与记录
     private var inputCard: some View {
-        Card {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    TextField("粘贴合约地址（Solana / EVM 自动识别）", text: $vm.input)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .font(.system(.body, design: .monospaced))
-                        .onChange(of: vm.input) { _, _ in vm.inputChanged() }
-                    if !vm.input.isEmpty {
-                        Button { vm.input = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary) }
-                    }
-                }
-                HStack {
-                    Button {
-                        if let s = UIPasteboard.general.string { vm.input = s }
-                    } label: { Label("粘贴并分析", systemImage: "doc.on.clipboard") }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
-                    Spacer()
-                    Menu {
-                        if hist.isEmpty { Text("还没有查询记录") }
-                        ForEach(hist.prefix(15)) { h in
-                            Button(h.title + " · " + (Chain(rawValue: h.chain)?.title ?? h.chain)) { vm.start(h.address) }
-                        }
-                        if !hist.isEmpty {
-                            Divider()
-                            Button("清空记录", role: .destructive) { QueryHistory.clear(kind: "token"); hist = [] }
-                        }
-                    } label: { Label("记录", systemImage: "clock.arrow.circlepath").font(.subheadline) }
-                }
-            }
-        }
+        AvSearchBar(vm: vm, hist: $hist)
     }
 
     private var startCard: some View {
@@ -160,21 +129,7 @@ struct UnifiedTokenRoot: View {
             }
             if !hist.isEmpty {
                 Card {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("最近查询").font(.headline)
-                        ForEach(hist.prefix(12)) { h in
-                            Button { vm.start(h.address) } label: {
-                                HStack {
-                                    Text(h.title).font(.subheadline.weight(.semibold)).foregroundStyle(Color.primary)
-                                    Pill(text: Chain(rawValue: h.chain)?.title ?? h.chain, color: Color.blue)
-                                    Spacer()
-                                    Text(TZ.short(h.at)).font(.caption2).foregroundStyle(.secondary)
-                                }
-                            }
-                            .buttonStyle(.plain)
-                            Divider()
-                        }
-                    }
+                    AvRecentStrip(items: Array(hist.prefix(12)), showTitle: true) { h in vm.start(h.address) }
                 }
             }
         }

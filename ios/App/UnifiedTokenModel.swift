@@ -70,7 +70,7 @@ struct UTrade: Identifiable, Codable {
 }
 
 enum TF: String, CaseIterable, Identifiable {
-    case m1, m5, m15, h1, h4, d1
+    case m1, m5, m15, h1, h4, d1, w1, mo1
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -80,18 +80,20 @@ enum TF: String, CaseIterable, Identifiable {
         case .h1: return "1时"
         case .h4: return "4时"
         case .d1: return "日"
+        case .w1: return "周"
+        case .mo1: return "月"
         }
     }
     var unit: String {
         switch self {
         case .m1, .m5, .m15: return "minute"
         case .h1, .h4: return "hour"
-        case .d1: return "day"
+        case .d1, .w1, .mo1: return "day"
         }
     }
     var aggregate: Int {
         switch self {
-        case .m1, .h1, .d1: return 1
+        case .m1, .h1, .d1, .w1, .mo1: return 1
         case .m5: return 5
         case .m15: return 15
         case .h4: return 4
@@ -503,7 +505,7 @@ final class UTokenVM: ObservableObject {
             pairs = ps
             stamps.pairs = Date()
             refreshNote = nil
-            QueryHistory.add(kind: "token", chain: c.rawValue, address: addr, title: ps[0].baseToken?.symbol ?? Addr.short(addr))
+            QueryHistory.add(kind: "token", chain: c.rawValue, address: addr, title: ps[0].baseToken?.symbol ?? Addr.short(addr), logo: ps[0].info?.imageUrl)
         } catch {
             guard id == runID else { return }
             if pairs.isEmpty { self.error = error.localizedDescription } else { refreshNote = "刷新失败，显示的是旧数据：" + Net.message(error) }
