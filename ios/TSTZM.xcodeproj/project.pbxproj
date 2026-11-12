@@ -37,6 +37,7 @@
 		93266E944C65DEF7CE1FF743 /* Core.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F8DB1833F2D784C2C5EFAF3 /* Core.swift */; };
 		9996C3148700EC20225DE269 /* AnalysisEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BFD9C0F8353AD8D9C21B711 /* AnalysisEngine.swift */; };
 		9C9959D00DE906FD6B1333F0 /* Avatars.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1109A3A676575586044A3E71 /* Avatars.swift */; };
+		9F11E1B92D4E9D5FA59254E3 /* KRoll.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DCCCCBECB1A227E8B926853 /* KRoll.swift */; };
 		A4F064E14FD4508649706F31 /* Core.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F8DB1833F2D784C2C5EFAF3 /* Core.swift */; };
 		A7CB6EE8C7F3501432AC81A6 /* ShareKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D40EE1C47297AFBEF15AD6F /* ShareKit.swift */; };
 		ACA59C68EDA15C8FDDB89F6C /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE73CF7AA13A5E168372E867 /* SettingsView.swift */; };
@@ -86,6 +87,7 @@
 		1F8DB1833F2D784C2C5EFAF3 /* Core.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core.swift; sourceTree = "<group>"; };
 		21D1990718F8B7A8B8202812 /* SolTokenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SolTokenView.swift; sourceTree = "<group>"; };
 		2BFD9C0F8353AD8D9C21B711 /* AnalysisEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisEngine.swift; sourceTree = "<group>"; };
+		2DCCCCBECB1A227E8B926853 /* KRoll.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KRoll.swift; sourceTree = "<group>"; };
 		2F8AF599DD1A05832F227BFD /* DeepAnalysis.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepAnalysis.swift; sourceTree = "<group>"; };
 		3ADD5C266E165C6DB8ED9B8F /* KlineExtras.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KlineExtras.swift; sourceTree = "<group>"; };
 		3C096B22068077AC8FF966D7 /* ProChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProChart.swift; sourceTree = "<group>"; };
@@ -159,6 +161,7 @@
 				CE7637A10277EAFDC835A549 /* EvmToken.swift */,
 				7DEF8DDF4366EB760D952288 /* EvmWallet.swift */,
 				3ADD5C266E165C6DB8ED9B8F /* KlineExtras.swift */,
+				2DCCCCBECB1A227E8B926853 /* KRoll.swift */,
 				E1B273DC40BF3C1A28998310 /* LifeSocial.swift */,
 				5D76E75436A979E7708A3F5B /* Lossy.swift */,
 				F64718B9AEB4779F025D0B54 /* MarketBoard.swift */,
@@ -332,6 +335,7 @@
 				D1EE2C8788EECC8A57067ECC /* Engine.swift in Sources */,
 				44BDE24088A9E3DAE74930FC /* EvmToken.swift in Sources */,
 				52F72A582A1A930236831A71 /* EvmWallet.swift in Sources */,
+				9F11E1B92D4E9D5FA59254E3 /* KRoll.swift in Sources */,
 				1BF1CB52888D111B43AD23A2 /* KlineExtras.swift in Sources */,
 				14D7BF2EBEC9E1E82A5F0630 /* LifeSocial.swift in Sources */,
 				CE3541393879104177E73605 /* Lossy.swift in Sources */,

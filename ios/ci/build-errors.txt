@@ -1,0 +1,8 @@
+/Users/runner/work/tugou-hanshuang-jiaoben-app/tugou-hanshuang-jiaoben-app/ios/App/CexView.swift:75:77: error: cannot find 'avWalletChain' in scope
+/Users/runner/work/tugou-hanshuang-jiaoben-app/tugou-hanshuang-jiaoben-app/ios/App/KRoll.swift:25:10: error: invalid redeclaration of 'rolled'
+/Users/runner/work/tugou-hanshuang-jiaoben-app/tugou-hanshuang-jiaoben-app/ios/App/KRoll.swift:5:9: error: invalid redeclaration of 'isRolled'
+/Users/runner/work/tugou-hanshuang-jiaoben-app/tugou-hanshuang-jiaoben-app/ios/App/UnifiedToken.swift:118:9: error: cannot find 'AvSearchBar' in scope
+/Users/runner/work/tugou-hanshuang-jiaoben-app/tugou-hanshuang-jiaoben-app/ios/App/UnifiedToken.swift:132:34: error: extra arguments at positions #2, #3 in call
+/Users/runner/work/tugou-hanshuang-jiaoben-app/tugou-hanshuang-jiaoben-app/ios/App/UnifiedToken.swift:132:64: error: missing argument for parameter 'onPick' in call
+/Users/runner/work/tugou-hanshuang-jiaoben-app/tugou-hanshuang-jiaoben-app/ios/App/WalletsView.swift:164:53: error: cannot find 'avWalletChain' in scope
+/Users/runner/work/tugou-hanshuang-jiaoben-app/tugou-hanshuang-jiaoben-app/ios/App/WalletsView.swift:353:66: error: cannot find 'avWalletChain' in scope
