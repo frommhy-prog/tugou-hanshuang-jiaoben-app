@@ -1,36 +1,16 @@
-# tugou-hanshuang-jiaoben-app
+# TSTZ-M
 
-土狗寒霜脚本app：第一阶段脚手架。
-
-
-App：土狗寒霜脚本app；仓库：frommhy-prog/tugou-hanshuang-jiaoben-app；Cloudflare 项目名：tugou-hanshuang-jiaoben-app。
-黑色硬核风格。私钥、账号密码、API Key 绝不写进代码，一律放 Secrets。
-
-## 已定设计（2026-10-27）
-- 链：BSC、ETH、Base、Solana、Robinhood Chain（Chain ID 4663，Arbitrum L2，Gas ETH）。
-- 交易所持仓：币安、欧易、Gate，只读 Key，尚未提供，接口先留空，Key 到后再接。
-- Ave、GMGN、推特（X）：按数据源 / 跳转接，不按交易所持仓接。第一版不假装有它们的免费公开 API：
-  数据先走 Dexscreener / GeckoTerminal，Ave / GMGN / X 以跳转链接 + 信号来源字段出现，
-  之后有免费或自有 Key 再在 Worker 里接对应适配器。
-- 钱包：用户在 App 内随时添加、编辑、删除，可同时多个、不同链混加；只存公开地址 + 链 + 备注名，不存私钥。
-- 寒霜兑换号（第三阶段）：[ONE]卡皮巴拉，ID 726154631，所在王国 4124，初始王国 4186，联盟 ONE。
+免费原生 iOS App（仓库名沿用旧名 tugou-hanshuang-jiaoben-app）：土狗合约体检与分析、多链钱包与交易所只读持仓、到价提醒、盯盘看板、小组件与灵动岛。
 
 ## 目录
-- `worker/`：Cloudflare Worker 统一网关。App 和小组件只读它返回的缓存 JSON，不直连上游。
-- `app/`：SwiftUI App 外壳 + 小组件源码骨架（黑色主题、钱包管理、合约体检、持仓页）。
-- `API.md`：接口契约。
+- `ios/`：App 源码（`App/`、`Shared/`、`Widget/`），`project.yml` 由 XcodeGen 生成工程；`ci/` 是每次构建的结果文件
+- `worker-api/`：令牌鉴权 API（Cloudflare Worker `tstzm-api`）
+- `worker-engine/`：分析引擎（Cloudflare Worker `tstzm-engine`）
+- `sidestore/`：SideStore 源（`source.json`）与图标
+- `.github/workflows/ios-build.yml`：云端编译 + 出 IPA + 更新 SideStore 源
+- `.github/patches/`：编译前应用的源码补丁清单
+- `docs/NEXT.md`：新对话接手清单（先读这个）；`docs/HANDOFF.md`、`API.md`：早期交接与接口说明
 
-## Worker 接口（第一版）
-- `GET /health`：存活检查。
-- `GET /api/token?chain=<链>&address=<合约>`：合约体检的价格/流动性部分，来自 Dexscreener。
-  持仓人数、买卖税、蜜罐、权限、LP 锁定等字段第一版返回 `null + source: "pending"`，不编数据；
-  第二阶段再接 GoPlus / RugCheck / Blockscout 等适配器。
-- `POST /api/holdings`：`{"wallets":[{"chain":"bsc","address":"0x...","label":"主钱包"}]}`，
-  返回按钱包、按链、汇总的持仓骨架；余额来源未接通前如实返回 `balanceSource: "pending"`，
-  价格部分用 Dexscreener 查得到就填，查不到就空，不估算假数。
-- `GET /api/sources`：Ave / GMGN / X / Dexscreener / GeckoTerminal 的跳转与来源说明。
-
-## 还没做的事（需要你按次审批后才动）
-- 推到 GitHub 仓库 frommhy-prog/tugou-hanshuang-jiaoben-app（写操作会弹审批卡）。
-- 在 Cloudflare 新建 Worker / KV，项目名 tugou-hanshuang-jiaoben-app（新建操作会弹审批卡）。
-- 真机编译：需要 Mac / Xcode 或 GitHub Actions macOS 环境，到编译时再确认。
+## 安装
+- 日常：SideStore 添加本仓库的源（`sidestore/source.json`），安装 / 更新 TSTZ-M，自动续签。
+- 开发：Xcode 打开 `ios/TSTZM.xcodeproj`，两个 target 的 Signing 选 Personal Team，用默认的 Run（Debug）。Debug 的应用标识会带上团队 ID，与 SideStore 重签后的标识一致，装上去覆盖的是同一个应用。
