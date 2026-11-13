@@ -49,6 +49,12 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.Hao-Yi-Miao.TSTZ-M
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         TARGETED_DEVICE_FAMILY: "1"
+      configs:
+        # Xcode 直装（Debug）：标识后面补上团队 ID，与 SideStore 重签后的标识完全一致，装上去就是覆盖同一个应用，不会再多出一个图标。
+        # 免费账号拿不到 App Group，所以 Debug 用不带 App Group 的权限文件。CI 打包的 Release 不受影响。
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: com.Hao-Yi-Miao.TSTZ-M.$(DEVELOPMENT_TEAM)
+          CODE_SIGN_ENTITLEMENTS: Config/AppDebug.entitlements
   TSTZMWidget:
     type: app-extension
     platform: iOS
@@ -75,3 +81,8 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.Hao-Yi-Miao.TSTZ-M.Widget
         SKIP_INSTALL: YES
         TARGETED_DEVICE_FAMILY: "1"
+      configs:
+        # 扩展标识 = 应用标识 + .Widget，SideStore 重签后是「应用标识.团队ID.Widget」，这里同样拼法
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: com.Hao-Yi-Miao.TSTZ-M.$(DEVELOPMENT_TEAM).Widget
+          CODE_SIGN_ENTITLEMENTS: Config/WidgetDebug.entitlements
