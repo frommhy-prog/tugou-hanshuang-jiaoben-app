@@ -11,7 +11,11 @@ enum Cfg {
         if let arr = Bundle.main.object(forInfoDictionaryKey: "ALTAppGroups") as? [String], let g = arr.first { return g }
         return fallbackGroup
     }
+    #if DEBUG
+    static let defaults: UserDefaults = UserDefaults.standard
+    #else
     static let defaults: UserDefaults = UserDefaults(suiteName: Cfg.group) ?? UserDefaults.standard
+    #endif
 
     static var base: String {
         get { defaults.string(forKey: "base") ?? defaultBase }

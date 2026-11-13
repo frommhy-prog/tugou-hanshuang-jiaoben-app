@@ -153,6 +153,7 @@ struct DashboardView: View {
                     .pickerStyle(.segmented)
                     if vm.seg > 0 { chainBar }
                     listCard
+                    InstallInfoCard()
                     diagLink
                 }
                 .padding(16)

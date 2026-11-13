@@ -82,6 +82,8 @@ h15_tab1
 h15_tab2
 h15_wv_hold
 h15_wv_intel
+h16_defaults
+h16_install_card
 kl_attr
 kl_cache_load
 kl_cache_save

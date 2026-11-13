@@ -1,4 +1,4 @@
 app=build/Build/Products/Release-iphoneos/TSTZM.app
 chart.html
 lwc.js
-CFBundleVersion=File Doesn't Exist, Will Create: build/Build/Products/Release-iphoneos/TSTZM.app/Info.plist
+CFBundleVersion=81
