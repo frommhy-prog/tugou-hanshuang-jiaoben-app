@@ -1,263 +1,222 @@
 import SwiftUI
 
-// 盯盘列表：用 UserDefaults 里一个逗号分隔的字符串保存（chain:address），@AppStorage 直接驱动界面刷新
-enum WatchPins {
-    static func items(_ raw: String) -> [String] { raw.split(separator: ",").map { String($0) } }
-
-    static func has(_ raw: String, _ chain: Chain, _ addr: String) -> Bool {
-        let k = (chain.rawValue + ":" + addr).lowercased()
-        return items(raw).contains { $0.lowercased() == k }
-    }
-
-    static func toggled(_ raw: String, _ chain: Chain, _ addr: String) -> String {
-        let k = chain.rawValue + ":" + addr
-        var list = items(raw)
-        if has(raw, chain, addr) { list.removeAll { $0.lowercased() == k.lowercased() } } else { list.insert(k, at: 0) }
-        return list.joined(separator: ",")
-    }
-}
-
+// MARK: - 盯盘看板：大盘 / 我的盯盘 / 各链热门 / 新池。数据全部由手机直连免费公共接口。
 struct BoardMajor: Identifiable {
     let id: String
     let name: String
     let price: Double
-    let change: Double?
+    let ch: Double?
 }
 
-struct BoardCoin: Identifiable {
+struct BoardPool: Identifiable {
     let id: String
-    let sym: String
-    let name: String
+    let symbol: String
+    let address: String
     let chain: Chain
-    let addr: String
-    let price: Double?
-    let ch24: Double?
-    let ch1h: Double?
-    let liq: Double
-    let vol: Double
-    let mc: Double?
-    let created: Double?
-    let logo: String?
-    let stale: Bool
+    var price: Double?
+    var ch1: Double?
+    var ch24: Double?
+    var liq: Double
+    var vol24: Double
+    var mc: Double?
+    var ageMin: Double?
+    var logo: String?
 }
 
 @MainActor
-final class BoardVM: ObservableObject {
+final class MarketBoardVM: ObservableObject {
     @Published var majors: [BoardMajor] = []
-    @Published var watch: [BoardCoin] = []
-    @Published var hot: [BoardCoin] = []
-    @Published var fresh: [BoardCoin] = []
-    @Published var loading = false
-    @Published var note: String?
-    private var cache: [String: (Date, [BoardCoin])] = [:]
+    @Published var watch: [BoardPool] = []
+    @Published var pools: [BoardPool] = []
+    @Published var poolNote: String?
+    @Published var loadingPools = false
+    @Published var loadingWatch = false
+    @Published var chain: Chain = .solana
+    @Published var seg = 0   // 0 我的盯盘 1 热门 2 新池
 
-    func load(seg: Int, chain: Chain, pins: [String], force: Bool) async {
-        loading = true
-        defer { loading = false }
-        note = nil
-        if majors.isEmpty || force { await loadMajors() }
-        if seg == 0 {
-            await loadWatch(pins: pins)
-        } else if seg == 1 {
-            hot = await loadGecko("trending_pools", chain, force: force)
-            if hot.isEmpty { note = "GeckoTerminal 暂无数据或被限速（免费 30 次/分钟），稍后下拉刷新" }
-        } else {
-            fresh = await loadGecko("new_pools", chain, force: force)
-            if fresh.isEmpty { note = "GeckoTerminal 暂无数据或被限速（免费 30 次/分钟），稍后下拉刷新" }
-        }
+    var poolKey: String { cat(String(seg), ":", chain.rawValue) }
+
+    func reload() async {
+        await loadMajors()
+        await loadWatch()
+        if seg > 0 { await loadPools() }
     }
 
     func loadMajors() async {
-        let ids: [(String, String)] = [("bitcoin", "BTC"), ("ethereum", "ETH"), ("solana", "SOL"), ("binancecoin", "BNB")]
-        let q = ids.map { $0.0 }.joined(separator: ",")
-        guard let raw = try? await MarketAPI.json("https://api.coingecko.com/api/v3/simple/price?ids=" + q + "&vs_currencies=usd&include_24hr_change=true") else { return }
-        guard let o = raw as? [String: Any] else { return }
+        let url = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,binancecoin&vs_currencies=usd&include_24hr_change=true"
+        guard let o = (try? await MarketAPI.json(url)) as? [String: Any] else { return }
+        let defs: [(String, String)] = [("bitcoin", "BTC"), ("ethereum", "ETH"), ("solana", "SOL"), ("binancecoin", "BNB")]
         var out: [BoardMajor] = []
-        for (id, sym) in ids {
-            guard let d = o[id] as? [String: Any], let p = MarketAPI.num(d["usd"]) else { continue }
-            out.append(BoardMajor(id: id, name: sym, price: p, change: MarketAPI.num(d["usd_24h_change"])))
+        for d in defs {
+            guard let e = o[d.0] as? [String: Any], let p = MarketAPI.num(e["usd"]) else { continue }
+            out.append(BoardMajor(id: d.1, name: d.1, price: p, ch: MarketAPI.num(e["usd_24h_change"])))
         }
         if !out.isEmpty { majors = out }
     }
 
-    private static func coin(_ p: DexPair, _ chain: Chain, stale: Bool) -> BoardCoin? {
-        guard let a = p.baseToken?.address, !a.isEmpty else { return nil }
-        let created: Double? = p.pairCreatedAt.map { $0 / 1000 }
-        return BoardCoin(id: chain.rawValue + ":" + a, sym: p.baseToken?.symbol ?? "?", name: p.baseToken?.name ?? "", chain: chain, addr: a, price: p.price, ch24: p.priceChange?["h24"], ch1h: p.priceChange?["h1"], liq: p.liq, vol: p.volume?["h24"] ?? 0, mc: p.marketCap ?? p.fdv, created: created, logo: p.info?.imageUrl, stale: stale)
-    }
-
-    // 盯盘：手动加星的 + 最近查过的（缓存），分链批量向 Dexscreener 取最新价格；取不到就显示缓存里的旧价格
-    func loadWatch(pins: [String]) async {
-        var keys: [String] = []
-        for p in pins where !keys.contains(where: { $0.lowercased() == p.lowercased() }) { keys.append(p) }
-        let snaps = TokenStore.list()
-        var snapMap: [String: TokenSnapshot] = [:]
-        for s in snaps { snapMap[(s.chain + ":" + s.address).lowercased()] = s }
-        for s in snaps.prefix(10) {
-            let k = s.chain + ":" + s.address
-            if !keys.contains(where: { $0.lowercased() == k.lowercased() }) { keys.append(k) }
+    // 我的盯盘 = 最近查过的代币，按链分组一次取回最新行情
+    func loadWatch() async {
+        let items = Array(QueryHistory.items.filter { $0.kind == "token" }.prefix(24))
+        if items.isEmpty {
+            watch = []
+            return
         }
-        var byChain: [String: [String]] = [:]
-        for k in keys {
-            let parts = k.split(separator: ":", maxSplits: 1).map { String($0) }
-            if parts.count == 2 { byChain[parts[0], default: []].append(parts[1]) }
+        loadingWatch = true
+        defer { loadingWatch = false }
+        var groups: [String: [HistoryItem]] = [:]
+        for h in items {
+            guard let c = Chain(rawValue: h.chain) else { continue }
+            groups[c.dexId, default: []].append(h)
         }
-        var live: [String: DexPair] = [:]
-        for (cid, addrs) in byChain {
-            guard let ch = Chain(rawValue: cid) else { continue }
-            var i = 0
-            while i < addrs.count {
-                let chunk = Array(addrs[i..<min(i + 25, addrs.count)])
-                i += 25
-                let urlStr = "https://api.dexscreener.com/tokens/v1/" + ch.dexId + "/" + chunk.joined(separator: ",")
-                guard let u = URL(string: urlStr), let r = try? await Net.fetch(URLRequest(url: u, timeoutInterval: 20)) else { continue }
-                let arr = (try? JSONDecoder().decode([DexPair].self, from: r.0)) ?? []
-                for p in arr {
-                    let k = cid + ":" + (p.baseToken?.address ?? "").lowercased()
-                    if let old = live[k], old.liq >= p.liq { continue }
-                    live[k] = p
-                }
+        var best: [String: BoardPool] = [:]
+        for (cid, hs) in groups {
+            let addrs = hs.map { $0.address }.joined(separator: ",")
+            guard let url = URL(string: "https://api.dexscreener.com/tokens/v1/" + cid + "/" + addrs) else { continue }
+            guard let r = try? await Net.fetch(URLRequest(url: url, timeoutInterval: 20)) else { continue }
+            let pairs: [DexPair] = (try? JSONDecoder().decode([DexPair].self, from: r.0)) ?? []
+            for p in pairs {
+                guard let b = p.baseToken?.address, let c = Chain.fromDex(p.chainId ?? "") else { continue }
+                let k = b.lowercased()
+                if let old = best[k], old.liq >= p.liq { continue }
+                var age: Double? = nil
+                if let cr = p.pairCreatedAt { age = (Date().timeIntervalSince1970 * 1000 - cr) / 60000 }
+                let pool = BoardPool(id: k, symbol: p.baseToken?.symbol ?? "?", address: b, chain: c, price: p.price, ch1: p.priceChange?["h1"], ch24: p.priceChange?["h24"], liq: p.liq, vol24: p.volume?["h24"] ?? 0, mc: p.marketCap ?? p.fdv, ageMin: age, logo: p.info?.imageUrl)
+                best[k] = pool
             }
         }
-        var out: [BoardCoin] = []
-        for k in keys {
-            let parts = k.split(separator: ":", maxSplits: 1).map { String($0) }
-            if parts.count != 2 { continue }
-            guard let ch = Chain(rawValue: parts[0]) else { continue }
-            let lk = (parts[0] + ":" + parts[1]).lowercased()
-            if let p = live[lk], let c = BoardVM.coin(p, ch, stale: false) {
-                out.append(c)
-            } else if let s = snapMap[lk], let p = s.pairs.first, let c = BoardVM.coin(p, ch, stale: true) {
-                out.append(c)
-            }
+        var out: [BoardPool] = []
+        for h in items {
+            if let p = best[h.address.lowercased()] { out.append(p) }
         }
         watch = out
     }
 
-    // GeckoTerminal 趋势池 / 新池（免费，带代币头像）
-    func loadGecko(_ kind: String, _ chain: Chain, force: Bool) async -> [BoardCoin] {
-        let ck = kind + ":" + chain.rawValue
-        if !force, let c = cache[ck], Date().timeIntervalSince(c.0) < 60 { return c.1 }
-        var url = "https://api.geckoterminal.com/api/v2/networks/" + chain.geckoId + "/" + kind + "?include=base_token"
-        if kind == "trending_pools" { url += "&duration=1h" }
-        guard let raw = try? await MarketAPI.json(url), let root = raw as? [String: Any], let data = root["data"] as? [[String: Any]] else {
-            return cache[ck]?.1 ?? []
+    // 热门 / 新池：GeckoTerminal 各链榜单
+    func loadPools() async {
+        loadingPools = true
+        poolNote = nil
+        defer { loadingPools = false }
+        let isTrend = seg == 1
+        let path = isTrend ? "trending_pools?duration=1h" : "new_pools"
+        let u = "https://api.geckoterminal.com/api/v2/networks/" + chain.geckoId + "/" + path
+        do {
+            let o = try await MarketAPI.json(u)
+            guard let arr = (o as? [String: Any])?["data"] as? [[String: Any]] else {
+                pools = []
+                poolNote = "这条链现在没有榜单数据"
+                return
+            }
+            let prefix = chain.geckoId + "_"
+            let iso = ISO8601DateFormatter()
+            var out: [BoardPool] = []
+            for item in arr {
+                guard let a = item["attributes"] as? [String: Any] else { continue }
+                let rel1 = item["relationships"] as? [String: Any]
+                let rel2 = rel1?["base_token"] as? [String: Any]
+                let rel3 = rel2?["data"] as? [String: Any]
+                let rid = (rel3?["id"] as? String) ?? ""
+                if !rid.hasPrefix(prefix) { continue }
+                let addr = String(rid.dropFirst(prefix.count))
+                if addr.isEmpty { continue }
+                let name = (a["name"] as? String) ?? ""
+                let sym = name.components(separatedBy: " / ").first ?? name
+                let pc = a["price_change_percentage"] as? [String: Any]
+                let vol = a["volume_usd"] as? [String: Any]
+                var age: Double? = nil
+                if let s = a["pool_created_at"] as? String, let d = iso.date(from: s) { age = Date().timeIntervalSince(d) / 60 }
+                let pool = BoardPool(id: addr.lowercased(), symbol: sym, address: addr, chain: chain, price: MarketAPI.num(a["base_token_price_usd"]), ch1: MarketAPI.num(pc?["h1"]), ch24: MarketAPI.num(pc?["h24"]), liq: MarketAPI.num(a["reserve_in_usd"]) ?? 0, vol24: MarketAPI.num(vol?["h24"]) ?? 0, mc: MarketAPI.num(a["market_cap_usd"]) ?? MarketAPI.num(a["fdv_usd"]), ageMin: age, logo: nil)
+                out.append(pool)
+            }
+            pools = out
+            if out.isEmpty { poolNote = "这条链现在没有榜单数据" }
+        } catch {
+            pools = []
+            poolNote = Net.message(error)
         }
-        var imgs: [String: String] = [:]
-        let included = (root["included"] as? [[String: Any]]) ?? []
-        for inc in included {
-            guard let id = inc["id"] as? String, let a = inc["attributes"] as? [String: Any] else { continue }
-            if let u = a["image_url"] as? String, u.hasPrefix("http") { imgs[id.lowercased()] = u }
-        }
-        let iso = ISO8601DateFormatter()
-        let prefix = chain.geckoId + "_"
-        var out: [BoardCoin] = []
-        for d in data {
-            guard let a = d["attributes"] as? [String: Any] else { continue }
-            let rels = d["relationships"] as? [String: Any]
-            let bt = rels?["base_token"] as? [String: Any]
-            let btd = bt?["data"] as? [String: Any]
-            let rel = (btd?["id"] as? String) ?? ""
-            if !rel.hasPrefix(prefix) { continue }
-            let addr = String(rel.dropFirst(prefix.count))
-            let name = (a["name"] as? String) ?? ""
-            let sym = name.components(separatedBy: " / ").first ?? name
-            let chg = a["price_change_percentage"] as? [String: Any]
-            let vol = a["volume_usd"] as? [String: Any]
-            var created: Double? = nil
-            if let s = a["pool_created_at"] as? String, let dt = iso.date(from: s) { created = dt.timeIntervalSince1970 }
-            let mc: Double? = MarketAPI.num(a["market_cap_usd"]) ?? MarketAPI.num(a["fdv_usd"])
-            out.append(BoardCoin(id: rel, sym: sym, name: name, chain: chain, addr: addr, price: MarketAPI.num(a["base_token_price_usd"]), ch24: MarketAPI.num(chg?["h24"]), ch1h: MarketAPI.num(chg?["h1"]), liq: MarketAPI.num(a["reserve_in_usd"]) ?? 0, vol: MarketAPI.num(vol?["h24"]) ?? 0, mc: mc, created: created, logo: imgs[rel.lowercased()], stale: false))
-        }
-        cache[ck] = (Date(), out)
-        return out
     }
 }
 
-// 仪表盘：大盘 / 我的盯盘 / 热门 / 新池。点任意一行直接切到代币页分析；原来的数据源健康与控制台收进「系统诊断」
 struct DashboardView: View {
-    @StateObject private var vm = BoardVM()
+    @StateObject private var vm = MarketBoardVM()
     @Environment(\.dismiss) private var dismiss
-    @State private var seg = 0
-    @State private var chain: Chain = .solana
-    @AppStorage("watchlist", store: Cfg.defaults) private var watchRaw = ""
-
-    private var loadKey: String { String(seg) + chain.rawValue + String(watchRaw.count) }
-
-    private var list: [BoardCoin] {
-        if seg == 0 { return vm.watch }
-        return seg == 1 ? vm.hot : vm.fresh
-    }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 14) {
                     majorsCard
-                    Picker("", selection: $seg) {
-                        Text("盯盘").tag(0)
+                    Picker("", selection: $vm.seg) {
+                        Text("我的盯盘").tag(0)
                         Text("热门").tag(1)
                         Text("新池").tag(2)
                     }
                     .pickerStyle(.segmented)
-                    if seg != 0 { chainChips }
+                    if vm.seg > 0 { chainBar }
                     listCard
-                    NavigationLink { DiagnosticsView() } label: {
-                        Card {
-                            HStack {
-                                Label("系统诊断：数据源健康 / AI 自检 / 控制台", systemImage: "stethoscope").font(.subheadline)
-                                Spacer()
-                                Image(systemName: "chevron.right").foregroundStyle(.secondary)
-                            }
-                        }
-                    }
-                    .buttonStyle(.plain)
+                    diagLink
                 }
                 .padding(16)
             }
             .background(Color.page)
-            .navigationTitle("仪表盘")
+            .navigationTitle("盯盘看板")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("关闭") { dismiss() } }
-                ToolbarItem(placement: .topBarTrailing) { if vm.loading { ProgressView() } }
+                ToolbarItem(placement: .topBarLeading) { Button("完成") { dismiss() } }
+                ToolbarItem(placement: .topBarTrailing) {
+                    if vm.loadingWatch || vm.loadingPools {
+                        ProgressView()
+                    } else {
+                        Button { Task { await vm.reload() } } label: { Image(systemName: "arrow.clockwise") }
+                    }
+                }
             }
-            .refreshable { await vm.load(seg: seg, chain: chain, pins: WatchPins.items(watchRaw), force: true) }
-            .task(id: loadKey) { await vm.load(seg: seg, chain: chain, pins: WatchPins.items(watchRaw), force: false) }
+            .refreshable { await vm.reload() }
+            .task {
+                await vm.loadMajors()
+                await vm.loadWatch()
+            }
+            .task(id: vm.poolKey) { if vm.seg > 0 { await vm.loadPools() } }
         }
     }
 
     private var majorsCard: some View {
         Card {
             VStack(alignment: .leading, spacing: 10) {
-                Text("大盘").font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
-                if vm.majors.isEmpty { Text("读取中…").font(.caption).foregroundStyle(.secondary) }
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                    ForEach(vm.majors) { m in
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(m.name).font(.caption).foregroundStyle(.secondary)
-                            Text(Money.format(m.price)).font(.footnote.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.6)
-                            Text(m.change.map { String(format: "%+.1f%%", $0) } ?? "—").font(.caption2.weight(.semibold)).foregroundStyle((m.change ?? 0) >= 0 ? Color.green : Color.red)
+                Text("大盘").font(.footnote).foregroundStyle(.secondary)
+                if vm.majors.isEmpty {
+                    Text("行情读取中，或 CoinGecko 免费接口暂时限速").font(.caption).foregroundStyle(.secondary)
+                } else {
+                    HStack(spacing: 8) {
+                        ForEach(vm.majors) { m in
+                            VStack(spacing: 3) {
+                                Text(m.name).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                                Text(Money.price(m.price)).font(.footnote.weight(.semibold).monospacedDigit()).lineLimit(1).minimumScaleFactor(0.6)
+                                Text(m.ch.map { String(format: "%+.1f%%", $0) } ?? "—")
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle((m.ch ?? 0) >= 0 ? Color.green : Color.red)
+                            }
+                            .frame(maxWidth: .infinity)
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
             }
         }
     }
 
-    private var chainChips: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
+    private var chainBar: some View {
+        let list: [Chain] = [.solana, .bsc, .base, .eth, .arbitrum, .optimism, .polygon]
+        return ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                ForEach(Chain.allCases.filter { $0.tokenSupported }) { c in
-                    Button { chain = c } label: {
+                ForEach(list) { c in
+                    Button { vm.chain = c } label: {
                         HStack(spacing: 5) {
                             AvChainBadge(chain: c, size: 16)
-                            Text(c.title).font(.footnote.weight(chain == c ? .bold : .regular))
+                            Text(c.title).font(.footnote.weight(vm.chain == c ? .bold : .regular))
                         }
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
-                        .background(chain == c ? Color.accentColor.opacity(0.18) : Color.secondary.opacity(0.1), in: Capsule())
+                        .background(vm.chain == c ? Color.accentColor.opacity(0.18) : Color.secondary.opacity(0.1), in: Capsule())
+                        .foregroundStyle(vm.chain == c ? Color.accentColor : Color.primary)
                     }
                     .buttonStyle(.plain)
                 }
@@ -266,49 +225,92 @@ struct DashboardView: View {
     }
 
     private var listCard: some View {
-        Card {
-            VStack(alignment: .leading, spacing: 4) {
-                let items = list
-                if items.isEmpty && !vm.loading {
-                    Text(seg == 0 ? "还没有盯盘：在代币页点右上角 ☆ 加入；查过的币也会出现在这里" : (vm.note ?? "暂无数据")).font(.footnote).foregroundStyle(.secondary)
+        let rows: [BoardPool] = vm.seg == 0 ? vm.watch : vm.pools
+        return Card {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(title).font(.headline)
+                if rows.isEmpty {
+                    Text(emptyText).font(.footnote).foregroundStyle(.secondary)
                 }
-                ForEach(items) { c in
-                    Button {
-                        UTokenVM.shared.start(c.addr)
-                        AppRouter.shared.tab = 0
-                        dismiss()
-                    } label: { row(c) }
-                    .buttonStyle(.plain)
-                    if c.id != items.last?.id { Divider() }
+                ForEach(rows) { p in
+                    row(p)
+                    Divider()
                 }
-                if seg == 0 && !items.isEmpty {
-                    Text("价格来自 Dexscreener 实时批量查询；标「缓存」的是取不到最新数据时显示的上次结果").font(.caption2).foregroundStyle(.secondary).padding(.top, 6)
-                }
+                Text(footText).font(.caption2).foregroundStyle(.secondary)
             }
         }
     }
 
-    private func meta(_ c: BoardCoin) -> String {
-        let age = c.created.map { Fmt2.dur(Date().timeIntervalSince1970 - $0) } ?? ""
-        return cat("市值 ", Fmt2.usd(c.mc), " · 池 ", Fmt2.usd(c.liq), " · 量 ", Fmt2.usd(c.vol), age.isEmpty ? "" : " · " + age)
+    private var title: String {
+        if vm.seg == 0 { return "我的盯盘（最近查过的代币，实时行情）" }
+        return vm.seg == 1 ? "热门池子（1 小时热度）" : "新池子（刚建池）"
     }
 
-    private func row(_ c: BoardCoin) -> some View {
-        HStack(spacing: 12) {
-            AvTokenLogo(chain: c.chain, address: c.addr, symbol: c.sym, hint: c.logo, size: 42)
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 6) {
-                    Text(c.sym).font(.subheadline.weight(.semibold)).lineLimit(1)
-                    if c.stale { Pill(text: "缓存", color: Color.gray) }
+    private var emptyText: String {
+        if vm.seg == 0 { return "还没有查过代币：去代币页查几个，这里就会出现并实时刷新" }
+        if vm.loadingPools { return "读取中…" }
+        return vm.poolNote ?? "暂无数据"
+    }
+
+    private var footText: String {
+        if vm.seg == 0 { return "点一行直接跳到该代币的完整分析" }
+        return "来源 GeckoTerminal 免费接口；榜单只是热度，不代表安全，新池尤其要先看风险页"
+    }
+
+    private func sub(_ p: BoardPool) -> String {
+        var s = cat(p.chain.title, " · 流动性 ", Fmt2.usd(p.liq), " · 成交 ", Fmt2.usd(p.vol24))
+        if let a = p.ageMin { s += " · " + Fmt2.dur(a * 60) }
+        return s
+    }
+
+    private func chg(_ label: String, _ v: Double?) -> some View {
+        HStack(spacing: 3) {
+            Text(label).font(.system(size: 9)).foregroundStyle(.secondary)
+            Text(v.map { String(format: "%+.1f%%", $0) } ?? "—")
+                .font(.caption2.weight(.semibold).monospacedDigit())
+                .foregroundStyle((v ?? 0) >= 0 ? Color.green : Color.red)
+        }
+    }
+
+    private func row(_ p: BoardPool) -> some View {
+        Button {
+            UTokenVM.shared.start(p.address)
+            AppRouter.shared.tab = 0
+            dismiss()
+        } label: {
+            HStack(spacing: 12) {
+                AvTokenLogo(chain: p.chain, address: p.address, symbol: p.symbol, hint: p.logo, size: 40)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(p.symbol).font(.subheadline.weight(.semibold)).foregroundStyle(Color.primary).lineLimit(1)
+                    Text(sub(p)).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
                 }
-                Text(meta(c)).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
-            }
-            Spacer(minLength: 6)
-            VStack(alignment: .trailing, spacing: 3) {
-                Text(c.price.map { Money.price($0) } ?? "—").font(.subheadline.monospacedDigit())
-                Text(c.ch24.map { String(format: "%+.1f%%", $0) } ?? "—").font(.caption.weight(.semibold)).foregroundStyle((c.ch24 ?? 0) >= 0 ? Color.green : Color.red)
+                Spacer(minLength: 6)
+                VStack(alignment: .trailing, spacing: 3) {
+                    Text(p.price.map { Money.price($0) } ?? "—").font(.subheadline.monospacedDigit()).foregroundStyle(Color.primary).lineLimit(1)
+                    HStack(spacing: 6) {
+                        chg("1h", p.ch1)
+                        chg("24h", p.ch24)
+                    }
+                }
             }
         }
-        .padding(.vertical, 6)
+        .buttonStyle(.plain)
+    }
+
+    private var diagLink: some View {
+        NavigationLink {
+            DiagnosticsView()
+        } label: {
+            Card {
+                HStack {
+                    Label("系统诊断：数据源健康 / AI 自检 / 控制台", systemImage: "waveform.path.ecg")
+                        .font(.subheadline)
+                        .foregroundStyle(Color.primary)
+                    Spacer()
+                    Image(systemName: "chevron.right").foregroundStyle(.secondary)
+                }
+            }
+        }
+        .buttonStyle(.plain)
     }
 }
