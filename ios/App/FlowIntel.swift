@@ -28,6 +28,7 @@ struct LinksResp: Codable {
     var detail: String?
 }
 
+@MainActor
 enum Intel {
     // 洗盘：同地址买卖往返、固定金额、同秒多笔、成交高度集中
     static func wash(_ ts: [UTrade]) -> (Int, [Finding]) {

@@ -114,6 +114,7 @@ h17_w_scale
 h17_w_sp
 h17_w_state
 h17_w_vma
+h18_intel_mainactor
 kl_attr
 kl_cache_load
 kl_cache_save
