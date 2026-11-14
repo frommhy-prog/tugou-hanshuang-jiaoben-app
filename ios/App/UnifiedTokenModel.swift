@@ -102,17 +102,31 @@ enum TF: String, CaseIterable, Identifiable {
 }
 
 enum MarketAPI {
-    static func json(_ urlStr: String) async throws -> Any {
+    static func json(_ urlStr: String, ttl: Double = 0) async throws -> Any {
         guard let url = URL(string: urlStr) else { throw APIError.network("地址无效") }
-        var req = URLRequest(url: url, timeoutInterval: 25)
-        req.setValue("application/json", forHTTPHeaderField: "Accept")
-        let r: (Data, URLResponse)
-        do { r = try await Net.fetch(req) } catch { throw APIError.network(Net.message(error)) }
-        let code = (r.1 as? HTTPURLResponse)?.statusCode ?? 0
-        if code == 429 { throw APIError.network("行情接口限速（429），稍后自动重试") }
-        if !(200..<300).contains(code) { throw APIError.http(code, String((String(data: r.0, encoding: .utf8) ?? "").prefix(80))) }
-        guard let o = try? JSONSerialization.jsonObject(with: r.0) else { throw APIError.decode("行情数据不是 JSON") }
-        return o
+        let host = url.host ?? ""
+        if ttl > 0, let d = await DataGate.shared.cached(urlStr, ttl: ttl), let o = try? JSONSerialization.jsonObject(with: d) { return o }
+        var attempt = 0
+        while true {
+            await DataGate.shared.wait(host)
+            var req = URLRequest(url: url, timeoutInterval: 25)
+            req.setValue("application/json", forHTTPHeaderField: "Accept")
+            let r: (Data, URLResponse)
+            do { r = try await Net.fetch(req) } catch { throw APIError.network(Net.message(error)) }
+            let resp = r.1 as? HTTPURLResponse
+            let code = resp?.statusCode ?? 0
+            if code == 429 {
+                let ra = Double(resp?.value(forHTTPHeaderField: "Retry-After") ?? "") ?? 8
+                await DataGate.shared.penalize(host, min(max(ra, 3), 20))
+                attempt += 1
+                if attempt >= 2 { throw APIError.network("行情接口限速（429），稍后自动重试") }
+                continue
+            }
+            if !(200..<300).contains(code) { throw APIError.http(code, String((String(data: r.0, encoding: .utf8) ?? "").prefix(80))) }
+            guard let o = try? JSONSerialization.jsonObject(with: r.0) else { throw APIError.decode("行情数据不是 JSON") }
+            if ttl > 0 { await DataGate.shared.put(urlStr, r.0) }
+            return o
+        }
     }
 
     static func num(_ x: Any?) -> Double? {
@@ -132,7 +146,9 @@ enum MarketAPI {
         if !(200..<300).contains(code) { throw APIError.http(code, "Dexscreener") }
         let all = (try? JSONDecoder().decode([DexPair].self, from: r.0)) ?? []
         let key = addr.lowercased()
-        return all.filter { ($0.baseToken?.address ?? "").lowercased() == key }.sorted { $0.liq > $1.liq }
+        let hit = all.filter { ($0.baseToken?.address ?? "").lowercased() == key }.sorted { $0.liq > $1.liq }
+        if !hit.isEmpty { return hit }
+        return await legacyPairs(chain, addr)
     }
 
     static func candles(_ chain: Chain, _ pair: String, _ tf: TF) async throws -> [Candle] {
@@ -598,17 +614,32 @@ final class UTokenVM: ObservableObject {
                 holderComplete = true
                 holderNote = (r.notes ?? []).first
             } else if EvmDetailVM.supported.contains(chain.rawValue) {
-                let r: EvmTokenResp = try await Engine.get("/e/evm/token", ["chain": chain.rawValue, "token": address, "pages": String(holderPages)])
+                let r: EvmTokenResp? = try? await Engine.get("/e/v2/holders2", ["chain": chain.rawValue, "token": address, "pages": String(max(holderPages, 12))])
                 guard id == runID else { return }
-                if let e = r.error { holderNote = EvmFmt.errorText(e, r.detail); return }
-                holders = (r.holders ?? []).enumerated().map { UHolder(rank: $0.element.rank ?? ($0.offset + 1), owner: $0.element.owner, kind: $0.element.kind ?? "unknown", pct: $0.element.pct) }
-                conc = r.concentration.map { Conc(top1: $0.top1, top5: $0.top5, top10: $0.top10, top20: $0.top20, wallets10: $0.wallets10, nonWallet: $0.nonWallet, listed: $0.listed) }
-                holderFindings = (r.findings ?? []).compactMap { f in
-                    guard let t = f.text else { return nil }
-                    return Finding(level: f.level ?? "info", text: t, basis: f.basis)
+                var got = false
+                if let r = r, r.error == nil, !(r.holders ?? []).isEmpty {
+                    holders = (r.holders ?? []).enumerated().map { UHolder(rank: $0.element.rank ?? ($0.offset + 1), owner: $0.element.owner, kind: $0.element.kind ?? "unknown", pct: $0.element.pct) }
+                    conc = r.concentration.map { Conc(top1: $0.top1, top5: $0.top5, top10: $0.top10, top20: $0.top20, wallets10: $0.wallets10, nonWallet: $0.nonWallet, listed: $0.listed) }
+                    holderFindings = (r.findings ?? []).compactMap { f in
+                        guard let t = f.text else { return nil }
+                        return Finding(level: f.level ?? "info", text: t, basis: f.basis)
+                    }
+                    holderComplete = r.complete == true
+                    holderNote = nil
+                    got = true
                 }
-                holderComplete = r.complete == true
-                holderNote = (r.notes ?? []).first
+                if !got {
+                    if let fb = await HolderFallback.load(chain: chain, address: address, pair: main?.pairAddress) {
+                        guard id == runID else { return }
+                        holders = fb.holders
+                        conc = fb.conc
+                        holderFindings = fb.findings
+                        holderComplete = false
+                        holderNote = fb.note
+                    } else {
+                        holderNote = (r?.findings ?? []).first?.text ?? "云端与备用数据源都没有返回持有人，稍后下拉刷新重试"
+                    }
+                }
             } else {
                 holderNote = "该链暂不支持持有人榜单"
             }

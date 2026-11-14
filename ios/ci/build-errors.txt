@@ -1,0 +1,10 @@
+/Users/runner/work/tugou-hanshuang-jiaoben-app/tugou-hanshuang-jiaoben-app/ios/App/FlowIntel.swift:107:31: error: main actor-isolated property 'analyses' can not be referenced from a nonisolated context
+/Users/runner/work/tugou-hanshuang-jiaoben-app/tugou-hanshuang-jiaoben-app/ios/App/FlowIntel.swift:123:26: error: main actor-isolated property 'holders' can not be referenced from a nonisolated context
+/Users/runner/work/tugou-hanshuang-jiaoben-app/tugou-hanshuang-jiaoben-app/ios/App/FlowIntel.swift:134:30: error: main actor-isolated property 'analyses' can not be referenced from a nonisolated context
+/Users/runner/work/tugou-hanshuang-jiaoben-app/tugou-hanshuang-jiaoben-app/ios/App/FlowIntel.swift:153:32: error: main actor-isolated property 'holders' can not be referenced from a nonisolated context
+/Users/runner/work/tugou-hanshuang-jiaoben-app/tugou-hanshuang-jiaoben-app/ios/App/FlowIntel.swift:162:29: error: main actor-isolated property 'main' can not be referenced from a nonisolated context
+/Users/runner/work/tugou-hanshuang-jiaoben-app/tugou-hanshuang-jiaoben-app/ios/App/FlowIntel.swift:163:37: error: main actor-isolated property 'chain' can not be referenced from a nonisolated context
+/Users/runner/work/tugou-hanshuang-jiaoben-app/tugou-hanshuang-jiaoben-app/ios/App/FlowIntel.swift:164:52: error: main actor-isolated property 'chain' can not be referenced from a nonisolated context
+/Users/runner/work/tugou-hanshuang-jiaoben-app/tugou-hanshuang-jiaoben-app/ios/App/FlowIntel.swift:169:21: error: main actor-isolated property 'holders' can not be referenced from a nonisolated context
+/Users/runner/work/tugou-hanshuang-jiaoben-app/tugou-hanshuang-jiaoben-app/ios/App/FlowIntel.swift:170:31: error: main actor-isolated property 'analyses' can not be referenced from a nonisolated context
+/Users/runner/work/tugou-hanshuang-jiaoben-app/tugou-hanshuang-jiaoben-app/ios/App/FlowIntel.swift:96:31: error: main actor-isolated property 'analyses' can not be referenced from a nonisolated context

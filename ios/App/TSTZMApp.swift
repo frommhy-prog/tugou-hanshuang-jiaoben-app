@@ -90,6 +90,7 @@ struct RootView: View {
             needSetup = Cfg.token.isEmpty
         }
         .task { await FX.refresh() }
+        .task { WatchMonitor.shared.start() }
     }
 }
 

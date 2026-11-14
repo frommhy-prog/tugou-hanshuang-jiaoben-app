@@ -202,6 +202,7 @@ final class KLineVM: ObservableObject {
     var dark = true
     static let autoPages = 1
     @Published var histMore = false
+    @Published var liveNote = ""
     var extraMarks: [[Double]] = []
     var cfgMain = "MA,SUPER"
     var cfgSub = "MACD"
@@ -216,13 +217,15 @@ final class KLineVM: ObservableObject {
     private var gen = 0
     private var resumeBefore: Double?
     private var base: [Candle] = []   // 拉到的原始 K 线（周线月线用日线汇总）
+    private var liveC: Candle?
+    private var liveTF: TF = .m15
 
     var tzOff: Double { Double(TZ.current.secondsFromGMT()) }
 
     var statusText: String {
         if candles.isEmpty { return "" }
         let tail = loadingHist ? "，历史加载中…" : (histDone ? "，已到池子最早一根" : (histCapped ? "，已达加载上限" : ""))
-        return "共 \(candles.count) 根" + tail
+        return "共 \(candles.count) 根" + tail + liveNote
     }
 
     func aiKey(_ t: Double) -> String { tf.rawValue + ":" + String(Int(t)) }
@@ -283,7 +286,9 @@ final class KLineVM: ObservableObject {
     private func reload() {
         gen += 1
         let g = gen
-        setCandles(KLineCache.load(chain.rawValue + ":" + pair + ":" + tf.rawValue))
+        var own = KLineCache.load(chain.rawValue + ":" + pair + ":" + tf.rawValue)
+        if own.count < 30, let d = deriveFromFiner() { own = merged(d, own) }
+        setCandles(own)
         if !candles.isEmpty { rebuild() }
         note = nil
         histDone = false
@@ -299,7 +304,7 @@ final class KLineVM: ObservableObject {
 
     private func setCandles(_ raw: [Candle]) {
         base = raw
-        candles = tf.rolled(raw)
+        candles = withLive(tf.rolled(raw))
         KLineShared.shared.update(chain: chain, pair: pair, tf: tf, candles: candles)
     }
 
@@ -364,7 +369,7 @@ final class KLineVM: ObservableObject {
     }
 
     // 把全部 K 线 + 大额成交标记打成 JSON 交给网页图表（时间按设置里的时区平移）
-    func rebuild() {
+    func rebuild(live: Bool = false) {
         if candles.isEmpty { return }
         let off = tzOff
         let sec = tf.sec
@@ -427,7 +432,99 @@ final class KLineVM: ObservableObject {
             payload = s
             seq += 1
         }
-        KLineCache.save(key: chain.rawValue + ":" + pair + ":" + tf.rawValue, base)
+        if !live { KLineCache.save(key: chain.rawValue + ":" + pair + ":" + tf.rawValue, base) }
+    }
+
+    // MARK: 实时尾巴：Dexscreener 实时价每 3 秒把最新一根 K 线补到「现在」，不再等 GeckoTerminal 的延迟 K 线
+    private func withLive(_ cs: [Candle]) -> [Candle] {
+        guard let lc = liveC, liveTF == tf, let last = cs.last else { return cs }
+        var out = cs
+        if lc.t == last.t {
+            out[out.count - 1] = Candle(t: last.t, o: last.o, h: max(last.h, lc.h), l: min(last.l, lc.l), c: lc.c, v: max(last.v, lc.v))
+        } else if lc.t > last.t {
+            if tf.sec <= 86400 {
+                var t = last.t + tf.sec
+                var n = 0
+                while t < lc.t && n < 300 {
+                    out.append(Candle(t: t, o: last.c, h: last.c, l: last.c, c: last.c, v: 0))
+                    t += tf.sec
+                    n += 1
+                }
+            }
+            out.append(lc)
+        }
+        return out
+    }
+
+    func applyLive(_ price: Double) {
+        guard price > 0, price.isFinite, let last = candles.last else { return }
+        let b = kBucket(Date().timeIntervalSince1970, tf)
+        if b < last.t { return }
+        let lc: Candle
+        if let ex = liveC, liveTF == tf, ex.t == b {
+            lc = Candle(t: b, o: ex.o, h: max(ex.h, price), l: min(ex.l, price), c: price, v: ex.v)
+        } else if b == last.t {
+            lc = Candle(t: b, o: last.o, h: max(last.h, price), l: min(last.l, price), c: price, v: last.v)
+        } else {
+            lc = Candle(t: b, o: last.c, h: max(last.c, price), l: min(last.c, price), c: price, v: 0)
+        }
+        liveC = lc
+        liveTF = tf
+        candles = withLive(tf.rolled(base))
+        rebuild(live: true)
+    }
+
+    func liveLoop() async {
+        while !Task.isCancelled {
+            let g = gen
+            if !pair.isEmpty, !candles.isEmpty, let p = try? await MarketAPI.livePrice(chain, pair), g == gen {
+                applyLive(p)
+                let f = DateFormatter()
+                f.dateFormat = "HH:mm:ss"
+                f.timeZone = TZ.current
+                liveNote = "，实时价 " + f.string(from: Date())
+            }
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+        }
+    }
+
+    // MARK: 秒切周期：本地缓存里有更细的周期时，直接汇总出当前周期先显示，网络数据回来再覆盖
+    private func deriveFromFiner() -> [Candle]? {
+        if tf == .w1 || tf == .mo1 || tf == .m1 { return nil }
+        let order: [TF] = [.m1, .m5, .m15, .h1, .h4]
+        for f in order where f.sec < tf.sec && Int(tf.sec) % Int(f.sec) == 0 {
+            let cs = KLineCache.load(chain.rawValue + ":" + pair + ":" + f.rawValue)
+            if cs.count < 5 { continue }
+            var out: [Candle] = []
+            var cur: Candle?
+            for c in cs.sorted(by: { $0.t < $1.t }) {
+                let b = kBucket(c.t, tf)
+                if let x = cur, x.t == b {
+                    cur = Candle(t: b, o: x.o, h: max(x.h, c.h), l: min(x.l, c.l), c: c.c, v: x.v + c.v)
+                } else {
+                    if let x = cur { out.append(x) }
+                    cur = Candle(t: b, o: c.o, h: c.h, l: c.l, c: c.c, v: c.v)
+                }
+            }
+            if let x = cur { out.append(x) }
+            if out.count >= 3 { return out }
+        }
+        return nil
+    }
+
+    // 后台把其它周期预取进缓存（受限流网关排队，不会触发 429）
+    func prefetchOthers() async {
+        let g = gen
+        try? await Task.sleep(nanoseconds: 7_000_000_000)
+        for t in [TF.m1, .m5, .m15, .h1, .h4, .d1] {
+            if g != gen || Task.isCancelled { return }
+            if t == tf { continue }
+            let k = chain.rawValue + ":" + pair + ":" + t.rawValue
+            if KLineCache.load(k).count >= 200 { continue }
+            if let page = try? await MarketAPI.candlesPage(chain, pair, t, before: nil, limit: 1000), !page.isEmpty {
+                KLineCache.save(key: k, page)
+            }
+        }
     }
 
     // 任意地址的拆解（成本、盈亏、入场时点、状态），同一地址只拆一次
@@ -456,20 +553,23 @@ struct KLineCard: View {
     @AppStorage("kMcap", store: Cfg.defaults) private var mcap = false
     @State private var webFailed = false
     @State private var fallbackSel: Date?
+    @State private var showFull = false
 
     private var key: String { vm.chain.rawValue + ":" + (vm.main?.pairAddress ?? "") + ":" + vm.address }
 
     var body: some View {
         VStack(spacing: 14) {
             chartBlock
-            KLineDetailCard(vm: vm, cvm: cvm)
+            KLineDetailCard(vm: vm, cvm: cvm).padding(.horizontal, 16)
         }
+        .task(id: key) { await cvm.liveLoop() }
         .task(id: key) {
             webFailed = false
             cvm.dark = (scheme == .dark)
             applyCfg()
             cvm.sync(trades: vm.trades, createdMs: vm.main?.pairCreatedAt)
             cvm.begin(chain: vm.chain, pair: vm.main?.pairAddress, token: vm.address)
+            Task { await cvm.prefetchOthers() }
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 20_000_000_000)
                 if Task.isCancelled { break }
@@ -548,8 +648,7 @@ struct KLineCard: View {
             }
         } else {
             KLineWeb(payload: cvm.payload, seq: cvm.seq, clearToken: cvm.clearToken, onWeb: { t in cvm.onWeb(t) }, onFail: { webFailed = true })
-                .frame(height: 460)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .frame(height: KHero.chartHeight)
         }
     }
 
@@ -575,33 +674,62 @@ struct KLineCard: View {
 
     @ViewBuilder
     private var chartBlock: some View {
-        Card {
-            VStack(alignment: .leading, spacing: 8) {
-                CompactHeader(vm: vm, embedded: true)
-                Divider()
-                periodBar
-                Text(cvm.statusText).font(.caption2).foregroundStyle(.secondary)
-                if cvm.payload.isEmpty {
+        VStack(alignment: .leading, spacing: 8) {
+            CompactHeader(vm: vm, embedded: true).padding(.horizontal, 14)
+            periodBar.padding(.horizontal, 14)
+            Text(cvm.statusText).font(.caption2).foregroundStyle(.secondary).padding(.horizontal, 14)
+            if cvm.payload.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
                     if let n = cvm.note {
                         Text(n).font(.footnote).foregroundStyle(.secondary)
                         Button("重试") { cvm.retry() }.font(.footnote.weight(.semibold))
                     } else {
                         HStack(spacing: 8) { ProgressView(); Text("加载 K 线…").font(.footnote).foregroundStyle(.secondary) }
                     }
-                } else {
-                    chartArea
-                    indicatorBar
-                    if cvm.histPaused {
-                        Button("历史加载被限速打断，点这里继续补全") { cvm.resume() }.font(.footnote.weight(.semibold))
-                    }
-                    Text("来源 GeckoTerminal · 箭头 = 大额买卖，圆点 #n = 第 n 大持有人的成交 · 点 K 线选中，再点取消 · 图表 TradingView Lightweight Charts™").font(.caption2).foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 14)
+                .frame(minHeight: KHero.chartHeight / 2, alignment: .top)
+            } else {
+                chartArea
+                indicatorBar.padding(.horizontal, 14)
+                if cvm.histPaused {
+                    Button("历史加载被限速打断，点这里继续补全") { cvm.resume() }.font(.footnote.weight(.semibold)).padding(.horizontal, 14)
+                }
+                Text("K 线 GeckoTerminal + 最新一根用 Dexscreener 实时价每 3 秒补齐 · 箭头 = 大额买卖，圆点 #n = 第 n 大持有人 · 点 K 线选中，再点取消 · 右上角 ⤢ 全屏图表 · TradingView Lightweight Charts™").font(.caption2).foregroundStyle(.secondary).padding(.horizontal, 14)
+            }
+        }
+        .padding(.vertical, 10)
+        .background(Color.card)
+        .onChange(of: mainSet) { _, _ in applyCfg(); cvm.rebuild() }
+        .onChange(of: subInd) { _, _ in applyCfg(); cvm.rebuild() }
+        .onChange(of: mcap) { _, _ in applyCfg(); cvm.rebuild() }
+        .onChange(of: vm.stamps.analyses) { _, _ in applyCfg(); cvm.rebuild() }
+        .onReceive(NotificationCenter.default.publisher(for: .tstzmFullChart)) { _ in showFull = true }
+        .fullScreenCover(isPresented: $showFull) { fullCover }
+    }
+
+    // 全屏图表：顶部价格条 + 周期栏 + 整屏 K 线 + 指标栏
+    private var fullCover: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                Text(vm.symbol).font(.headline)
+                Text(Money.price(vm.main?.price)).font(.headline.monospacedDigit())
+                Spacer()
+                Button { showFull = false } label: {
+                    Image(systemName: "xmark.circle.fill").font(.title2).foregroundStyle(.secondary)
                 }
             }
-            .onChange(of: mainSet) { _, _ in applyCfg(); cvm.rebuild() }
-            .onChange(of: subInd) { _, _ in applyCfg(); cvm.rebuild() }
-            .onChange(of: mcap) { _, _ in applyCfg(); cvm.rebuild() }
-            .onChange(of: vm.stamps.analyses) { _, _ in applyCfg(); cvm.rebuild() }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            periodBar.padding(.horizontal, 14)
+            if cvm.payload.isEmpty {
+                Spacer()
+            } else {
+                KLineWeb(payload: cvm.payload, seq: cvm.seq, clearToken: cvm.clearToken, onWeb: { t in cvm.onWeb(t) }, onFail: { webFailed = true })
+            }
+            indicatorBar.padding(.horizontal, 14).padding(.vertical, 8)
         }
+        .background(Color.page.ignoresSafeArea())
     }
 }
 

@@ -164,6 +164,11 @@ struct CompactHeader: View {
                 Text(sub).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
             }
             Spacer(minLength: 4)
+            FavButton(vm: vm)
+            Button { NotificationCenter.default.post(name: .tstzmFullChart, object: nil) } label: {
+                Image(systemName: "arrow.up.left.and.arrow.down.right").font(.body)
+            }
+            .buttonStyle(.plain)
             Menu {
                 ForEach(ls.indices, id: \.self) { i in
                     Link(ls[i].0, destination: ls[i].1)
@@ -265,12 +270,43 @@ struct CompactHeader: View {
         wrap {
             VStack(alignment: .leading, spacing: 10) {
                 titleRow(m, ls)
-                priceRow(m, h24)
+                exchangeRow(m, h24)
                 changeRow(m)
-                statGrid(m)
                 if expanded { moreBlock(m, tx) }
                 toggleButton
             }
+        }
+    }
+
+    // 交易所样式：左边大价格 + 24h 涨跌，右边 4 项关键数据
+    private func exchangeRow(_ m: DexPair, _ h24: Double?) -> some View {
+        let age: String = m.pairCreatedAt.map { Fmt2.dur(Date().timeIntervalSince1970 - $0 / 1000) } ?? "—"
+        return HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(m.price.map { Money.price($0) } ?? "—")
+                    .font(.system(size: 30, weight: .bold, design: .rounded))
+                    .foregroundStyle(col(h24))
+                    .minimumScaleFactor(0.55)
+                    .lineLimit(1)
+                HStack(spacing: 6) {
+                    Text(pct(h24)).font(.subheadline.weight(.semibold)).foregroundStyle(col(h24))
+                    Text("24h").font(.caption2).foregroundStyle(.secondary)
+                }
+            }
+            Spacer(minLength: 4)
+            VStack(alignment: .trailing, spacing: 3) {
+                kvRow("市值", Fmt2.usd(m.marketCap))
+                kvRow("流动性", Fmt2.usd(m.liq))
+                kvRow("24h成交", Fmt2.usd(m.volume?["h24"]))
+                kvRow("池龄", age)
+            }
+        }
+    }
+
+    private func kvRow(_ k: String, _ v: String) -> some View {
+        HStack(spacing: 6) {
+            Text(k).font(.caption2).foregroundStyle(.secondary)
+            Text(v).font(.caption.weight(.semibold).monospacedDigit())
         }
     }
 

@@ -21,7 +21,7 @@ struct UnifiedTokenRoot: View {
         return s + " " + p
     }
 
-    private var tabNames: [String] { ["总览", "成交", "筹码", "风险", "叙事", "更多"] }
+    private var tabNames: [String] { ["总览", "成交", "筹码", "风险", "叙事", "情报", "更多"] }
 
     private var tabBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -63,6 +63,8 @@ struct UnifiedTokenRoot: View {
             NarrativeRulesCard(vm: vm)
             SocialCard(vm: vm)
             AIFoldCard(vm: vm)
+        case 5:
+            IntelTab(vm: vm)
         default:
             PromoCard(vm: vm)
         }
@@ -72,16 +74,20 @@ struct UnifiedTokenRoot: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 14) {
-                    inputCard
-                    if vm.loading { Card { HStack(spacing: 10) { ProgressView(); Text("正在识别链并读取行情…").foregroundStyle(.secondary) } } }
-                    if let e = vm.error { ErrorCard(text: e) { vm.start(vm.input) } }
+                    VStack(spacing: 10) {
+                        inputCard
+                        FavBar(vm: vm)
+                    }
+                    .padding(.horizontal, 16)
+                    if vm.loading { Card { HStack(spacing: 10) { ProgressView(); Text("正在识别链并读取行情…").foregroundStyle(.secondary) } }.padding(.horizontal, 16) }
+                    if let e = vm.error { ErrorCard(text: e) { vm.start(vm.input) }.padding(.horizontal, 16) }
                     if vm.main != nil { content }
-                    else if !vm.loading && vm.error == nil { startCard }
+                    else if !vm.loading && vm.error == nil { startCard.padding(.horizontal, 16) }
                 }
-                .padding(16)
+                .padding(.vertical, 12)
+                .background(LogoRefreshHook { vm.refreshAll(); try? await Task.sleep(nanoseconds: 800_000_000) })
             }
             .background(Color.page)
-            .refreshable { vm.refreshAll(); try? await Task.sleep(nanoseconds: 800_000_000) }
             .navigationTitle(navTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -144,11 +150,11 @@ struct UnifiedTokenRoot: View {
     private var content: some View {
         Group {
             KLineCard(vm: vm)
-            FreshnessRow(vm: vm)
-            tabBar
+            FreshnessRow(vm: vm).padding(.horizontal, 16)
+            tabBar.padding(.horizontal, 16)
         }
         Group {
-            tabBody
+            tabBody.padding(.horizontal, 16)
         }
     }
 

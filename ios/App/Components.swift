@@ -83,14 +83,11 @@ struct ErrorCard: View {
 struct BrandMark: View {
     var size: CGFloat = 44
     var body: some View {
-        ZStack {
-            Circle().fill(Color.navy)
-            Circle().strokeBorder(Color.gold, lineWidth: size * 0.04)
-            Text("TSTZ-M")
-                .font(.system(size: size * 0.24, weight: .heavy, design: .rounded))
-                .foregroundStyle(Color.white)
-        }
-        .frame(width: size, height: size)
+        Image("Logo")
+            .resizable()
+            .scaledToFit()
+            .frame(width: size, height: size)
+            .clipShape(RoundedRectangle(cornerRadius: size * 0.2237, style: .continuous))
     }
 }
 
