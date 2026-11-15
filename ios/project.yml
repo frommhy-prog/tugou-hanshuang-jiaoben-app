@@ -42,8 +42,11 @@ targets:
             CFBundleURLSchemes:
               - tstzm
         NSPhotoLibraryUsageDescription: 选择要随反馈一起提交的截图
+        # 平时由 TSTZAppDelegate 锁竖屏，只有全屏 K 线打开时才放开横屏
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.Hao-Yi-Miao.TSTZ-M
