@@ -648,7 +648,7 @@ struct KLineCard: View {
             }
         } else {
             KLineWeb(payload: cvm.payload, seq: cvm.seq, clearToken: cvm.clearToken, onWeb: { t in cvm.onWeb(t) }, onFail: { webFailed = true })
-                .frame(height: KHero.chartHeight)
+                .frame(height: GMLayout.chartHeight)
         }
     }
 
@@ -677,7 +677,6 @@ struct KLineCard: View {
         VStack(alignment: .leading, spacing: 8) {
             GMHeader(vm: vm).padding(.horizontal, 14)
             periodBar.padding(.horizontal, 14)
-            Text(cvm.statusText).font(.caption2).foregroundStyle(.secondary).padding(.horizontal, 14)
             if cvm.payload.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
                     if let n = cvm.note {
@@ -695,7 +694,6 @@ struct KLineCard: View {
                 if cvm.histPaused {
                     Button("历史加载被限速打断，点这里继续补全") { cvm.resume() }.font(.footnote.weight(.semibold)).padding(.horizontal, 14)
                 }
-                Text("K 线 GeckoTerminal + 最新一根用 Dexscreener 实时价每 3 秒补齐 · 箭头 = 大额买卖，圆点 #n = 第 n 大持有人 · 点 K 线选中，再点取消 · 右上角 ⤢ 全屏图表 · TradingView Lightweight Charts™").font(.caption2).foregroundStyle(.secondary).padding(.horizontal, 14)
             }
         }
         .padding(.vertical, 10)

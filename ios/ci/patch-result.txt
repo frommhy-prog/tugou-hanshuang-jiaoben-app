@@ -1,1 +1,38 @@
-PATCH_OK g19_fav_fields g19_fav_scan g19_av_glyph g19_av_dexparam g19_av_launch g19_ut_state g19_ut_title g19_ut_pagebody g19_ut_content g19_ut_nav g19_px_UnifiedToken g19_pc_sel g19_pc_hdr g19_pc_full g19_px_ProChart g19_app_delegate g19_app_tab g19_px_DeepAnalysis g19_px_LifeSocial
+LOGOS:
+OK   gmc_solana <- https://dd.dexscreener.com/ds-data/chains/solana.png
+OK   gmc_ethereum <- https://dd.dexscreener.com/ds-data/chains/ethereum.png
+OK   gmc_bsc <- https://dd.dexscreener.com/ds-data/chains/bsc.png
+OK   gmc_base <- https://dd.dexscreener.com/ds-data/chains/base.png
+OK   gmc_polygon <- https://dd.dexscreener.com/ds-data/chains/polygon.png
+OK   gmc_arbitrum <- https://dd.dexscreener.com/ds-data/chains/arbitrum.png
+OK   gmc_optimism <- https://dd.dexscreener.com/ds-data/chains/optimism.png
+OK   gmc_robinhood <- https://dd.dexscreener.com/ds-data/chains/robinhood.png
+OK   gml_pumpfun <- https://dd.dexscreener.com/ds-data/dexes/pumpfun.png
+OK   gml_letsbonk <- https://dd.dexscreener.com/ds-data/dexes/letsbonk.png
+OK   gml_fourmeme <- https://dd.dexscreener.com/ds-data/dexes/fourmeme.png
+OK   gml_flap <- https://dd.dexscreener.com/ds-data/dexes/flap.png
+OK   gml_moonshot <- https://dd.dexscreener.com/ds-data/dexes/moonshot.png
+OK   gml_clanker <- https://dd.dexscreener.com/ds-data/dexes/clanker.png
+OK   gml_virtuals <- https://dd.dexscreener.com/ds-data/dexes/virtuals.png
+OK   gml_bags <- https://www.google.com/s2/favicons?domain=bags.fm&sz=128
+total 304
+drwxr-xr-x  18 runner  staff    576 Nov 15 15:30 .
+drwxr-xr-x  56 runner  staff   1792 Nov 15 15:30 ..
+-rw-r--r--   1 runner  staff   9929 Nov 15 15:30 gmc_arbitrum.png
+-rw-r--r--   1 runner  staff   1829 Nov 15 15:30 gmc_base.png
+-rw-r--r--   1 runner  staff   5739 Nov 15 15:30 gmc_bsc.png
+-rw-r--r--   1 runner  staff   6609 Nov 15 15:30 gmc_ethereum.png
+-rw-r--r--   1 runner  staff   5354 Nov 15 15:30 gmc_optimism.png
+-rw-r--r--   1 runner  staff   7080 Nov 15 15:30 gmc_polygon.png
+-rw-r--r--   1 runner  staff   2783 Nov 15 15:30 gmc_robinhood.png
+-rw-r--r--   1 runner  staff   8623 Nov 15 15:30 gmc_solana.png
+-rw-r--r--   1 runner  staff   3666 Nov 15 15:30 gml_bags.png
+-rw-r--r--   1 runner  staff   1688 Nov 15 15:30 gml_clanker.png
+-rw-r--r--   1 runner  staff   1688 Nov 15 15:30 gml_flap.png
+-rw-r--r--   1 runner  staff  25521 Nov 15 15:30 gml_fourmeme.png
+-rw-r--r--   1 runner  staff   1688 Nov 15 15:30 gml_letsbonk.png
+-rw-r--r--   1 runner  staff   1688 Nov 15 15:30 gml_moonshot.png
+-rw-r--r--   1 runner  staff  34821 Nov 15 15:30 gml_pumpfun.png
+-rw-r--r--   1 runner  staff   1688 Nov 15 15:30 gml_virtuals.png
+
+PATCH_OK g20_fav_fields g20_fav_notify g20_av_chain g20_mk_launch g20_lk_old g20_lk_coin g20_lk_flip g20_ut_state g20_ut_top g20_ut_pad g20_ut_fresh g20_ut_tool g20_ut_sheet g20_pc_h g20_pc_status g20_pc_foot g20_app_alert g20_set_sections

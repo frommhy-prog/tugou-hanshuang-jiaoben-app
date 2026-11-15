@@ -17,6 +17,11 @@ struct FavItem: Codable, Identifiable, Equatable {
     var created: Double?
     var change1h: Double?
     var change5m: Double?
+    var group: String?
+    var note: String?
+    var vols: [String: Double]?
+    var txs: [String: Int]?
+    var chgs: [String: Double]?
     var id: String { chain + ":" + address.lowercased() }
 }
 
@@ -126,6 +131,7 @@ final class WatchMonitor: ObservableObject {
         cool[k] = Date()
         log.insert(MonitorLog(at: Date(), symbol: it.symbol, text: text), at: 0)
         if log.count > 60 { log.removeLast(log.count - 60) }
+        if (Cfg.defaults.object(forKey: "alertCh.local") as? Bool) == false { return }
         let c = UNMutableNotificationContent()
         c.title = it.symbol + " 监控提醒"
         c.body = text

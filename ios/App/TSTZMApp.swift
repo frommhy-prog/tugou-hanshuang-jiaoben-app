@@ -81,9 +81,6 @@ struct RootView: View {
             WalletsRoot() // 钱包页：链上钱包 / 交易所 / 查询任意地址
                 .tabItem { Label("钱包", systemImage: "wallet.pass") }
                 .tag(1)
-            AlertsView()
-                .tabItem { Label("提醒", systemImage: "bell.badge") }
-                .tag(3)
             SettingsView()
                 .tabItem { Label("设置", systemImage: "gearshape") }
                 .tag(4)

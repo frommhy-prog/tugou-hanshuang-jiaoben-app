@@ -37,6 +37,7 @@ struct SettingsView: View {
                     .pickerStyle(.segmented)
                     Text("自动：查币、查钱包、停在 K 线上都自动请求 AI。手动：只在点按钮时请求，省 Groq 额度。").font(.caption).foregroundStyle(.secondary)
                 }
+                GMSettingsSections()
                 Section("计价货币") {
                     NavigationLink {
                         CurrencyPicker(selected: $currency)

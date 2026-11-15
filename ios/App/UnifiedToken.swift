@@ -16,6 +16,7 @@ struct UnifiedTokenRoot: View {
     @AppStorage("kMcap", store: Cfg.defaults) private var mcapMode = false
     @State private var openPage: Int?
     @State private var showMon = false
+    @State private var showSearch = false
 
     private var navTitle: String {
         guard let m = vm.main else { return "代币" }
@@ -77,17 +78,20 @@ struct UnifiedTokenRoot: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 14) {
-                    VStack(spacing: 10) {
-                        inputCard
-                        FavBar(vm: vm)
+                    if vm.main == nil {
+                        VStack(spacing: 10) {
+                            inputCard
+                            FavBar(vm: vm)
+                        }
+                        .padding(.horizontal, 16)
                     }
-                    .padding(.horizontal, 16)
                     if vm.loading { Card { HStack(spacing: 10) { ProgressView(); Text("正在识别链并读取行情…").foregroundStyle(.secondary) } }.padding(.horizontal, 16) }
                     if let e = vm.error { ErrorCard(text: e) { vm.start(vm.input) }.padding(.horizontal, 16) }
                     if vm.main != nil { content }
                     else if !vm.loading && vm.error == nil { startCard.padding(.horizontal, 16) }
                 }
-                .padding(.vertical, 12)
+                .padding(.top, 2)
+                .padding(.bottom, 12)
                 .background(LogoRefreshHook { vm.refreshAll(); try? await Task.sleep(nanoseconds: 800_000_000) })
             }
             .background(Color.page)
@@ -102,12 +106,16 @@ struct UnifiedTokenRoot: View {
                 }
             }
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
+                ToolbarItemGroup(placement: .topBarLeading) {
                     Button { showDash = true } label: { Image(systemName: "gauge.with.dots.needle.67percent") }
+                    if vm.main != nil {
+                        Button { showSearch = true } label: { Image(systemName: "magnifyingglass") }
+                    }
                 }
             }
             .sheet(isPresented: $showDash) { DashboardView() }
             .sheet(isPresented: $showMon) { MonitorSheet() }
+            .sheet(isPresented: $showSearch) { GMSearchSheet(vm: vm, hist: $hist) }
             .navigationDestination(item: $openPage) { i in analysisPage(i) }
             .onReceive(NotificationCenter.default.publisher(for: .tstzmOpenPage)) { n in
                 if let i = n.object as? Int { openPage = i }
@@ -160,7 +168,6 @@ struct UnifiedTokenRoot: View {
     private var content: some View {
         Group {
             KLineCard(vm: vm)
-            FreshnessRow(vm: vm).padding(.horizontal, 16)
             GMFuncGrid(vm: vm, onOpen: { i in
                 if i == 99 { showMon = true } else { openPage = i }
             }).padding(.horizontal, 16)

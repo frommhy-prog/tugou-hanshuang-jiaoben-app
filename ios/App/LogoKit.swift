@@ -148,7 +148,7 @@ struct LogoLoaderFrame: View {
     }
 
     private func coin(_ sc: Double, _ flip: Double) -> some View {
-        let w: CGFloat = size * 0.8
+        let w: CGFloat = size * 0.9
         return base(w)
             .overlay(shine(w))
             .scaleEffect(CGFloat(sc))
@@ -169,7 +169,7 @@ struct LogoLoaderFrame: View {
 
     var body: some View {
         let glow: Double = spinning ? 0.6 + 0.4 * sin(t * 3.6) : p * 0.6
-        let flip: Double = spinning ? sin(t * 2.4) * 58.0 : p * 270.0
+        let flip: Double = spinning ? sin(t * 2.2) * 36.0 : p * 270.0
         let sc: Double = spinning ? 0.94 + 0.06 * sin(t * 5.2) : 0.5 + 0.5 * p
         let spin: Double = spinning ? t * 330.0 : p * 120.0
         let arc: CGFloat = spinning ? 0.3 : CGFloat(0.3 * p)
@@ -300,7 +300,7 @@ final class LogoRefreshControl: UIRefreshControl {
     }
 }
 
-struct LogoRefreshHook: UIViewRepresentable {
+struct LogoRefreshHookOld: UIViewRepresentable {
     var action: @MainActor () async -> Void
     init(_ action: @escaping @MainActor () async -> Void) { self.action = action }
 

@@ -59,7 +59,7 @@ struct AvChainBadge: View {
     var body: some View {
         ZStack {
             Circle().fill(LinearGradient(colors: chain.avColors, startPoint: .topLeading, endPoint: .bottomTrailing))
-            GMChainGlyph(chain: chain, size: size)
+            GMChainLogo(chain: chain, size: size)
         }
         .frame(width: size, height: size)
         .overlay(Circle().stroke(Color.card, lineWidth: 1.5))

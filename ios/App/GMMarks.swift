@@ -217,7 +217,7 @@ struct GMLaunchBadge: View {
     var body: some View {
         if size >= 30, let p = GMLaunchpad.detect(chain: chain, address: address, dex: dex) {
             let d: CGFloat = max(14, size * 0.36)
-            GMLaunchMark(pad: p, size: d)
+            GMLaunchLogo(pad: p, size: d)
                 .frame(width: d, height: d)
                 .clipShape(Circle())
                 .overlay(Circle().stroke(Color.card, lineWidth: 1.5))
