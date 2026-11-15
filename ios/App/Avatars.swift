@@ -59,9 +59,7 @@ struct AvChainBadge: View {
     var body: some View {
         ZStack {
             Circle().fill(LinearGradient(colors: chain.avColors, startPoint: .topLeading, endPoint: .bottomTrailing))
-            Text(chain.avMark)
-                .font(.system(size: size * 0.58, weight: .heavy, design: .rounded))
-                .foregroundStyle(Color.white)
+            GMChainGlyph(chain: chain, size: size)
         }
         .frame(width: size, height: size)
         .overlay(Circle().stroke(Color.card, lineWidth: 1.5))
@@ -206,6 +204,7 @@ struct AvTokenLogo: View {
     var hint: String? = nil
     var size: CGFloat = 40
     var badge: Bool = true
+    var dex: String? = nil
     @State private var img: UIImage?
 
     private var key: String { (chain?.rawValue ?? "?") + ":" + address.lowercased() }
@@ -219,6 +218,7 @@ struct AvTokenLogo: View {
             }
         }
         .frame(width: size, height: size)
+        .overlay(alignment: .topTrailing) { GMLaunchBadge(chain: chain, address: address, dex: dex, size: size) }
         .task(id: key + "|" + (hint ?? "")) { await resolve() }
     }
 

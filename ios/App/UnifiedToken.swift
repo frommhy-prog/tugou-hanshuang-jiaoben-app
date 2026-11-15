@@ -13,11 +13,14 @@ struct UnifiedTokenRoot: View {
     @State private var showAlert = false
     @State private var showDash = false
     @AppStorage("tokTab", store: Cfg.defaults) private var tokTab = 0
+    @AppStorage("kMcap", store: Cfg.defaults) private var mcapMode = false
+    @State private var openPage: Int?
+    @State private var showMon = false
 
     private var navTitle: String {
         guard let m = vm.main else { return "代币" }
         let s: String = m.baseToken?.symbol ?? vm.symbol
-        let p: String = m.price.map { Money.price($0) } ?? ""
+        let p: String = GMPx.headline(m, mcap: mcapMode)
         return s + " " + p
     }
 
@@ -41,8 +44,8 @@ struct UnifiedTokenRoot: View {
     }
 
     @ViewBuilder
-    private var tabBody: some View {
-        switch tokTab {
+    private func pageBody(_ t: Int) -> some View {
+        switch t {
         case 0:
             VerdictCard(vm: vm)
             TokenDeepCard(vm: vm)
@@ -104,6 +107,13 @@ struct UnifiedTokenRoot: View {
                 }
             }
             .sheet(isPresented: $showDash) { DashboardView() }
+            .sheet(isPresented: $showMon) { MonitorSheet() }
+            .navigationDestination(item: $openPage) { i in analysisPage(i) }
+            .onReceive(NotificationCenter.default.publisher(for: .tstzmOpenPage)) { n in
+                if let i = n.object as? Int { openPage = i }
+            }
+            .onChange(of: vm.main?.price) { _, _ in GMPx.sync(vm.main) }
+            .onAppear { GMPx.sync(vm.main) }
             .sheet(isPresented: $shareSheet) { ShareSheet(items: shareItems) }
             .sheet(isPresented: $showAlert) { AlertEditor(prefill: alertPrefill) { } }
             .task(id: vm.address) {
@@ -151,11 +161,22 @@ struct UnifiedTokenRoot: View {
         Group {
             KLineCard(vm: vm)
             FreshnessRow(vm: vm).padding(.horizontal, 16)
-            tabBar.padding(.horizontal, 16)
+            GMFuncGrid(vm: vm, onOpen: { i in
+                if i == 99 { showMon = true } else { openPage = i }
+            }).padding(.horizontal, 16)
+            GMTradesMini(vm: vm, onMore: { openPage = 1 }).padding(.horizontal, 16)
         }
-        Group {
-            tabBody.padding(.horizontal, 16)
+    }
+
+    // 分析数据都放进各自的新页面（综合研判 / 成交池子 / 持有筹码 / 合约安全 / 叙事社交 / 庄家情报 / 工具）
+    private func analysisPage(_ i: Int) -> some View {
+        ScrollView {
+            VStack(spacing: 14) { pageBody(i) }
+                .padding(16)
         }
+        .background(Color.page)
+        .navigationTitle(i < tabNames.count ? tabNames[i] : "分析")
+        .navigationBarTitleDisplayMode(.inline)
     }
 
     private func changeChip(_ key: String, _ label: String) -> some View {
@@ -185,7 +206,7 @@ struct UnifiedTokenRoot: View {
                     Spacer()
                     Pill(text: vm.chain.title, color: Color.blue)
                 }
-                Text(Money.price(vm.main?.price)).font(.system(size: 32, weight: .bold, design: .rounded))
+                Text(GMPx.tp(vm.main?.price)).font(.system(size: 32, weight: .bold, design: .rounded))
                 HStack(spacing: 6) {
                     changeChip("m5", "5分")
                     changeChip("h1", "1时")
@@ -239,10 +260,10 @@ struct UnifiedTokenRoot: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(TZ.format(Date(timeIntervalSince1970: c.t))).font(.caption2).foregroundStyle(.secondary)
                     HStack(spacing: 10) {
-                        Text("开 " + Money.price(c.o))
-                        Text("高 " + Money.price(c.h))
-                        Text("低 " + Money.price(c.l))
-                        Text("收 " + Money.price(c.c)).foregroundStyle(c.up ? Color.green : Color.red)
+                        Text("开 " + GMPx.tp(c.o))
+                        Text("高 " + GMPx.tp(c.h))
+                        Text("低 " + GMPx.tp(c.l))
+                        Text("收 " + GMPx.tp(c.c)).foregroundStyle(c.up ? Color.green : Color.red)
                     }
                     .font(.system(size: 10, design: .monospaced))
                     Text("成交量 " + Fmt2.usd(c.v)).font(.caption2).foregroundStyle(.secondary)
@@ -379,7 +400,7 @@ struct UnifiedTokenRoot: View {
                         HStack(spacing: 10) {
                             Text("24h 成交 " + Fmt2.usd(p.volume?["h24"]))
                             Text("买/卖 " + Fmt2.buySell(p.txns?["h24"]?.buys, p.txns?["h24"]?.sells))
-                            Text("价格 " + Money.price(p.price))
+                            Text("价格 " + GMPx.tp(p.price))
                         }
                         .font(.caption2).foregroundStyle(.secondary)
                         if let pa = p.pairAddress, let u = URL(string: "https://dexscreener.com/\(vm.chain.dexId)/\(pa)") {
@@ -488,8 +509,8 @@ struct UnifiedTokenRoot: View {
                     kv("已兑现盈亏", Fmt2.usd(p.realizedUsd, signed: true))
                     kv("当前持仓价值", Fmt2.usd(p.valueNowUsd))
                     kv("浮动盈亏", Fmt2.usd(p.unrealizedUsd, signed: true))
-                    kv("平均买入价", p.avgBuyUsd.map { Money.price($0) } ?? "未知")
-                    kv("现价", p.priceNowUsd.map { Money.price($0) } ?? "未知")
+                    kv("平均买入价", p.avgBuyUsd.map { GMPx.tp($0) } ?? "未知")
+                    kv("现价", p.priceNowUsd.map { GMPx.tp($0) } ?? "未知")
                     if let d = p.delayMin { kv("入场时点", d < 0 ? "早于池子创建" : String(format: "池子创建后 %.1f 分钟", d)) }
                     if let f = p.firstBuy { kv("首次买入", TZ.format(Date(timeIntervalSince1970: f))) }
                 }
@@ -642,7 +663,7 @@ struct CandleChartView: View {
                 AxisMarks(position: .trailing) { v in
                     AxisGridLine()
                     AxisValueLabel {
-                        if let d = v.as(Double.self) { Text(Money.price(d)).font(.system(size: 9)) }
+                        if let d = v.as(Double.self) { Text(GMPx.tp(d)).font(.system(size: 9)) }
                     }
                 }
             }

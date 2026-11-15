@@ -560,7 +560,7 @@ struct KLineCard: View {
     var body: some View {
         VStack(spacing: 14) {
             chartBlock
-            KLineDetailCard(vm: vm, cvm: cvm).padding(.horizontal, 16)
+            GMKSelBar(vm: vm, cvm: cvm).padding(.horizontal, 16)
         }
         .task(id: key) { await cvm.liveLoop() }
         .task(id: key) {
@@ -675,7 +675,7 @@ struct KLineCard: View {
     @ViewBuilder
     private var chartBlock: some View {
         VStack(alignment: .leading, spacing: 8) {
-            CompactHeader(vm: vm, embedded: true).padding(.horizontal, 14)
+            GMHeader(vm: vm).padding(.horizontal, 14)
             periodBar.padding(.horizontal, 14)
             Text(cvm.statusText).font(.caption2).foregroundStyle(.secondary).padding(.horizontal, 14)
             if cvm.payload.isEmpty {
@@ -705,7 +705,7 @@ struct KLineCard: View {
         .onChange(of: mcap) { _, _ in applyCfg(); cvm.rebuild() }
         .onChange(of: vm.stamps.analyses) { _, _ in applyCfg(); cvm.rebuild() }
         .onReceive(NotificationCenter.default.publisher(for: .tstzmFullChart)) { _ in showFull = true }
-        .fullScreenCover(isPresented: $showFull) { fullCover }
+        .fullScreenCover(isPresented: $showFull) { GMFullChart(vm: vm, cvm: cvm, onFail: { webFailed = true }) }
     }
 
     // 全屏图表：顶部价格条 + 周期栏 + 整屏 K 线 + 指标栏
@@ -713,7 +713,7 @@ struct KLineCard: View {
         VStack(spacing: 0) {
             HStack(spacing: 10) {
                 Text(vm.symbol).font(.headline)
-                Text(Money.price(vm.main?.price)).font(.headline.monospacedDigit())
+                Text(GMPx.tp(vm.main?.price)).font(.headline.monospacedDigit())
                 Spacer()
                 Button { showFull = false } label: {
                     Image(systemName: "xmark.circle.fill").font(.title2).foregroundStyle(.secondary)
@@ -859,9 +859,9 @@ struct KLineDetailCard: View {
                 }
                 Text(span).font(.caption).foregroundStyle(.secondary)
                 LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
-                    StatTile(title: "开盘 → 收盘", value: Money.price(c.o) + " → " + Money.price(c.c), tint: col)
+                    StatTile(title: "开盘 → 收盘", value: GMPx.tp(c.o) + " → " + GMPx.tp(c.c), tint: col)
                     StatTile(title: "涨跌 / 振幅", value: String(format: "%+.1f%% / %.1f%%", chg, amp), tint: col)
-                    StatTile(title: "最高 / 最低", value: Money.price(c.h) + " / " + Money.price(c.l))
+                    StatTile(title: "最高 / 最低", value: GMPx.tp(c.h) + " / " + GMPx.tp(c.l))
                     StatTile(title: "K 线成交额", value: Fmt2.usd(c.v))
                 }
                 if let r = ratio {
@@ -1131,8 +1131,8 @@ struct KLineDetailCard: View {
         let down = cs.min(by: { KCalc.gain($0) < KCalc.gain($1) })
         let a = vm.agg
         let range = TZ.short(first.date) + " ~ " + TZ.short(last.date) + " · \(cs.count) 根（" + cvm.tf.title + "）"
-        let path = Money.price(first.o) + " → " + Money.price(last.c) + String(format: "（%+.1f%%）", run)
-        let hl = "最高 " + Money.price(hi.h) + "（" + TZ.short(hi.date) + "）· 最低 " + Money.price(lo.l) + "（" + TZ.short(lo.date) + "）"
+        let path = GMPx.tp(first.o) + " → " + GMPx.tp(last.c) + String(format: "（%+.1f%%）", run)
+        let hl = "最高 " + GMPx.tp(hi.h) + "（" + TZ.short(hi.date) + "）· 最低 " + GMPx.tp(lo.l) + "（" + TZ.short(lo.date) + "）"
         let tv = topVol.map { TZ.short($0.date) + " " + Fmt2.usd($0.v) }.joined(separator: "；")
         let now = Date().timeIntervalSince1970
         let w24 = FlowCalc.windows(vm.trades, now: now).first(where: { $0.id == "24h" })

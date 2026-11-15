@@ -251,7 +251,7 @@ struct TokenDeepCard: View {
         var bull = false
         var bear = false
         if let a = ma5, let b = ma10, let c = ma20 {
-            let basis = cat("MA5 ", Money.price(a), " · MA10 ", Money.price(b), " · MA20 ", Money.price(c))
+            let basis = cat("MA5 ", GMPx.tp(a), " · MA10 ", GMPx.tp(b), " · MA20 ", GMPx.tp(c))
             if a > b && b > c {
                 bull = true
                 fs.append(Finding(level: "ok", text: "均线多头排列（MA5 > MA10 > MA20），短中期趋势向上", basis: basis))
@@ -272,10 +272,10 @@ struct TokenDeepCard: View {
         let res = DeepCalc.levels(sw.0).filter { $0.0 > cur * 1.01 }.min(by: { $0.0 < $1.0 })
         let sup = DeepCalc.levels(sw.1).filter { $0.0 < cur * 0.99 }.max(by: { $0.0 < $1.0 })
         if let r = res {
-            fs.append(Finding(level: "info", text: cat("上方最近阻力 ", Money.price(r.0), String(format: "（距现价 %+.1f%%，被触及 %d 次）", (r.0 / cur - 1) * 100, r.1)), basis: "已加载 K 线里的局部高点聚类（3% 内合并）"))
+            fs.append(Finding(level: "info", text: cat("上方最近阻力 ", GMPx.tp(r.0), String(format: "（距现价 %+.1f%%，被触及 %d 次）", (r.0 / cur - 1) * 100, r.1)), basis: "已加载 K 线里的局部高点聚类（3% 内合并）"))
         }
         if let s = sup {
-            fs.append(Finding(level: "info", text: cat("下方最近支撑 ", Money.price(s.0), String(format: "（距现价 %+.1f%%，被触及 %d 次）", (s.0 / cur - 1) * 100, s.1)), basis: "已加载 K 线里的局部低点聚类（3% 内合并）"))
+            fs.append(Finding(level: "info", text: cat("下方最近支撑 ", GMPx.tp(s.0), String(format: "（距现价 %+.1f%%，被触及 %d 次）", (s.0 / cur - 1) * 100, s.1)), basis: "已加载 K 线里的局部低点聚类（3% 内合并）"))
         }
 
         // 量能
@@ -544,9 +544,9 @@ struct HolderDeepCard: View {
             let basis = cat("已拆解大户中仍持仓的 ", String(holding), " 个，持仓成本合计 ", Fmt2.usd(cost), " ÷ 持仓数量")
             let d = (px / avg - 1) * 100
             if d >= 0 {
-                out.append(Finding(level: "info", text: cat("大户持仓加权成本约 ", Money.price(avg), String(format: "，现价高出 %.0f%%，整体账面盈利", d)), basis: basis))
+                out.append(Finding(level: "info", text: cat("大户持仓加权成本约 ", GMPx.tp(avg), String(format: "，现价高出 %.0f%%，整体账面盈利", d)), basis: basis))
             } else {
-                out.append(Finding(level: "warn", text: cat("大户持仓加权成本约 ", Money.price(avg), String(format: "，现价低于成本 %.0f%%，整体被套", -d)), basis: basis))
+                out.append(Finding(level: "warn", text: cat("大户持仓加权成本约 ", GMPx.tp(avg), String(format: "，现价低于成本 %.0f%%，整体被套", -d)), basis: basis))
             }
         }
         // 获利盘 / 套牢盘（按持仓价值）
@@ -558,7 +558,7 @@ struct HolderDeepCard: View {
         if lossQty > 0, let px = vm.main?.price, px > 0 {
             let lossAvg = lossCost / lossQty
             if lossAvg > px * 1.05 {
-                out.append(Finding(level: "info", text: cat("套牢盘成本中枢约 ", Money.price(lossAvg), String(format: "，比现价高 %.0f%%：价格涨回这一带可能有解套抛压", (lossAvg / px - 1) * 100)), basis: "只统计已拆解、仍持仓且浮亏的大户"))
+                out.append(Finding(level: "info", text: cat("套牢盘成本中枢约 ", GMPx.tp(lossAvg), String(format: "，比现价高 %.0f%%：价格涨回这一带可能有解套抛压", (lossAvg / px - 1) * 100)), basis: "只统计已拆解、仍持仓且浮亏的大户"))
             }
         }
         // 兑现程度

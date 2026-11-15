@@ -11,6 +11,12 @@ struct FavItem: Codable, Identifiable, Equatable {
     var change24h: Double?
     var liq: Double?
     var addedAt: Double
+    var mcap: Double?
+    var vol24h: Double?
+    var dex: String?
+    var created: Double?
+    var change1h: Double?
+    var change5m: Double?
     var id: String { chain + ":" + address.lowercased() }
 }
 
@@ -93,6 +99,7 @@ final class WatchMonitor: ObservableObject {
             guard let ch = Chain(rawValue: it.chain) else { continue }
             guard let ps = try? await MarketAPI.pairs(ch, it.address), let m = ps.first else { continue }
             FavStore.shared.update(id: it.id, price: m.price, change: m.priceChange?["h24"], liq: m.liq)
+            FavStore.shared.fill(m, id: it.id)
             if let old = last[it.id] { evaluate(it, old, m) }
             last[it.id] = m
             try? await Task.sleep(nanoseconds: 400_000_000)

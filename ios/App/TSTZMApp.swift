@@ -7,6 +7,7 @@ import WidgetKit
 struct TSTZMApp: App {
     @AppStorage("theme") private var theme = "system"
     @Environment(\.scenePhase) private var phase
+    @UIApplicationDelegateAdaptor(TSTZAppDelegate.self) private var appDelegate
 
     init() { TZ.apply(); SourceHub.install() } // 启动即应用统一时区，并开启请求日志
 
@@ -74,6 +75,9 @@ struct RootView: View {
             UnifiedTokenRoot() // 统一代币页：Solana / EVM 合并为一个入口
                 .tabItem { Label("代币", systemImage: "waveform.path.ecg") }
                 .tag(0)
+            GMFavoritesRoot()
+                .tabItem { Label("收藏", systemImage: "star") }
+                .tag(2)
             WalletsRoot() // 钱包页：链上钱包 / 交易所 / 查询任意地址
                 .tabItem { Label("钱包", systemImage: "wallet.pass") }
                 .tag(1)

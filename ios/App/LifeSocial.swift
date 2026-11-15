@@ -55,7 +55,7 @@ enum LifeEngine {
         let basis = cat("GeckoTerminal ", tf.title, " K 线，共 ", String(cs.count), " 根")
         var phases: [LifePhase] = []
 
-        var launch = cat("首根 K 线 ", TZ.short(first.date), "，开盘 ", Money.price(p0))
+        var launch = cat("首根 K 线 ", TZ.short(first.date), "，开盘 ", GMPx.tp(p0))
         if total > 0 { launch += String(format: "；首 24 小时成交额占已加载累计的 %.0f%%", day1 / total * 100) }
         var lb = basis
         if let cm = createdMs, cm / 1000 < first.t - sec * 2 { lb = cat(basis, "；最早一根晚于建池时间，更早的数据未取到") }
@@ -63,16 +63,16 @@ enum LifeEngine {
 
         if athIdx > 0 {
             let t = cat("从开盘涨到最高点 ", String(format: "%.1f", mult), " 倍，用时 ", Fmt2.dur(ath.t - first.t))
-            phases.append(LifePhase(title: "拉升", text: t, basis: cat("最高价 ÷ 首根开盘价（", Money.price(ath.h), " ÷ ", Money.price(p0), "）"), level: mult >= 20 ? "warn" : "info"))
+            phases.append(LifePhase(title: "拉升", text: t, basis: cat("最高价 ÷ 首根开盘价（", GMPx.tp(ath.h), " ÷ ", GMPx.tp(p0), "）"), level: mult >= 20 ? "warn" : "info"))
         }
-        var top = cat("最高价 ", Money.price(ath.h), " 出现在 ", TZ.short(ath.date))
+        var top = cat("最高价 ", GMPx.tp(ath.h), " 出现在 ", TZ.short(ath.date))
         if avgV > 0 { top += String(format: "；那一根成交额是均值的 %.1f 倍", ath.v / avgV) }
         phases.append(LifePhase(title: "顶部", text: top, basis: "已加载范围内最高价", level: "info"))
 
         if athIdx < cs.count - 1 {
             var t = cat("自最高点至今 ", String(format: "%+.0f%%", dd * 100))
             if let h = halfAfter { t += cat("；最高点后 ", Fmt2.dur(h), " 就跌去一半") } else { t += "；还没有从最高点跌去一半" }
-            phases.append(LifePhase(title: "回落", text: t, basis: cat("现价 ", Money.price(last.c), " ÷ 最高价"), level: dd <= -0.7 ? "risk" : (dd <= -0.4 ? "warn" : "info")))
+            phases.append(LifePhase(title: "回落", text: t, basis: cat("现价 ", GMPx.tp(last.c), " ÷ 最高价"), level: dd <= -0.7 ? "risk" : (dd <= -0.4 ? "warn" : "info")))
         }
 
         var stage = "横盘整理期"
