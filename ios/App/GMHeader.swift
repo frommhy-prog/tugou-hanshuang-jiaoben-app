@@ -1,12 +1,11 @@
 import SwiftUI
 import UIKit
 
-// GMGN 风格代币头：头像（右下链徽标 + 右上发射台徽标）、代币/报价币、叙事标签、合约 + 社交、价格/市值大字、涨跌条、风控四格。
+// GMGN 风格紧凑代币头：首屏就能看完「基础信息 + 完整 K 线」，不用滑动。
 // 价格/市值开关和 K 线共用 kMcap：切换后头部大字、右侧数据、导航标题、K 线、收藏页同步变化。
 struct GMHeader: View {
     @ObservedObject var vm: UTokenVM
     @AppStorage("kMcap", store: Cfg.defaults) private var mcapMode = false
-    @State private var expanded = false
     @State private var copied = false
     @State private var narr: NarrReport?
 
@@ -99,24 +98,36 @@ struct GMHeader: View {
         narr = r
     }
 
-    // MARK: 标题行：头像 + 代币/报价币 + 叙事 + 链·DEX·发射台；右侧 ☆ ⤢ ⋯
+    private func chipText(_ t: String, _ c: Color) -> some View {
+        Text(t).font(.caption2.weight(.bold)).padding(.horizontal, 7).padding(.vertical, 3).background(c.opacity(0.14), in: Capsule()).foregroundStyle(c)
+    }
+
+    // MARK: 标题行：头像 + 代币/报价币 + 一行标签（叙事·链·DEX·发射台·内外盘）；右侧 ☆ ⤢ ⋯
+    private func tagsRow(_ m: DexPair) -> some View {
+        let pad: GMLaunchpad? = GMLaunchpad.detect(chain: vm.chain, address: vm.address, dex: m.dexId)
+        let mk: String? = GMMarketKind.text(dex: m.dexId, pad: pad)
+        return ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                narrChip(m)
+                Text(vm.chain.title).font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+                if let d = m.dexId, !d.isEmpty { GMDexChip(dex: d) }
+                if let p = pad { Text(p.title).font(.caption2.weight(.semibold)).foregroundStyle(Color.orange).lineLimit(1) }
+                if let t = mk { chipText(t, t == "内盘" ? Color.orange : Color.green) }
+            }
+        }
+    }
+
     private func titleRow(_ m: DexPair) -> some View {
         let quote: String = m.quoteToken?.symbol ?? ""
         let ls: [(String, URL)] = socials(m) + externals(m)
-        let pad: GMLaunchpad? = GMLaunchpad.detect(chain: vm.chain, address: vm.address, dex: m.dexId)
-        return HStack(alignment: .center, spacing: 12) {
-            AvTokenLogo(chain: vm.chain, address: vm.address, symbol: m.baseToken?.symbol ?? vm.symbol, hint: m.info?.imageUrl, size: 56, dex: m.dexId)
-            VStack(alignment: .leading, spacing: 5) {
+        return HStack(alignment: .center, spacing: 10) {
+            AvTokenLogo(chain: vm.chain, address: vm.address, symbol: m.baseToken?.symbol ?? vm.symbol, hint: m.info?.imageUrl, size: 48, dex: m.dexId)
+            VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(m.baseToken?.symbol ?? vm.symbol).font(.title3.bold()).lineLimit(1)
                     if !quote.isEmpty { Text("/" + quote).font(.subheadline).foregroundStyle(.secondary).lineLimit(1) }
                 }
-                narrChip(m)
-                HStack(spacing: 6) {
-                    Text(vm.chain.title).font(.caption2).foregroundStyle(.secondary)
-                    if let d = m.dexId, !d.isEmpty { GMDexChip(dex: d) }
-                    if let p = pad { Text(p.title).font(.caption2.weight(.semibold)).foregroundStyle(Color.orange).lineLimit(1) }
-                }
+                tagsRow(m)
             }
             Spacer(minLength: 4)
             FavButton(vm: vm)
@@ -136,7 +147,7 @@ struct GMHeader: View {
     }
 
     // MARK: 合约 + 社交 + 外部行情
-    private func linkRow(_ m: DexPair) -> some View {
+    private func contractRow(_ m: DexPair) -> some View {
         let ss: [(String, URL)] = socials(m)
         let ex: [(String, URL)] = externals(m).filter { $0.0 == "GMGN" || $0.0 == "Dexscreener" }
         return ScrollView(.horizontal, showsIndicators: false) {
@@ -160,10 +171,6 @@ struct GMHeader: View {
         }
     }
 
-    private func chipText(_ t: String, _ c: Color) -> some View {
-        Text(t).font(.caption2.weight(.bold)).padding(.horizontal, 7).padding(.vertical, 3).background(c.opacity(0.14), in: Capsule()).foregroundStyle(c)
-    }
-
     // MARK: 价格 / 市值大字 + 右侧关键数据
     private func kvRow(_ k: String, _ v: String) -> some View {
         HStack(spacing: 6) {
@@ -175,9 +182,9 @@ struct GMHeader: View {
     private func headline(_ m: DexPair, _ h24: Double?) -> some View {
         let age: String = m.pairCreatedAt.map { Fmt2.dur(Date().timeIntervalSince1970 - $0 / 1000) } ?? "—"
         let big: String = GMPx.headline(m, mcap: mcapMode)
-        let other: String = m.price.map { Money.price($0) } ?? "—"
+        let other: String = m.price.map { GMPx.usd($0) } ?? "—"
         return HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 5) {
                 Text(big)
                     .font(.system(size: 30, weight: .bold, design: .rounded))
                     .foregroundStyle(col(h24))
@@ -190,8 +197,8 @@ struct GMHeader: View {
                 }
             }
             Spacer(minLength: 4)
-            VStack(alignment: .trailing, spacing: 3) {
-                if mcapMode { kvRow("价格", other) } else { kvRow("市值", Fmt2.usd(m.marketCap)) }
+            VStack(alignment: .trailing, spacing: 2) {
+                if mcapMode { kvRow("价格", other) } else { kvRow("市值", Fmt2.usd(m.marketCap ?? m.fdv)) }
                 kvRow("流动性", Fmt2.usd(m.liq))
                 kvRow("24h成交", Fmt2.usd(m.volume?["h24"]))
                 kvRow("池龄", age)
@@ -208,122 +215,21 @@ struct GMHeader: View {
                     Text(pct(v)).font(.caption.bold()).foregroundStyle(col(v))
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 5)
+                .padding(.vertical, 4)
                 .background(Color.secondary.opacity(0.1), in: RoundedRectangle(cornerRadius: 7))
             }
         }
     }
 
-    // MARK: GMGN 风控四格：Top10 / 狙击·早买 / 税或权限 / 池深比（读不到显示 —，不编数）
-    private func liqRatio(_ m: DexPair) -> String {
-        let mc: Double = m.marketCap ?? m.fdv ?? 0
-        if mc <= 0 || m.liq <= 0 { return "—" }
-        return String(format: "%.1f%%", m.liq / mc * 100)
-    }
-
-    private func riskCells(_ m: DexPair) -> [(String, String, Color)] {
-        var out: [(String, String, Color)] = []
-        if let w = vm.conc?.wallets10 {
-            let v = Double(w)
-            out.append(("Top10", String(format: "%.1f%%", v), v >= 30 ? Color.red : (v >= 15 ? Color.orange : Color.green)))
-        } else if let w = vm.conc?.top10 {
-            let v = Double(w)
-            out.append(("Top10", String(format: "%.1f%%", v), v >= 30 ? Color.red : (v >= 15 ? Color.orange : Color.green)))
-        } else {
-            out.append(("Top10", "—", Color.secondary))
-        }
-        let a = vm.agg
-        if a.withPos >= 1 {
-            let n: Int = a.snipers + a.early
-            out.append(("狙击/早买", String(n), n > 0 ? Color.orange : Color.green))
-        } else {
-            out.append(("狙击/早买", "—", Color.secondary))
-        }
-        if vm.chain == .solana {
-            if let au = vm.authorities {
-                let on: Bool = !(au.mint ?? "").isEmpty || !(au.freeze ?? "").isEmpty
-                out.append(("增发/冻结", on ? "未弃" : "已弃", on ? Color.red : Color.green))
-            } else {
-                out.append(("增发/冻结", "—", Color.secondary))
-            }
-        } else if let s = vm.security {
-            if s.honeypot == true {
-                out.append(("蜜罐", "是", Color.red))
-            } else if let t = s.sellTax {
-                out.append(("卖税", String(format: "%.0f%%", Double(t)), t >= 10 ? Color.red : Color.green))
-            } else {
-                out.append(("卖税", "—", Color.secondary))
-            }
-        } else {
-            out.append(("合约", "—", Color.secondary))
-        }
-        out.append(("池深/市值", liqRatio(m), Color.primary))
-        return out
-    }
-
-    private func riskRow(_ m: DexPair) -> some View {
-        let cells = riskCells(m)
-        return HStack(spacing: 6) {
-            ForEach(cells.indices, id: \.self) { i in
-                VStack(spacing: 2) {
-                    Text(cells[i].1).font(.footnote.weight(.bold)).foregroundStyle(cells[i].2).lineLimit(1).minimumScaleFactor(0.7)
-                    Text(cells[i].0).font(.caption2).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.7)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 6)
-                .background(Color.secondary.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
-            }
-        }
-    }
-
-    // MARK: 更多数据
-    private func moreBlock(_ m: DexPair, _ tx: DexTx?) -> some View {
-        let cols = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
-        return VStack(alignment: .leading, spacing: 10) {
-            LazyVGrid(columns: cols, alignment: .leading, spacing: 8) {
-                stat("FDV", Fmt2.usd(m.fdv))
-                stat("24h 买/卖", String(tx?.buys ?? 0) + "/" + String(tx?.sells ?? 0))
-                stat("池子数", String(vm.pairs.count))
-                stat("池深/市值", liqRatio(m))
-            }
-            Text("每 20 秒自动刷新").font(.caption2).foregroundStyle(.secondary)
-        }
-    }
-
-    private func stat(_ title: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title).font(.caption2).foregroundStyle(.secondary)
-            Text(value).font(.footnote.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.7)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private var toggleButton: some View {
-        Button {
-            withAnimation(.easeInOut(duration: 0.2)) { expanded.toggle() }
-        } label: {
-            HStack(spacing: 4) {
-                Text(expanded ? "收起" : "更多数据").font(.caption)
-                Image(systemName: expanded ? "chevron.up" : "chevron.down").font(.caption2)
-            }
-            .frame(maxWidth: .infinity)
-            .foregroundStyle(.secondary)
-        }
-        .buttonStyle(.plain)
-    }
-
     @ViewBuilder
     private func content(_ m: DexPair) -> some View {
         let h24 = m.priceChange?["h24"]
-        let tx = m.txns?["h24"]
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             titleRow(m)
-            linkRow(m)
+            contractRow(m)
             headline(m, h24)
+            GMMetricStrip(vm: vm)
             changeRow(m)
-            riskRow(m)
-            if expanded { moreBlock(m, tx) }
-            toggleButton
         }
     }
 
