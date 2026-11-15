@@ -13,17 +13,17 @@
       "localizedDescription": "土狗合约体检、多链钱包、盯盘看板、到价提醒、小组件与灵动岛。",
       "iconURL": "https://raw.githubusercontent.com/frommhy-prog/tugou-hanshuang-jiaoben-app/main/sidestore/icon.png",
       "tintColor": "001C44",
-      "version": "1.0.90",
-      "versionDate": "2026-11-15T15:34:28Z",
-      "downloadURL": "https://github.com/frommhy-prog/tugou-hanshuang-jiaoben-app/releases/download/build-90/TSTZ-M.ipa",
-      "size": 3429268,
+      "version": "1.0.91",
+      "versionDate": "2026-11-15T23:53:57Z",
+      "downloadURL": "https://github.com/frommhy-prog/tugou-hanshuang-jiaoben-app/releases/download/build-91/TSTZ-M.ipa",
+      "size": 3436166,
       "versions": [
         {
-          "version": "1.0.90",
-          "buildVersion": "90",
-          "date": "2026-11-15T15:34:28Z",
-          "downloadURL": "https://github.com/frommhy-prog/tugou-hanshuang-jiaoben-app/releases/download/build-90/TSTZ-M.ipa",
-          "size": 3429268,
+          "version": "1.0.91",
+          "buildVersion": "91",
+          "date": "2026-11-15T23:53:57Z",
+          "downloadURL": "https://github.com/frommhy-prog/tugou-hanshuang-jiaoben-app/releases/download/build-91/TSTZ-M.ipa",
+          "size": 3436166,
           "minOSVersion": "17.0"
         }
       ]
