@@ -5,7 +5,7 @@ import UIKit
 enum GMLayout {
     static var chartHeight: CGFloat {
         let h: CGFloat = UIScreen.main.bounds.height
-        return max(240, min(560, h - 548))
+        return max(240, min(560, h - 492))
     }
 }
 
@@ -57,9 +57,9 @@ private struct GMPullView: View {
         ZStack {
             if st.spinning || st.pull > 0.05 {
                 Circle()
-                    .fill(Color.card.opacity(0.94))
+                    .fill(Color.clear)
                     .frame(width: 52, height: 52)
-                    .shadow(color: Color.black.opacity(0.18), radius: 8, y: 2)
+                    .shadow(color: Color.clear, radius: 0)
                 if st.spinning {
                     LogoLoader(size: 34)
                 } else {
@@ -75,6 +75,11 @@ private struct GMPullView: View {
 struct LogoRefreshHook: UIViewRepresentable {
     var action: @MainActor () async -> Void
     init(_ action: @escaping @MainActor () async -> Void) { self.action = action }
+    var bind: Binding<Bool>? = nil
+    init(refreshing: Binding<Bool>, _ action: @escaping @MainActor () async -> Void) {
+        self.action = action
+        self.bind = refreshing
+    }
 
     func makeCoordinator() -> Coord { Coord() }
 
@@ -86,6 +91,7 @@ struct LogoRefreshHook: UIViewRepresentable {
 
     func updateUIView(_ v: UIView, context: Context) {
         context.coordinator.action = action
+        context.coordinator.bind = bind
         let c = context.coordinator
         DispatchQueue.main.async { c.attach(v) }
     }
@@ -96,6 +102,7 @@ struct LogoRefreshHook: UIViewRepresentable {
 
     final class Coord: NSObject {
         var action: (@MainActor () async -> Void)?
+        var bind: Binding<Bool>?
         private weak var scroll: UIScrollView?
         private var obs: NSKeyValueObservation?
         private var host: UIHostingController<GMPullView>?
@@ -147,8 +154,8 @@ struct LogoRefreshHook: UIViewRepresentable {
                 }
                 st.pull = min(1, Double(pull / thr))
             }
-            let y: CGFloat = refreshing ? 38 : min(pull, 110) * 0.5 + 4
-            h.view.center = CGPoint(x: sv.frame.midX, y: sv.frame.minY + top + y + 12)
+            let y: CGFloat = refreshing ? 27 : min(pull, 96) * 0.5 + 10
+            h.view.center = CGPoint(x: sv.frame.midX, y: sv.frame.minY + top + y)
         }
 
         private func fire() {
@@ -158,9 +165,11 @@ struct LogoRefreshHook: UIViewRepresentable {
             st.spinning = true
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             Task { @MainActor in
+                if let b = self.bind { withAnimation(.easeInOut(duration: 0.25)) { b.wrappedValue = true } }
                 await self.action?()
                 self.st.spinning = false
                 self.st.pull = 0
+                if let b = self.bind { withAnimation(.easeInOut(duration: 0.25)) { b.wrappedValue = false } }
                 self.refreshing = false
             }
         }
@@ -240,6 +249,7 @@ struct GMSettingsSections: View {
                 Text(pubKey).font(.system(size: 10, design: .monospaced)).textSelection(.enabled)
                 Button("复制公钥") { UIPasteboard.general.string = pubKey }
             }
+            GMFreeSettings()
             Section("提醒") {
                 Toggle("本地通知（App 在前台时监控收藏）", isOn: $chLocal)
                 HStack { Text("Telegram 推送"); Spacer(); Text(statusText(tgOK)).font(.footnote).foregroundStyle(.secondary) }

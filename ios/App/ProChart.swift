@@ -427,6 +427,8 @@ final class KLineVM: ObservableObject {
             "sub": cfgSub,
             "mcap": cfgMcap,
             "mult": (cfgMult.isFinite && cfgMult > 0) ? cfgMult : 1.0,
+            "rate": GMPx.rate,
+            "cur": GMPx.sym,
         ]
         if let d = try? JSONSerialization.data(withJSONObject: obj), let s = String(data: d, encoding: .utf8) {
             payload = s

@@ -1,10 +1,5 @@
 LOGOS:
 PLACEHOLDER md5=17b0e4c0dec3291821000102feef9779
-DROP placeholder ios/App/Logos/gml_clanker.png
-DROP placeholder ios/App/Logos/gml_flap.png
-DROP placeholder ios/App/Logos/gml_letsbonk.png
-DROP placeholder ios/App/Logos/gml_moonshot.png
-DROP placeholder ios/App/Logos/gml_virtuals.png
 HAVE gmc_solana
 HAVE gmc_ethereum
 HAVE gmc_bsc
@@ -15,30 +10,30 @@ HAVE gmc_optimism
 HAVE gmc_robinhood
 HAVE gml_pumpfun
 HAVE gml_fourmeme
-OK   gml_letsbonk <- https://www.google.com/s2/favicons?domain=bonk.fun&sz=128
-OK   gml_flap <- https://www.google.com/s2/favicons?domain=flap.sh&sz=128
-OK   gml_moonshot <- https://www.google.com/s2/favicons?domain=moonshot.com&sz=128
-OK   gml_clanker <- https://www.google.com/s2/favicons?domain=clanker.world&sz=128
-OK   gml_virtuals <- https://www.google.com/s2/favicons?domain=virtuals.io&sz=128
+HAVE gml_letsbonk
+HAVE gml_flap
+HAVE gml_moonshot
+HAVE gml_clanker
+HAVE gml_virtuals
 HAVE gml_bags
 total 336
-drwxr-xr-x  18 runner  staff    576 Nov 15 23:49 .
-drwxr-xr-x  56 runner  staff   1792 Nov 15 23:49 ..
--rw-r--r--   1 runner  staff   9929 Nov 15 23:49 gmc_arbitrum.png
--rw-r--r--   1 runner  staff   1829 Nov 15 23:49 gmc_base.png
--rw-r--r--   1 runner  staff   5739 Nov 15 23:49 gmc_bsc.png
--rw-r--r--   1 runner  staff   6609 Nov 15 23:49 gmc_ethereum.png
--rw-r--r--   1 runner  staff   5354 Nov 15 23:49 gmc_optimism.png
--rw-r--r--   1 runner  staff   7080 Nov 15 23:49 gmc_polygon.png
--rw-r--r--   1 runner  staff   2783 Nov 15 23:49 gmc_robinhood.png
--rw-r--r--   1 runner  staff   8623 Nov 15 23:49 gmc_solana.png
--rw-r--r--   1 runner  staff   3666 Nov 15 23:49 gml_bags.png
--rw-r--r--   1 runner  staff   2183 Nov 15 23:49 gml_clanker.png
--rw-r--r--   1 runner  staff   1081 Nov 15 23:49 gml_flap.png
--rw-r--r--   1 runner  staff  25521 Nov 15 23:49 gml_fourmeme.png
--rw-r--r--   1 runner  staff  10354 Nov 15 23:49 gml_letsbonk.png
--rw-r--r--   1 runner  staff  10157 Nov 15 23:49 gml_moonshot.png
--rw-r--r--   1 runner  staff  34821 Nov 15 23:49 gml_pumpfun.png
--rw-r--r--   1 runner  staff    588 Nov 15 23:49 gml_virtuals.png
+drwxr-xr-x  18 runner  staff    576 Nov 16 09:45 .
+drwxr-xr-x  57 runner  staff   1824 Nov 16 09:45 ..
+-rw-r--r--   1 runner  staff   9929 Nov 16 09:45 gmc_arbitrum.png
+-rw-r--r--   1 runner  staff   1829 Nov 16 09:45 gmc_base.png
+-rw-r--r--   1 runner  staff   5739 Nov 16 09:45 gmc_bsc.png
+-rw-r--r--   1 runner  staff   6609 Nov 16 09:45 gmc_ethereum.png
+-rw-r--r--   1 runner  staff   5354 Nov 16 09:45 gmc_optimism.png
+-rw-r--r--   1 runner  staff   7080 Nov 16 09:45 gmc_polygon.png
+-rw-r--r--   1 runner  staff   2783 Nov 16 09:45 gmc_robinhood.png
+-rw-r--r--   1 runner  staff   8623 Nov 16 09:45 gmc_solana.png
+-rw-r--r--   1 runner  staff   3666 Nov 16 09:45 gml_bags.png
+-rw-r--r--   1 runner  staff   2183 Nov 16 09:45 gml_clanker.png
+-rw-r--r--   1 runner  staff   1081 Nov 16 09:45 gml_flap.png
+-rw-r--r--   1 runner  staff  25521 Nov 16 09:45 gml_fourmeme.png
+-rw-r--r--   1 runner  staff  10354 Nov 16 09:45 gml_letsbonk.png
+-rw-r--r--   1 runner  staff  10157 Nov 16 09:45 gml_moonshot.png
+-rw-r--r--   1 runner  staff  34821 Nov 16 09:45 gml_pumpfun.png
+-rw-r--r--   1 runner  staff    588 Nov 16 09:45 gml_virtuals.png
 
-PATCH_OK (none new)
+PATCH_OK g21_h1 g21_h2 g21_h3 g21_h4 g21_h5 g21_h6 g21_h7 g21_m1 g21_m2 g21_m3 g21_m4 g21_m5 g21_m6 g21_m7 g21_m8 g21_m9 g21_m10 g21_m11 g21_m12 g21_m13 g21_m14 g21_m15 g21_m16 g21_g1 g21_g2 g21_g3 g21_g4 g21_g5 g21_g6 g21_g7 g21_g8 g21_g9 g21_g10 g21_g11 g21_u1 g21_u2 g21_u3 g21_u4 g21_u5 g21_u6 g21_u7 g21_p1 g21_w1 g21_w2 g21_w3 g21_w4 g21_w5 g21_w6

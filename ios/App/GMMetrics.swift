@@ -64,7 +64,7 @@ enum GMMetricCatalog {
 
     @MainActor
     static func eval(_ id: String, vm: UTokenVM, gm: GMGNStore, paid: GMPaid?) -> GMVal {
-        let hint: String = gm.hasKey ? "GMGN 暂未返回这一项" : "没填 GMGN API Key，这一项暂时读不到（设置 → GMGN 数据）"
+        let hint: String = gm.hasKey ? "GMGN 暂未返回这一项" : "免费来源（币安 Web3、Blockscout、GoPlus、RugCheck 等）暂时没有这一项；填 GMGN 或 OKX Web3 Key 可补全（设置）"
         let none = GMVal(text: "—", color: Color.secondary, rows: [("说明", hint)])
 
         func pct(_ x: Double?, _ lo: Double, _ hi: Double, _ extra: [(String, String)]) -> GMVal {
@@ -80,40 +80,52 @@ enum GMMetricCatalog {
                 v = Double(w)
                 src = "链上榜单（已剔除池子和合约）"
             }
+            if v == nil, let fx = GMFreeStore.shared.v["top10"] {
+                v = fx
+                src = (GMFreeStore.shared.src["top10"] ?? "免费数据源") + (GMFreeStore.shared.t["top10note"].map { "（" + $0 + "）" } ?? "")
+            }
             guard let x = v else { return none }
             return GMVal(text: String(format: "%.1f%%", x), color: pctColor(x, 20, 50), rows: [("前十持仓占比", String(format: "%.2f%%", x)), ("数据来源", src)])
         case "holders":
-            guard let n = gm.num("holder_count", "stat.holder_count") else { return none }
-            return GMVal(text: compact(n), color: Color.primary, rows: [("持有钱包数", String(Int(n))), ("数据来源", "GMGN")])
+            let gmN: Double? = gm.num("holder_count", "stat.holder_count")
+            guard let n = gmN ?? GMFreeStore.shared.v["holders"] else { return none }
+            return GMVal(text: compact(n), color: Color.primary, rows: [("持有钱包数", String(Int(n))), ("数据来源", gmN != nil ? "GMGN" : (GMFreeStore.shared.src["holders"] ?? "免费数据源"))])
         case "dexpaid":
             guard let p = paid else { return GMVal(text: "—", color: Color.secondary, icon: "dollarsign.circle", rows: [("说明", "查询 Dexscreener 付费状态中或暂无结果")]) }
             return GMVal(text: p.text, color: p.paid ? Color.green : Color.secondary, icon: p.paid ? "dollarsign.circle.fill" : "dollarsign.circle", rows: [("资料页付费", p.profile ? "已付" : "未付"), ("社区接管 CTO", p.cto ? "是" : "否"), ("广告位", p.ad ? "有" : "无"), ("数据来源", "Dexscreener")])
         case "devhold":
-            let r: Double? = gm.num("creator_balance_rate", "stat.creator_hold_rate").map { $0 * 100 }
+            let fs = GMFreeStore.shared
+            let gmDev: Double? = gm.num("creator_balance_rate", "stat.creator_hold_rate").map { $0 * 100 }
+            let r: Double? = gmDev ?? fs.v["dev"]
             let st: String? = gm.str("creator_token_status")
             if r == nil && st == nil { return none }
             let stText: String = st == "creator_hold" ? "仍持有" : (st == "creator_close" ? "已清仓" : "未知")
-            var rows: [(String, String)] = [("创建者状态", stText)]
+            var rows: [(String, String)] = []
+            if st != nil { rows.append(("创建者状态", stText)) }
             if let x = r { rows.append(("创建者持仓占比", String(format: "%.2f%%", x))) }
             if let t = gm.num("dev_team_hold_rate", "stat.dev_team_hold_rate") { rows.append(("Dev 团队持仓", String(format: "%.2f%%", t * 100))) }
-            rows.append(("数据来源", "GMGN"))
+            let devFromGM: Bool = gmDev != nil || st != nil
+            rows.append(("数据来源", devFromGM ? "GMGN" : (fs.src["dev"] ?? "免费数据源")))
             let col: Color = st == "creator_close" ? Color.green : ((r ?? 0) > 5 ? Color.red : Color.orange)
             return GMVal(text: r.map { String(format: "%.1f%%", $0) } ?? stText, color: col, rows: rows)
         case "sniper":
-            let cnt: Double? = gm.num("sniper_count", "wallet_tags_stat.sniper_wallets")
-            let hold: Double? = gm.sniperHold()
+            let fs = GMFreeStore.shared
+            let cnt: Double? = gm.num("sniper_count", "wallet_tags_stat.sniper_wallets") ?? fs.v["sniperN"]
+            let gmHold: Double? = gm.sniperHold()
+            let hold: Double? = gmHold ?? fs.v["sniper"]
             if cnt == nil && hold == nil { return none }
             var rows: [(String, String)] = []
             if let c = cnt { rows.append(("狙击钱包数", String(Int(c)))) }
             if let h = hold { rows.append(("狙击者当前持仓", String(format: "%.2f%%", h))) }
-            rows.append(("数据来源", "GMGN"))
+            let fromFree: Bool = gmHold == nil && fs.v["sniper"] != nil
+            rows.append(("数据来源", fromFree ? (fs.src["sniper"] ?? "免费数据源") : "GMGN"))
             if let h = hold { return GMVal(text: String(format: "%.2f%%", h), color: pctColor(h, 3, 10), rows: rows) }
             let c = cnt ?? 0
             return GMVal(text: String(Int(c)) + " 个", color: c < 5 ? Color.green : (c <= 20 ? Color.orange : Color.red), rows: rows)
         case "bundler":
-            return pct(gm.num("bundler_trader_amount_rate", "stat.top_bundler_trader_percentage").map { $0 * 100 }, 5, 15, [])
+            return GMFreeStore.pctVal(gm.num("bundler_trader_amount_rate", "stat.top_bundler_trader_percentage").map { $0 * 100 }, "bundle", 5, 15, none)
         case "rat":
-            return pct(gm.num("suspected_insider_hold_rate", "rat_trader_amount_rate", "stat.top_rat_trader_percentage").map { $0 * 100 }, 5, 15, [])
+            return GMFreeStore.pctVal(gm.num("suspected_insider_hold_rate", "rat_trader_amount_rate", "stat.top_rat_trader_percentage").map { $0 * 100 }, "insider", 5, 15, none)
         case "phishing":
             return pct(gm.num("stat.top_entrapment_trader_percentage").map { $0 * 100 }, 3, 10, [])
         case "fresh":
@@ -126,6 +138,12 @@ enum GMMetricCatalog {
                 b = sc.buyTax
                 s = sc.sellTax
                 src = "合约扫描"
+            }
+            if b == nil && s == nil, let fb = GMFreeStore.shared.v["buyTax"] ?? GMFreeStore.shared.v["sellTax"] {
+                _ = fb
+                b = GMFreeStore.shared.v["buyTax"]
+                s = GMFreeStore.shared.v["sellTax"]
+                src = GMFreeStore.shared.src["buyTax"] ?? GMFreeStore.shared.src["sellTax"] ?? "免费数据源"
             }
             if b == nil && s == nil { return none }
             let bb: Double = b ?? 0
@@ -161,6 +179,10 @@ enum GMMetricCatalog {
             }
             return none
         case "honeypot":
+            if vm.chain != .solana, gm.str("is_honeypot") == nil, vm.security?.honeypot == nil, let hv = GMFreeStore.shared.v["honeypot"] {
+                let yes: Bool = hv > 0
+                return GMVal(text: yes ? "是" : "否", color: yes ? Color.red : Color.green, rows: [("数据来源", GMFreeStore.shared.src["honeypot"] ?? "免费数据源")])
+            }
             if vm.chain == .solana { return GMVal(text: "不适用", color: Color.secondary, rows: [("说明", "Solana 没有蜜罐这个概念")]) }
             if let h = gm.str("is_honeypot") {
                 return GMVal(text: h == "yes" ? "是" : "否", color: h == "yes" ? Color.red : Color.green, rows: [("数据来源", "GMGN")])
@@ -170,6 +192,9 @@ enum GMMetricCatalog {
             }
             return none
         case "lp":
+            if gm.str("burn_status") == nil, gmPath(gm.sec, "burn_status") == nil, vm.security?.lpLocked == nil, let lv = GMFreeStore.shared.v["lpSafe"] {
+                return GMVal(text: String(format: "%.0f%%", lv), color: lv >= 90 ? Color.green : (lv >= 50 ? Color.orange : Color.red), rows: [("LP 已锁定/烧毁占比", String(format: "%.1f%%", lv)), ("数据来源", GMFreeStore.shared.src["lpSafe"] ?? "免费数据源")])
+            }
             if let b = gm.str("burn_status") {
                 let burned: Bool = b == "burn"
                 return GMVal(text: burned ? "已烧" : b, color: burned ? Color.green : Color.orange, rows: [("LP 烧毁状态", b), ("数据来源", "GMGN")])
@@ -224,6 +249,7 @@ struct GMMetricStrip: View {
     @AppStorage("gmHidden", store: Cfg.defaults) private var hiddenStr = ""
     @State private var paid: GMPaid?
     @State private var sheet: GMSheetID?
+    @ObservedObject private var fr = GMFreeStore.shared
     @State private var showEditor = false
 
     private var ids: [String] {
@@ -236,13 +262,13 @@ struct GMMetricStrip: View {
         let v = GMMetricCatalog.eval(id, vm: vm, gm: gm, paid: paid)
         return Button { sheet = GMSheetID(id: id) } label: {
             VStack(alignment: .leading, spacing: 3) {
-                Text(title).underline(true, pattern: .dot, color: Color.secondary).font(.caption2).foregroundStyle(Color.secondary)
+                Text(title).underline(true, pattern: .dot, color: Color.secondary).font(.system(size: 9.5)).foregroundStyle(Color.secondary)
                 HStack(spacing: 3) {
                     if let ic = v.icon { Image(systemName: ic).font(.caption2).foregroundStyle(v.color) }
-                    Text(v.text).font(.footnote.weight(.bold)).foregroundStyle(v.color).lineLimit(1)
+                    Text(v.text).font(.system(size: 11.5, weight: .bold)).foregroundStyle(v.color).lineLimit(1)
                 }
             }
-            .padding(.horizontal, 9)
+            .padding(.horizontal, 7).padding(.vertical, -2.5)
             .padding(.vertical, 6)
             .background(Color.secondary.opacity(0.1), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
@@ -268,10 +294,12 @@ struct GMMetricStrip: View {
         }
         .task(id: vm.chain.rawValue + ":" + vm.address) {
             paid = nil
+            Task { await fr.load(chain: vm.chain, address: vm.address) }
             await gm.load(chain: vm.chain, address: vm.address)
             paid = await GMPaidApi.fetch(chainId: vm.main?.chainId ?? vm.chain.dexId, address: vm.address)
         }
         .onChange(of: vm.refreshToken) { _, _ in
+            Task { await fr.load(chain: vm.chain, address: vm.address, force: true) }
             Task { await gm.load(chain: vm.chain, address: vm.address) }
         }
         .sheet(item: $sheet) { s in GMMetricSheet(id: s.id, vm: vm, paid: paid) }
@@ -287,6 +315,7 @@ struct GMMetricSheet: View {
     @ObservedObject private var gm = GMGNStore.shared
     @Environment(\.dismiss) private var dismiss
     @State private var showBuyers = false
+    @ObservedObject private var fr = GMFreeStore.shared
 
     private func wallets() -> [GMWallet] {
         let all = gm.wallets()
@@ -383,6 +412,7 @@ struct GMMetricSheet: View {
                         Text(gm.status).font(.footnote).foregroundStyle(Color.orange)
                     }
                     if !ws.isEmpty { walletsCard(ws) }
+                    if ws.isEmpty { GMFreeWalletsCard(chain: vm.chain, id: id) }
                     if ["top10", "holders", "sniper"].contains(id) {
                         Button { showBuyers = true } label: {
                             Label("前 70 买家状态（持仓不变 / 加仓 / 卖出 / 转走）", systemImage: "circle.grid.3x3.fill")

@@ -130,12 +130,21 @@ struct GMHeader: View {
                 tagsRow(m)
             }
             Spacer(minLength: 4)
+            Button { NotificationCenter.default.post(name: .gmOpenSearch, object: nil) } label: {
+                Image(systemName: "magnifyingglass").font(.body)
+            }
+            .buttonStyle(.plain)
             FavButton(vm: vm)
             Button { NotificationCenter.default.post(name: .tstzmFullChart, object: nil) } label: {
                 Image(systemName: "arrow.up.left.and.arrow.down.right").font(.body)
             }
             .buttonStyle(.plain)
             Menu {
+                Button { NotificationCenter.default.post(name: .gmOpenTools, object: nil) } label: { Label("工具箱 · 全部数据源", systemImage: "wrench.and.screwdriver") }
+                Button { NotificationCenter.default.post(name: .gmOpenDash, object: nil) } label: { Label("盯盘看板", systemImage: "gauge.with.dots.needle.67percent") }
+                Button { NotificationCenter.default.post(name: .gmShare, object: nil) } label: { Label("分享", systemImage: "square.and.arrow.up") }
+                Button { NotificationCenter.default.post(name: .gmAlert, object: nil) } label: { Label("设提醒", systemImage: "bell.badge") }
+                Divider()
                 ForEach(ls.indices, id: \.self) { i in
                     Link(ls[i].0, destination: ls[i].1)
                 }
@@ -186,7 +195,7 @@ struct GMHeader: View {
         return HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 5) {
                 Text(big)
-                    .font(.system(size: 30, weight: .bold, design: .rounded))
+                    .font(.system(size: 27, weight: .bold, design: .rounded))
                     .foregroundStyle(col(h24))
                     .minimumScaleFactor(0.55)
                     .lineLimit(1)
@@ -198,9 +207,9 @@ struct GMHeader: View {
             }
             Spacer(minLength: 4)
             VStack(alignment: .trailing, spacing: 2) {
-                if mcapMode { kvRow("价格", other) } else { kvRow("市值", Fmt2.usd(m.marketCap ?? m.fdv)) }
-                kvRow("流动性", Fmt2.usd(m.liq))
-                kvRow("24h成交", Fmt2.usd(m.volume?["h24"]))
+                if mcapMode { kvRow("价格", other) } else { kvRow("市值", GMPx.cap(m.marketCap ?? m.fdv)) }
+                kvRow("流动性", GMPx.cap(m.liq))
+                kvRow("24h成交", GMPx.cap(m.volume?["h24"]))
                 kvRow("池龄", age)
             }
         }
@@ -215,7 +224,7 @@ struct GMHeader: View {
                     Text(pct(v)).font(.caption.bold()).foregroundStyle(col(v))
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 4)
+                .padding(.vertical, 2)
                 .background(Color.secondary.opacity(0.1), in: RoundedRectangle(cornerRadius: 7))
             }
         }

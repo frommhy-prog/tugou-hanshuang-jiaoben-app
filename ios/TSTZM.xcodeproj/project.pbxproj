@@ -82,6 +82,7 @@
 		F4CDC6EA97CD0A1AE3F3B7BB /* ProChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C096B22068077AC8FF966D7 /* ProChart.swift */; };
 		F531F2D227F4CB31BE327AD5 /* GMMarks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020FA04C92E44120E6C44132 /* GMMarks.swift */; };
 		F55D2AEA54F08B49124CA190 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 411CE31D7810F32D59BBDB21 /* Models.swift */; };
+		F747A75FB71ED8596AB386E5 /* GMFree.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FC4FE12F0C2FB38802AD514 /* GMFree.swift */; };
 		FC8D6B1FED267A25533EC1A5 /* GMKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0E5BBD0AE09FB2E61CE079 /* GMKit.swift */; };
 /* End PBXBuildFile section */
 
@@ -118,6 +119,7 @@
 		1B26015C07FB8923BD2E88CF /* gmc_optimism.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmc_optimism.png; sourceTree = "<group>"; };
 		1D643379E866F39F21887438 /* Narrative.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Narrative.swift; sourceTree = "<group>"; };
 		1F8DB1833F2D784C2C5EFAF3 /* Core.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core.swift; sourceTree = "<group>"; };
+		1FC4FE12F0C2FB38802AD514 /* GMFree.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GMFree.swift; sourceTree = "<group>"; };
 		21D1990718F8B7A8B8202812 /* SolTokenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SolTokenView.swift; sourceTree = "<group>"; };
 		21D3518A7825CF14B540C5D0 /* LogoKit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogoKit.swift; sourceTree = "<group>"; };
 		256372FFEFB505A9789D76EC /* gmc_arbitrum.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmc_arbitrum.png; sourceTree = "<group>"; };
@@ -249,6 +251,7 @@
 				C0FADC9E6DFF520C0314AE2D /* Favorites.swift */,
 				7AC458D3A84C09193CA39B33 /* FlowIntel.swift */,
 				30D6E1EB84CD6EB455797423 /* GMFavorites.swift */,
+				1FC4FE12F0C2FB38802AD514 /* GMFree.swift */,
 				AF483F2182C818D05032DCCB /* GMGNApi.swift */,
 				8553E2E527B66CAD40C0C0BC /* GMHeader.swift */,
 				AB0E5BBD0AE09FB2E61CE079 /* GMKit.swift */,
@@ -456,6 +459,7 @@
 				96887AD51009F1A7E3E1825E /* Favorites.swift in Sources */,
 				1E6A7BAF8B8DEE8D87F43EEE /* FlowIntel.swift in Sources */,
 				33565189588FD376756AAAC6 /* GMFavorites.swift in Sources */,
+				F747A75FB71ED8596AB386E5 /* GMFree.swift in Sources */,
 				4B5463FF1149508C3FCE5FE8 /* GMGNApi.swift in Sources */,
 				204F652164C51285BD8B7D62 /* GMHeader.swift in Sources */,
 				FC8D6B1FED267A25533EC1A5 /* GMKit.swift in Sources */,

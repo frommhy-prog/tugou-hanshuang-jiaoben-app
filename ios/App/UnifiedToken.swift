@@ -17,6 +17,10 @@ struct UnifiedTokenRoot: View {
     @State private var openPage: Int?
     @State private var showMon = false
     @State private var showSearch = false
+    @State private var showTools = false
+    @State private var isRefreshing = false
+    @AppStorage("currency", store: Cfg.defaults) private var curCode = "USD"
+    @ObservedObject private var fxs = GMFXState.shared
 
     private var navTitle: String {
         guard let m = vm.main else { return "代币" }
@@ -87,12 +91,12 @@ struct UnifiedTokenRoot: View {
                     }
                     if vm.loading { Card { HStack(spacing: 10) { ProgressView(); Text("正在识别链并读取行情…").foregroundStyle(.secondary) } }.padding(.horizontal, 16) }
                     if let e = vm.error { ErrorCard(text: e) { vm.start(vm.input) }.padding(.horizontal, 16) }
-                    if vm.main != nil { content }
+                    if vm.main != nil { content.id(curCode + "|" + String(fxs.tick)) }
                     else if !vm.loading && vm.error == nil { startCard.padding(.horizontal, 16) }
                 }
-                .padding(.top, 2)
+                .padding(.top, isRefreshing ? 52 : 2)
                 .padding(.bottom, 12)
-                .background(LogoRefreshHook { vm.refreshAll(); try? await Task.sleep(nanoseconds: 800_000_000) })
+                .background(LogoRefreshHook(refreshing: $isRefreshing) { vm.refreshAll(); try? await Task.sleep(nanoseconds: 800_000_000) })
             }
             .background(Color.page)
             .navigationTitle(navTitle)
@@ -113,7 +117,14 @@ struct UnifiedTokenRoot: View {
                     }
                 }
             }
+            .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showDash) { DashboardView() }
+            .sheet(isPresented: $showTools) { GMToolbox(vm: vm) }
+            .onReceive(NotificationCenter.default.publisher(for: .gmOpenSearch)) { _ in showSearch = true }
+            .onReceive(NotificationCenter.default.publisher(for: .gmOpenDash)) { _ in showDash = true }
+            .onReceive(NotificationCenter.default.publisher(for: .gmOpenTools)) { _ in showTools = true }
+            .onReceive(NotificationCenter.default.publisher(for: .gmShare)) { _ in shareToken() }
+            .onReceive(NotificationCenter.default.publisher(for: .gmAlert)) { _ in showAlert = true }
             .sheet(isPresented: $showMon) { MonitorSheet() }
             .sheet(isPresented: $showSearch) { GMSearchSheet(vm: vm, hist: $hist) }
             .navigationDestination(item: $openPage) { i in analysisPage(i) }
@@ -121,7 +132,7 @@ struct UnifiedTokenRoot: View {
                 if let i = n.object as? Int { openPage = i }
             }
             .onChange(of: vm.main?.price) { _, _ in GMPx.sync(vm.main) }
-            .onAppear { GMPx.sync(vm.main) }
+            .onAppear { GMPx.sync(vm.main); Task { await GMPx.ensureFX() } }
             .sheet(isPresented: $shareSheet) { ShareSheet(items: shareItems) }
             .sheet(isPresented: $showAlert) { AlertEditor(prefill: alertPrefill) { } }
             .task(id: vm.address) {
@@ -149,7 +160,11 @@ struct UnifiedTokenRoot: View {
         VStack(spacing: 14) {
             Card {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("粘贴合约，自动出完整分析").font(.headline)
+                    HStack {
+                        Text("粘贴合约，自动出完整分析").font(.headline)
+                        Spacer()
+                        Button { showDash = true } label: { Label("盯盘看板", systemImage: "gauge.with.dots.needle.67percent").font(.footnote) }
+                    }
                     Text("K 线与资金流向、池子、持有人成本与盈亏、叙事、合约安全，每条结论附依据；查不到的项目显示「未知」，不编数。")
                         .font(.subheadline).foregroundStyle(.secondary)
                 }
