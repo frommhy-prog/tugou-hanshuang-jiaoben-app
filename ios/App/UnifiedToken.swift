@@ -129,7 +129,9 @@ struct UnifiedTokenRoot: View {
             .sheet(isPresented: $showSearch) { GMSearchSheet(vm: vm, hist: $hist) }
             .navigationDestination(item: $openPage) { i in analysisPage(i) }
             .onReceive(NotificationCenter.default.publisher(for: .tstzmOpenPage)) { n in
-                if let i = n.object as? Int { openPage = i }
+                if let i = n.object as? Int {
+                    if i == 99 { showMon = true } else { GMTabState.shared.open(i) }
+                }
             }
             .onChange(of: vm.main?.price) { _, _ in GMPx.sync(vm.main) }
             .onAppear { GMPx.sync(vm.main); Task { await GMPx.ensureFX() } }
@@ -183,10 +185,39 @@ struct UnifiedTokenRoot: View {
     private var content: some View {
         Group {
             KLineCard(vm: vm)
-            GMFuncGrid(vm: vm, onOpen: { i in
-                if i == 99 { showMon = true } else { openPage = i }
-            }).padding(.horizontal, 16)
-            GMTradesMini(vm: vm, onMore: { openPage = 1 }).padding(.horizontal, 16)
+            GMTabsSection(vm: vm, onMonitor: { showMon = true }) { id in tabBody(id) }
+        }
+    }
+
+    // 各分页内容：交易记录 / 钱包分析 / 持有者 / 流动性 / 综合研判 / 合约安全 / 叙事社交 / 庄家情报 / 更多工具
+    @ViewBuilder
+    private func tabBody(_ id: String) -> some View {
+        switch id {
+        case "trade":
+            GMTradeLabView(vm: vm)
+            flowCard
+        case "wallet":
+            GMWalletLabView(vm: vm)
+        case "holder":
+            GMTrendCard(vm: vm)
+            pageBody(2)
+        case "liq":
+            GMLiquidityLabView(vm: vm)
+            poolsCard
+        case "verdict":
+            pageBody(0)
+        case "risk":
+            pageBody(3)
+        case "narr":
+            pageBody(4)
+        case "intel":
+            pageBody(5)
+        default:
+            Button { NotificationCenter.default.post(name: .gmOpenTools, object: nil) } label: {
+                Label("工具箱 · 全部数据源与跳转", systemImage: "wrench.and.screwdriver").frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            pageBody(6)
         }
     }
 
@@ -288,7 +319,7 @@ struct UnifiedTokenRoot: View {
                         Text("收 " + GMPx.tp(c.c)).foregroundStyle(c.up ? Color.green : Color.red)
                     }
                     .font(.system(size: 10, design: .monospaced))
-                    Text("成交量 " + Fmt2.usd(c.v)).font(.caption2).foregroundStyle(.secondary)
+                    Text("成交量 " + GMPx.fiat(c.v)).font(.caption2).foregroundStyle(.secondary)
                 }
             }
         }
@@ -357,10 +388,10 @@ struct UnifiedTokenRoot: View {
                     ForEach(ws) { w in
                         HStack {
                             Text(w.label).font(.caption).frame(width: 56, alignment: .leading)
-                            Text("买 " + Fmt2.usd(w.buy)).font(.caption.monospacedDigit()).foregroundStyle(Color.green)
-                            Text("卖 " + Fmt2.usd(w.sell)).font(.caption.monospacedDigit()).foregroundStyle(Color.red)
+                            Text("买 " + GMPx.fiat(w.buy)).font(.caption.monospacedDigit()).foregroundStyle(Color.green)
+                            Text("卖 " + GMPx.fiat(w.sell)).font(.caption.monospacedDigit()).foregroundStyle(Color.red)
                             Spacer()
-                            Text("净 " + Fmt2.usd(w.net, signed: true)).font(.caption.weight(.semibold).monospacedDigit()).foregroundStyle(w.net >= 0 ? Color.green : Color.red)
+                            Text("净 " + GMPx.fiat(w.net, signed: true)).font(.caption.weight(.semibold).monospacedDigit()).foregroundStyle(w.net >= 0 ? Color.green : Color.red)
                         }
                     }
                     if span < 86400 * 0.9 { Text("时间窗口长于覆盖范围的行只含已读到的成交，不是完整 24 小时").font(.caption2).foregroundStyle(.secondary) }
@@ -372,8 +403,8 @@ struct UnifiedTokenRoot: View {
                             HStack {
                                 Text(Addr.short(a.who)).font(.caption.monospaced())
                                 Spacer()
-                                Text("买 " + Fmt2.usd(a.buy) + "·" + "\(a.nb)").font(.caption2.monospacedDigit()).foregroundStyle(Color.green)
-                                Text("卖 " + Fmt2.usd(a.sell) + "·" + "\(a.ns)").font(.caption2.monospacedDigit()).foregroundStyle(Color.red)
+                                Text("买 " + GMPx.fiat(a.buy) + "·" + "\(a.nb)").font(.caption2.monospacedDigit()).foregroundStyle(Color.green)
+                                Text("卖 " + GMPx.fiat(a.sell) + "·" + "\(a.ns)").font(.caption2.monospacedDigit()).foregroundStyle(Color.red)
                             }
                         }
                     }
@@ -383,7 +414,7 @@ struct UnifiedTokenRoot: View {
                         ForEach(big) { t in
                             HStack {
                                 Pill(text: t.buy ? "买" : "卖", color: t.buy ? Color.green : Color.red)
-                                Text(Fmt2.usd(t.usd)).font(.caption.monospacedDigit())
+                                Text(GMPx.fiat(t.usd)).font(.caption.monospacedDigit())
                                 Text(TZ.short(Date(timeIntervalSince1970: t.t))).font(.caption2).foregroundStyle(.secondary)
                                 Spacer()
                                 Text(Addr.short(t.who)).font(.caption2.monospaced()).foregroundStyle(.secondary)
@@ -408,7 +439,7 @@ struct UnifiedTokenRoot: View {
                             Text((p.dexId ?? "?") + " · " + (p.quoteToken?.symbol ?? "?")).font(.subheadline.weight(.semibold))
                             if i == 0 { Pill(text: "最深", color: Color.blue) }
                             Spacer()
-                            Text(Fmt2.usd(p.liq)).font(.subheadline.monospacedDigit())
+                            Text(GMPx.fiat(p.liq)).font(.subheadline.monospacedDigit())
                         }
                         if total > 0 {
                             GeometryReader { g in
@@ -420,7 +451,7 @@ struct UnifiedTokenRoot: View {
                             .frame(height: 5)
                         }
                         HStack(spacing: 10) {
-                            Text("24h 成交 " + Fmt2.usd(p.volume?["h24"]))
+                            Text("24h 成交 " + GMPx.fiat(p.volume?["h24"]))
                             Text("买/卖 " + Fmt2.buySell(p.txns?["h24"]?.buys, p.txns?["h24"]?.sells))
                             Text("价格 " + GMPx.tp(p.price))
                         }
@@ -470,8 +501,8 @@ struct UnifiedTokenRoot: View {
                     if a.withPos >= 1 {
                         LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
                             StatTile(title: "账面盈利", value: "\(a.profit)/\(a.withPos) 个")
-                            StatTile(title: "合计盈亏", value: Fmt2.usd(a.pnl, signed: true), tint: a.pnl >= 0 ? Color.green : Color.red)
-                            StatTile(title: "持仓价值", value: Fmt2.usd(a.valueNow))
+                            StatTile(title: "合计盈亏", value: GMPx.fiat(a.pnl, signed: true), tint: a.pnl >= 0 ? Color.green : Color.red)
+                            StatTile(title: "持仓价值", value: GMPx.fiat(a.valueNow))
                             StatTile(title: "10 分钟内入场", value: "\(a.early) 个（1 分钟内 \(a.snipers)）")
                         }
                     }
@@ -526,11 +557,11 @@ struct UnifiedTokenRoot: View {
         VStack(alignment: .leading, spacing: 8) {
             if let p = r.position {
                 VStack(alignment: .leading, spacing: 3) {
-                    kv("累计投入", Fmt2.usd(p.boughtUsd) + "（\(p.buys ?? 0) 笔）")
-                    kv("已卖出", Fmt2.usd(p.soldUsd) + "（\(p.sells ?? 0) 笔）")
-                    kv("已兑现盈亏", Fmt2.usd(p.realizedUsd, signed: true))
-                    kv("当前持仓价值", Fmt2.usd(p.valueNowUsd))
-                    kv("浮动盈亏", Fmt2.usd(p.unrealizedUsd, signed: true))
+                    kv("累计投入", GMPx.fiat(p.boughtUsd) + "（\(p.buys ?? 0) 笔）")
+                    kv("已卖出", GMPx.fiat(p.soldUsd) + "（\(p.sells ?? 0) 笔）")
+                    kv("已兑现盈亏", GMPx.fiat(p.realizedUsd, signed: true))
+                    kv("当前持仓价值", GMPx.fiat(p.valueNowUsd))
+                    kv("浮动盈亏", GMPx.fiat(p.unrealizedUsd, signed: true))
                     kv("平均买入价", p.avgBuyUsd.map { GMPx.tp($0) } ?? "未知")
                     kv("现价", p.priceNowUsd.map { GMPx.tp($0) } ?? "未知")
                     if let d = p.delayMin { kv("入场时点", d < 0 ? "早于池子创建" : String(format: "池子创建后 %.1f 分钟", d)) }
@@ -553,7 +584,7 @@ struct UnifiedTokenRoot: View {
                         Pill(text: t.side == "buy" ? "买" : "卖", color: t.side == "buy" ? Color.green : Color.red)
                         Text(TZ.short(Date(timeIntervalSince1970: t.t))).font(.caption2).foregroundStyle(.secondary)
                         Spacer()
-                        Text((t.approx == true ? "≈ " : "") + Fmt2.usd(t.usd)).font(.caption.monospacedDigit())
+                        Text((t.approx == true ? "≈ " : "") + GMPx.fiat(t.usd)).font(.caption.monospacedDigit())
                         if let u = txLink(t.tx) { Link(destination: u) { Image(systemName: "arrow.up.right.square") }.font(.caption) }
                     }
                 }
@@ -719,7 +750,7 @@ struct FlowBarsView: View {
             AxisMarks { v in
                 AxisGridLine()
                 AxisValueLabel {
-                    if let d = v.as(Double.self) { Text(Fmt2.usd(abs(d))).font(.system(size: 9)) }
+                    if let d = v.as(Double.self) { Text(GMPx.fiat(abs(d))).font(.system(size: 9)) }
                 }
             }
         }

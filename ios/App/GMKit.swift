@@ -126,7 +126,7 @@ struct GMTradesMini: View {
                     HStack(spacing: 8) {
                         Text(TZ.short(Date(timeIntervalSince1970: t.t))).font(.caption2.monospacedDigit()).foregroundStyle(.secondary).frame(width: 78, alignment: .leading)
                         Pill(text: t.buy ? "买" : "卖", color: t.buy ? Color.green : Color.red)
-                        Text(Fmt2.usd(t.usd)).font(.caption.weight(.semibold).monospacedDigit()).foregroundStyle(t.buy ? Color.green : Color.red)
+                        Text(GMPx.fiat(t.usd)).font(.caption.weight(.semibold).monospacedDigit()).foregroundStyle(t.buy ? Color.green : Color.red)
                         Spacer()
                         Text(Addr.short(t.who)).font(.caption2.monospaced()).foregroundStyle(.secondary)
                     }

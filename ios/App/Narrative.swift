@@ -205,7 +205,7 @@ struct NarrativeCard: View {
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 2) {
-                Text("流动性 " + Fmt2.usd(s.liq)).font(.caption.monospacedDigit())
+                Text("流动性 " + GMPx.fiat(s.liq)).font(.caption.monospacedDigit())
                 HStack(spacing: 6) {
                     if let a = s.ageDays { Text(a < 2 ? String(format: "%.0f 小时", a * 24) : String(format: "%.0f 天", a)).font(.caption2).foregroundStyle(.secondary) }
                     Pill(text: s.status, color: s.statusColor)

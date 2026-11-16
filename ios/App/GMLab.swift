@@ -315,7 +315,10 @@ enum GLCalc {
             add(0, "有 " + String(r.botWallets) + " 个机器人特征地址", "合计只占成交额 " + String(format: "%.0f%%", r.washShare * 100) + "，对整体影响小。")
         }
         if let c = cl.first {
-            add(1, "同一区块 " + String(c.wallets.count) + " 个钱包一起买", "区块 #" + String(c.block) + " 内 " + String(c.wallets.count) + " 个不同地址买入合计 " + f(c.usd) + "。可能同一控制人拆分地址，也可能行情火爆碰巧同块；共 " + String(cl.count) + " 个这样的区块。")
+            let cn: String = String(c.wallets.count)
+            let d1: String = "区块 #" + String(c.block) + " 内 " + cn + " 个不同地址买入合计 " + f(c.usd) + "。"
+            let d2: String = "可能同一控制人拆分地址，也可能行情火爆碰巧同块；共 " + String(cl.count) + " 个这样的区块。"
+            add(1, "同一区块 " + cn + " 个钱包一起买", d1 + d2)
         }
         let sellersSorted: [GLWallet] = wl.filter { $0.sellUsd > 0 }.sorted { $0.sellUsd > $1.sellUsd }
         if let s = sellersSorted.first, total > 0 {
@@ -346,7 +349,9 @@ enum GLCalc {
                 let avgCost: Double = cost / tokens
                 let diff: Double = (cp - avgCost) / avgCost * 100
                 let under: Double = underCost / cost * 100
-                var d: String = "窗口内买入且仍持有的钱包，平均成本 " + GMPx.usd(avgCost) + "，现价 " + GMPx.usd(cp) + "（" + String(format: "%+.1f%%", diff) + "）。按金额算 " + String(format: "%.0f%%", under) + " 的资金成本高于现价。"
+                let d1: String = "窗口内买入且仍持有的钱包，平均成本 " + GMPx.usd(avgCost) + "，现价 " + GMPx.usd(cp)
+                let d2: String = "（" + String(format: "%+.1f%%", diff) + "）。按金额算 " + String(format: "%.0f%%", under) + " 的资金成本高于现价。"
+                var d: String = d1 + d2
                 var lv: Int = 0
                 if under >= 60 {
                     d += "价格回到它们的成本区会有解套抛压。"
@@ -382,10 +387,11 @@ enum GLCalc {
             let avgS: Double = r.sellUsd / Double(r.ns)
             let cntShare: Double = Double(r.nb) / Double(r.nb + r.ns)
             let usdShare: Double = r.buyUsd / total
+            let bs: String = "买 " + String(r.nb) + " 笔均 " + f(avgB) + "，卖 " + String(r.ns) + " 笔均 " + f(avgS) + "。"
             if cntShare >= 0.55 && usdShare <= 0.45 {
-                add(1, "买单多但金额小，卖单少但金额大", "买 " + String(r.nb) + " 笔均 " + f(avgB) + "，卖 " + String(r.ns) + " 笔均 " + f(avgS) + "。笔数占优的一方不一定是资金占优的一方，小额追买、大额卖出。")
+                add(1, "买单多但金额小，卖单少但金额大", bs + "笔数占优的一方不一定是资金占优的一方，小额追买、大额卖出。")
             } else if cntShare <= 0.45 && usdShare >= 0.55 {
-                add(3, "买单少但金额大", "买 " + String(r.nb) + " 笔均 " + f(avgB) + "，卖 " + String(r.ns) + " 笔均 " + f(avgS) + "。资金侧偏多，卖单是零散的小额。")
+                add(3, "买单少但金额大", bs + "资金侧偏多，卖单是零散的小额。")
             }
         }
         if !holders.isEmpty {
@@ -570,6 +576,13 @@ struct GMTradeLabView: View {
     @ObservedObject private var lab = GMLabStore.shared
     @State private var shown = 25
 
+    private func headLine(_ rep: GLReport) -> String {
+        let p1: String = "最近 " + String(rep.count) + " 笔成交，覆盖约 " + Fmt2.dur(rep.span) + "；"
+        let p2: String = "买 " + String(rep.nb) + " 笔 " + GMPx.fiat(rep.buyUsd) + " · 卖 " + String(rep.ns) + " 笔 " + GMPx.fiat(rep.sellUsd)
+        let p3: String = " · 净 " + GMPx.fiat(rep.buyUsd - rep.sellUsd, signed: true) + "。来源 GeckoTerminal 最深池子，地址是交易发起方。"
+        return p1 + p2 + p3
+    }
+
     private func tierLabel(_ t: GLTier) -> String {
         if t.lo == 0 { return "<" + GMPx.fiat(t.hi) }
         if t.hi == Double.infinity { return "≥" + GMPx.fiat(t.lo) }
@@ -591,7 +604,7 @@ struct GMTradeLabView: View {
                     } else if lab.trades.isEmpty {
                         HStack(spacing: 8) { ProgressView(); Text("读取成交…").font(.footnote).foregroundStyle(.secondary) }
                     } else {
-                        GLNote(text: "最近 " + String(rep.count) + " 笔成交，覆盖约 " + Fmt2.dur(rep.span) + "；买 " + String(rep.nb) + " 笔 " + GMPx.fiat(rep.buyUsd) + " · 卖 " + String(rep.ns) + " 笔 " + GMPx.fiat(rep.sellUsd) + " · 净 " + GMPx.fiat(rep.buyUsd - rep.sellUsd, signed: true) + "。来源 GeckoTerminal 最深池子，地址是交易发起方。")
+                        GLNote(text: headLine(rep))
                         if rep.insights.isEmpty {
                             Text("样本里没有触发任何值得说的结构，不硬编结论。").font(.footnote).foregroundStyle(.secondary)
                         }
@@ -657,6 +670,12 @@ struct GMWalletLabView: View {
         return Color.gray
     }
 
+    private func costLine(_ w: GLWallet, _ ab: Double) -> String {
+        var s: String = "买入均价 " + GMPx.usd(ab)
+        if let cp = vm.main?.price { s += " → 现价 " + GMPx.usd(cp) }
+        return s
+    }
+
     private func row(_ w: GLWallet) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 6) {
@@ -688,8 +707,8 @@ struct GMWalletLabView: View {
             }
             .font(.caption2.monospacedDigit())
             if let ab = w.avgBuy {
-                var line: String = "买入均价 " + GMPx.usd(ab)
-                if let cp = vm.main?.price { line += " → 现价 " + GMPx.usd(cp) }
+                let line: String = costLine(w, ab)
+                EmptyView()
                 Text(line).font(.caption2).foregroundStyle(.secondary)
                 if w.ns > 0 && !w.preHold { Text("已兑现 " + GMPx.fiat(w.realized, signed: true) + (w.unrealized != nil ? " · 浮动 " + GMPx.fiat(w.unrealized, signed: true) : "")).font(.caption2).foregroundStyle(.secondary) }
                 else if let u = w.unrealized { Text("浮动 " + GMPx.fiat(u, signed: true)).font(.caption2).foregroundStyle(.secondary) }
@@ -743,14 +762,20 @@ struct GMLiquidityLabView: View {
 
     private func pct(_ v: Double) -> String { return String(format: "%.1f%%", v) }
 
+    private func top10Val() -> Double? {
+        if let x = fr.v["top10"] { return x }
+        if let w = vm.conc?.wallets10 { return Double(w) }
+        return nil
+    }
+
     var body: some View {
         let L: Double = vm.main?.liq ?? 0
         let T: Double = L / 2
         let mc: Double = vm.main?.marketCap ?? vm.main?.fdv ?? 0
         let vol: Double = vm.main?.volume?["h24"] ?? 0
         let amounts: [Double] = [500, 1000, 5000, 10000, 50000]
-        var top10: Double? = fr.v["top10"]
-        if top10 == nil, let w = vm.conc?.wallets10 { top10 = Double(w) }
+        let top10: Double? = top10Val()
+        // 前十占比取自顶部数据条的数据源
         let dev: Double? = fr.v["dev"]
         VStack(spacing: 14) {
             Card {

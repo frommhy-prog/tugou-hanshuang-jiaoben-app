@@ -261,7 +261,7 @@ struct GMMetricStrip: View {
         let title: String = GMMetricCatalog.def(id)?.title ?? id
         let v = GMMetricCatalog.eval(id, vm: vm, gm: gm, paid: paid)
         return Button { sheet = GMSheetID(id: id) } label: {
-            VStack(alignment: .leading, spacing: 3) {
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Text(title).underline(true, pattern: .dot, color: Color.secondary).font(.system(size: 9.5)).foregroundStyle(Color.secondary)
                 HStack(spacing: 3) {
                     if let ic = v.icon { Image(systemName: ic).font(.caption2).foregroundStyle(v.color) }
@@ -353,7 +353,7 @@ struct GMMetricSheet: View {
             Spacer()
             VStack(alignment: .trailing, spacing: 3) {
                 Text(w.pct.map { String(format: "%.2f%%", $0) } ?? "—").font(.caption.weight(.semibold).monospacedDigit()).foregroundStyle(Color.primary)
-                if let p = w.profit { Text(Fmt2.usd(p, signed: true)).font(.caption2.monospacedDigit()).foregroundStyle(pc) }
+                if let p = w.profit { Text(GMPx.fiat(p, signed: true)).font(.caption2.monospacedDigit()).foregroundStyle(pc) }
             }
             Image(systemName: "arrow.up.right.square").font(.caption).foregroundStyle(Color.accentColor)
         }

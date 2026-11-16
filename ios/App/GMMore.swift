@@ -5,7 +5,7 @@ import UIKit
 enum GMLayout {
     static var chartHeight: CGFloat {
         let h: CGFloat = UIScreen.main.bounds.height
-        return max(240, min(560, h - 492))
+        return max(240, min(560, h - 470))
     }
 }
 
@@ -249,6 +249,7 @@ struct GMSettingsSections: View {
                 Text(pubKey).font(.system(size: 10, design: .monospaced)).textSelection(.enabled)
                 Button("复制公钥") { UIPasteboard.general.string = pubKey }
             }
+            GMTabSettings()
             GMFreeSettings()
             Section("提醒") {
                 Toggle("本地通知（App 在前台时监控收藏）", isOn: $chLocal)

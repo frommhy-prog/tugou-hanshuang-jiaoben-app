@@ -62,6 +62,14 @@ enum GMPx {
     }
 
     // 市值 / 流动性 / 成交额（输入是美元）→ 当前计价货币的缩写文本（¥21.40M）
+    // 任意美元金额（成交额、盈亏、池子…）→ 当前计价货币的缩写文本；全 App 原来的 Fmt2.usd 都转到这里
+    static func fiat(_ v: Double?, signed: Bool = false) -> String {
+        guard let x = v else { return "未知" }
+        let s: String = Money.format(x)
+        if signed && x > 0 { return "+" + s }
+        return s
+    }
+
     static func cap(_ v: Double?) -> String {
         guard let x = v else { return "—" }
         return Money.format(x)

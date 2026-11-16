@@ -115,10 +115,10 @@ final class WatchMonitor: ObservableObject {
         var hits: [(String, String)] = []
         if let c = m.priceChange?["m5"], abs(c) >= 8 { hits.append(("m5", String(format: "5 分钟涨跌 %+.1f%%", c))) }
         if let c = m.priceChange?["h1"], c >= 25 || c <= -15 { hits.append(("h1", String(format: "1 小时涨跌 %+.1f%%", c))) }
-        if old.liq > 0, m.liq > 0, m.liq / old.liq <= 0.75 { hits.append(("liq", "流动性骤降：" + Fmt2.usd(old.liq) + " → " + Fmt2.usd(m.liq))) }
+        if old.liq > 0, m.liq > 0, m.liq / old.liq <= 0.75 { hits.append(("liq", "流动性骤降：" + GMPx.fiat(old.liq) + " → " + GMPx.fiat(m.liq))) }
         let v5 = m.volume?["m5"] ?? 0
         let h1 = m.volume?["h1"] ?? 0
-        if h1 > 0, v5 > 2000, v5 > h1 / 12 * 5 { hits.append(("vol", "5 分钟放量：成交 " + Fmt2.usd(v5) + "，是 1 小时均值的 5 倍以上")) }
+        if h1 > 0, v5 > 2000, v5 > h1 / 12 * 5 { hits.append(("vol", "5 分钟放量：成交 " + GMPx.fiat(v5) + "，是 1 小时均值的 5 倍以上")) }
         let b5 = Double(m.txns?["m5"]?.buys ?? 0)
         let s5 = Double(m.txns?["m5"]?.sells ?? 0)
         if b5 + s5 >= 20, s5 > b5 * 3 { hits.append(("sell", "5 分钟卖出笔数是买入的 3 倍以上（卖压）")) }

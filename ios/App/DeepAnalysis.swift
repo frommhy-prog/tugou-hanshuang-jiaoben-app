@@ -99,9 +99,9 @@ enum KDeep {
         let bu = buys.reduce(0.0) { $0 + $1.usd }
         let su = sells.reduce(0.0) { $0 + $1.usd }
         var s = cat("买方 ", String(bw), " 个地址")
-        if bw > 0 { s += cat("（人均 ", Fmt2.usd(bu / Double(bw)), "）") }
+        if bw > 0 { s += cat("（人均 ", GMPx.fiat(bu / Double(bw)), "）") }
         s += cat(" · 卖方 ", String(sw), " 个地址")
-        if sw > 0 { s += cat("（人均 ", Fmt2.usd(su / Double(sw)), "）") }
+        if sw > 0 { s += cat("（人均 ", GMPx.fiat(su / Double(sw)), "）") }
         let big = ts.filter { $0.usd >= 1000 }.reduce(0.0) { $0 + $1.usd }
         let tot = bu + su
         if tot > 0 { s += String(format: " · 千美元以上大单占 %.0f%%", big / tot * 100) }
@@ -159,7 +159,7 @@ struct TokenDeepCard: View {
             let avg = (v6 - v1) / 5
             if avg > 0 {
                 let r = v1 / avg
-                let basis = cat("1 小时成交额 ", Fmt2.usd(v1), " ÷ 前 5 小时均值 ", Fmt2.usd(avg))
+                let basis = cat("1 小时成交额 ", GMPx.fiat(v1), " ÷ 前 5 小时均值 ", GMPx.fiat(avg))
                 if r >= 2.5 {
                     out.append(Finding(level: "info", text: String(format: "最近 1 小时成交额是前 5 小时均值的 %.1f 倍，正在放量", r), basis: basis))
                 } else if r <= 0.35 {
@@ -169,7 +169,7 @@ struct TokenDeepCard: View {
         }
         if let mc = m.marketCap ?? m.fdv, mc > 0, v24 > 0 {
             let t = v24 / mc
-            let basis = cat("24 小时成交额 ", Fmt2.usd(v24), " ÷ 市值 ", Fmt2.usd(mc))
+            let basis = cat("24 小时成交额 ", GMPx.fiat(v24), " ÷ 市值 ", GMPx.fiat(mc))
             if t >= 3 {
                 out.append(Finding(level: "warn", text: String(format: "24 小时换手率 %.1f 倍市值，筹码换手极快，炒作味很重", t), basis: basis))
             } else if t < 0.05 {
@@ -215,7 +215,7 @@ struct TokenDeepCard: View {
                     Text(cat(String(r.1), " 买 / ", String(r.2), " 卖")).font(.caption.monospacedDigit())
                     Spacer()
                     Text(ratio).font(.caption.weight(.semibold)).foregroundStyle(total > 0 && r.1 >= r.2 ? Color.green : Color.red)
-                    Text(Fmt2.usd(r.3)).font(.caption.monospacedDigit()).foregroundStyle(.secondary).frame(width: 64, alignment: .trailing)
+                    Text(GMPx.fiat(r.3)).font(.caption.monospacedDigit()).foregroundStyle(.secondary).frame(width: 64, alignment: .trailing)
                 }
             }
             ForEach(fs) { FindingRow(f: $0) }
@@ -291,7 +291,7 @@ struct TokenDeepCard: View {
             let bAvg = bv / Double(before.count)
             if bAvg > 0 {
                 vr = rAvg / bAvg
-                let basis = cat("最近 5 根均值 ", Fmt2.usd(rAvg), " ÷ 之前 ", String(before.count), " 根均值 ", Fmt2.usd(bAvg))
+                let basis = cat("最近 5 根均值 ", GMPx.fiat(rAvg), " ÷ 之前 ", String(before.count), " 根均值 ", GMPx.fiat(bAvg))
                 if vr >= 2 { fs.append(Finding(level: "info", text: String(format: "最近 5 根 K 线量能是之前的 %.1f 倍，放量", vr), basis: basis)) }
                 else if vr <= 0.4 { fs.append(Finding(level: "info", text: String(format: "最近 5 根 K 线量能只有之前的 %.0f%%，缩量", vr * 100), basis: basis)) }
             }
@@ -352,14 +352,14 @@ struct TokenDeepCard: View {
             } else {
                 ForEach(amounts, id: \.self) { a in
                     HStack {
-                        Text(Fmt2.usd(a)).font(.caption).frame(width: 56, alignment: .leading)
+                        Text(GMPx.fiat(a)).font(.caption).frame(width: 56, alignment: .leading)
                         Text(String(format: "买入推高 %+.1f%%", DeepCalc.buyImpact(a, liq) * 100)).font(.caption.monospacedDigit()).foregroundStyle(Color.green)
                         Spacer()
                         Text(String(format: "卖出砸价 -%.1f%%", DeepCalc.sellImpact(a, liq) * 100)).font(.caption.monospacedDigit()).foregroundStyle(Color.red)
                     }
                 }
-                Text(cat("买入约 ", Fmt2.usd(buy5), "、卖出约 ", Fmt2.usd(sell5), " 就会让价格移动 5%")).font(.footnote)
-                Text(cat("依据：池子总流动性 ", Fmt2.usd(liq), "，单边约 ", Fmt2.usd(h), "。集中流动性池（如 Raydium CLMM、Uniswap V3）实际冲击可能更小或更大，这里只给量级；不含手续费与链上 MEV。")).font(.caption2).foregroundStyle(.secondary)
+                Text(cat("买入约 ", GMPx.fiat(buy5), "、卖出约 ", GMPx.fiat(sell5), " 就会让价格移动 5%")).font(.footnote)
+                Text(cat("依据：池子总流动性 ", GMPx.fiat(liq), "，单边约 ", GMPx.fiat(h), "。集中流动性池（如 Raydium CLMM、Uniswap V3）实际冲击可能更小或更大，这里只给量级；不含手续费与链上 MEV。")).font(.caption2).foregroundStyle(.secondary)
             }
         }
     }
@@ -403,7 +403,7 @@ struct TradeDeepCard: View {
         // 大单 vs 散户
         let bigNet = tr[2].net + tr[3].net
         let smallNet = tr[0].net + tr[1].net
-        let basisNet = cat("大单+巨单净 ", Fmt2.usd(bigNet, signed: true), "；散户+中单净 ", Fmt2.usd(smallNet, signed: true))
+        let basisNet = cat("大单+巨单净 ", GMPx.fiat(bigNet, signed: true), "；散户+中单净 ", GMPx.fiat(smallNet, signed: true))
         if bigNet < 0 && smallNet > 0 && abs(bigNet) > 1000 {
             out.append(Finding(level: "warn", text: "大单在净卖、小单在净买：筹码可能从大户流向散户（出货形态）", basis: basisNet))
         } else if bigNet > 0 && smallNet < 0 && abs(bigNet) > 1000 {
@@ -480,10 +480,10 @@ struct TradeDeepCard: View {
                     ForEach(Array(tr.enumerated()), id: \.offset) { _, t in
                         HStack {
                             Text(t.name).font(.caption).frame(width: 96, alignment: .leading)
-                            Text(cat("买 ", Fmt2.usd(t.buy), "·", String(t.nb))).font(.caption2.monospacedDigit()).foregroundStyle(Color.green)
-                            Text(cat("卖 ", Fmt2.usd(t.sell), "·", String(t.ns))).font(.caption2.monospacedDigit()).foregroundStyle(Color.red)
+                            Text(cat("买 ", GMPx.fiat(t.buy), "·", String(t.nb))).font(.caption2.monospacedDigit()).foregroundStyle(Color.green)
+                            Text(cat("卖 ", GMPx.fiat(t.sell), "·", String(t.ns))).font(.caption2.monospacedDigit()).foregroundStyle(Color.red)
                             Spacer()
-                            Text(Fmt2.usd(t.net, signed: true)).font(.caption.weight(.semibold).monospacedDigit()).foregroundStyle(t.net >= 0 ? Color.green : Color.red)
+                            Text(GMPx.fiat(t.net, signed: true)).font(.caption.weight(.semibold).monospacedDigit()).foregroundStyle(t.net >= 0 ? Color.green : Color.red)
                         }
                     }
                     ForEach(findings(ts, tr)) { FindingRow(f: $0) }
@@ -541,7 +541,7 @@ struct HolderDeepCard: View {
         // 成本中枢
         if qty > 0, let px = vm.main?.price, px > 0 {
             let avg = cost / qty
-            let basis = cat("已拆解大户中仍持仓的 ", String(holding), " 个，持仓成本合计 ", Fmt2.usd(cost), " ÷ 持仓数量")
+            let basis = cat("已拆解大户中仍持仓的 ", String(holding), " 个，持仓成本合计 ", GMPx.fiat(cost), " ÷ 持仓数量")
             let d = (px / avg - 1) * 100
             if d >= 0 {
                 out.append(Finding(level: "info", text: cat("大户持仓加权成本约 ", GMPx.tp(avg), String(format: "，现价高出 %.0f%%，整体账面盈利", d)), basis: basis))
@@ -552,7 +552,7 @@ struct HolderDeepCard: View {
         // 获利盘 / 套牢盘（按持仓价值）
         let totalVal = profitVal + lossVal
         if totalVal > 0 {
-            let basis = cat("盈利持仓价值 ", Fmt2.usd(profitVal), " · 亏损持仓价值 ", Fmt2.usd(lossVal))
+            let basis = cat("盈利持仓价值 ", GMPx.fiat(profitVal), " · 亏损持仓价值 ", GMPx.fiat(lossVal))
             out.append(Finding(level: "info", text: String(format: "按持仓价值，获利盘 %.0f%% / 套牢盘 %.0f%%", profitVal / totalVal * 100, lossVal / totalVal * 100), basis: basis))
         }
         if lossQty > 0, let px = vm.main?.price, px > 0 {
@@ -668,12 +668,12 @@ struct HoldingsDeepCard: View {
         let other = max(0, total - stable - major)
         let ch24: Double? = prev > 0 ? (now / prev - 1) * 100 : nil
         var fs: [Finding] = []
-        let basisTop = cat("最大持仓 ", sorted.first?.0 ?? "?", " ", Fmt2.usd(sorted.first?.2 ?? 0), " ÷ 总估值 ", Fmt2.usd(total))
+        let basisTop = cat("最大持仓 ", sorted.first?.0 ?? "?", " ", GMPx.fiat(sorted.first?.2 ?? 0), " ÷ 总估值 ", GMPx.fiat(total))
         if top1 >= 60 { fs.append(Finding(level: "warn", text: String(format: "单一持仓占 %.0f%%，风险集中在一个币上", top1), basis: basisTop)) }
         if other / total >= 0.7 && stable / total < 0.05 {
-            fs.append(Finding(level: "warn", text: String(format: "约 %.0f%% 在稳定币和主流币之外，且稳定币不到 5%%：基本满仓，没有现金缓冲", other / total * 100), basis: cat("稳定币 ", Fmt2.usd(stable), " · 主流币 ", Fmt2.usd(major), " · 其他 ", Fmt2.usd(other))))
+            fs.append(Finding(level: "warn", text: String(format: "约 %.0f%% 在稳定币和主流币之外，且稳定币不到 5%%：基本满仓，没有现金缓冲", other / total * 100), basis: cat("稳定币 ", GMPx.fiat(stable), " · 主流币 ", GMPx.fiat(major), " · 其他 ", GMPx.fiat(other))))
         }
-        if chains.count >= 3 { fs.append(Finding(level: "info", text: cat("资产分布在 ", String(chains.count), " 条链上"), basis: chains.sorted { $0.value > $1.value }.prefix(4).map { cat($0.key, " ", Fmt2.usd($0.value)) }.joined(separator: " · "))) }
+        if chains.count >= 3 { fs.append(Finding(level: "info", text: cat("资产分布在 ", String(chains.count), " 条链上"), basis: chains.sorted { $0.value > $1.value }.prefix(4).map { cat($0.key, " ", GMPx.fiat($0.value)) }.joined(separator: " · "))) }
         if spamN > 0 { fs.append(Finding(level: "info", text: cat("另有 ", String(spamN), " 个疑似垃圾 / 空投币已排除，不计入上面的占比"), basis: "按报价与名称规则判定")) }
         return Card {
             VStack(alignment: .leading, spacing: 10) {

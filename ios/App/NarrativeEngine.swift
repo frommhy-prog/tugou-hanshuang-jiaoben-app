@@ -177,7 +177,7 @@ enum NarrEngine {
             else if groupMc >= 5_000_000 { level = "小叙事" }
             else { level = "微型 / 刚起步" }
         }
-        let levelBasis = cat("已搜到的 ", String(group.count), " 个同类代币市值合计 ", Fmt2.usd(groupMc), "（样本最多每个关键词 30 个池子，实际总规模可能更大）")
+        let levelBasis = cat("已搜到的 ", String(group.count), " 个同类代币市值合计 ", GMPx.fiat(groupMc), "（样本最多每个关键词 30 个池子，实际总规模可能更大）")
 
         var position = "无法定位"
         var positionBasis = "同类代币太少"
@@ -192,7 +192,7 @@ enum NarrEngine {
             else { position = "边缘 / 尾部（不到龙头的 5%）" }
             let older = group.filter { ($0.created ?? 0) > 0 && ($0.created ?? 0) < (myTok.created ?? 0) }.count
             let order = older == 0 ? "是已搜到代币里最早建池的" : cat("比它早建池的有 ", String(older), " 个")
-            positionBasis = cat("市值排 ", String(rank), " / ", String(group.count), "；龙头 ", leader.sym, " ", Fmt2.usd(leader.mc), "；", order)
+            positionBasis = cat("市值排 ", String(rank), " / ", String(group.count), "；龙头 ", leader.sym, " ", GMPx.fiat(leader.mc), "；", order)
             if older >= 1 && rank > 1 { position += " · 后发" }
             if older == 0 { position += " · 先发" }
         }
@@ -208,7 +208,7 @@ enum NarrEngine {
         let chs = group.compactMap { $0.ch24 }
         let mch = med(chs)
         var items: [[String]] = []
-        items.append(["同类代币 24h 成交额合计", Fmt2.usd(vol)])
+        items.append(["同类代币 24h 成交额合计", GMPx.fiat(vol)])
         items.append(["近 24 小时新建同类池子", cat(String(new24), " 个（7 天内 ", String(new7), " 个）")])
         if let m = mch { items.append(["同类 24h 涨跌中位数", String(format: "%+.1f%%", m)]) }
         if vol > 0 { items.append(["本币占同类成交额", String(format: "%.0f%%", (myTok.vol / vol) * 100)]) }
@@ -269,7 +269,7 @@ struct NarrativeRulesCard: View {
                                     }
                                     Spacer()
                                     VStack(alignment: .trailing, spacing: 1) {
-                                        Text(s.mc > 0 ? Fmt2.usd(s.mc) : "市值未知").font(.footnote.monospacedDigit()).foregroundStyle(Color.primary)
+                                        Text(s.mc > 0 ? GMPx.fiat(s.mc) : "市值未知").font(.footnote.monospacedDigit()).foregroundStyle(Color.primary)
                                         if let c = s.ch24 { Text(String(format: "%+.1f%%", c)).font(.caption2).foregroundStyle(c >= 0 ? Color.green : Color.red) }
                                     }
                                 }

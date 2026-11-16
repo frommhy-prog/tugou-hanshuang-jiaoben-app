@@ -80,7 +80,7 @@ enum LifeEngine {
         let ratio: Double = peak24 > 0 ? last24 / peak24 : 0
         if peak24 > 0 { sb += String(format: "；最近 24 小时成交额只有峰值 24 小时的 %.0f%%", ratio * 100) }
         let ageH = (last.t - first.t) / 3600
-        if liq > 0 && liq < 1_000 { stage = "已归零 / 无流动性"; sb = cat("流动性只有 ", Fmt2.usd(liq), "；", sb) }
+        if liq > 0 && liq < 1_000 { stage = "已归零 / 无流动性"; sb = cat("流动性只有 ", GMPx.fiat(liq), "；", sb) }
         else if dd <= -0.9 && ratio < 0.05 { stage = "死亡期（量能枯竭）" }
         else if dd <= -0.9 { stage = "崩盘后残局" }
         else if dd <= -0.7 { stage = "派发后期" }

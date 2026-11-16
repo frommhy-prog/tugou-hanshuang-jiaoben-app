@@ -211,9 +211,9 @@ struct CompactHeader: View {
         let cols = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
         let age: String = m.pairCreatedAt.map { Fmt2.dur(Date().timeIntervalSince1970 - $0 / 1000) } ?? "—"
         return LazyVGrid(columns: cols, alignment: .leading, spacing: 8) {
-            stat("市值", Fmt2.usd(m.marketCap))
-            stat("流动性", Fmt2.usd(m.liq))
-            stat("24h 成交", Fmt2.usd(m.volume?["h24"]))
+            stat("市值", GMPx.fiat(m.marketCap))
+            stat("流动性", GMPx.fiat(m.liq))
+            stat("24h 成交", GMPx.fiat(m.volume?["h24"]))
             stat("池龄", age)
         }
     }
@@ -223,7 +223,7 @@ struct CompactHeader: View {
         let chips = safetyChips()
         return VStack(alignment: .leading, spacing: 10) {
             LazyVGrid(columns: cols, alignment: .leading, spacing: 8) {
-                stat("FDV", Fmt2.usd(m.fdv))
+                stat("FDV", GMPx.fiat(m.fdv))
                 stat("24h 买/卖", cat(String(tx?.buys ?? 0), "/", String(tx?.sells ?? 0)))
                 stat("池子数", String(vm.pairs.count))
                 stat("流动性/市值", liqRatio(m))
@@ -295,9 +295,9 @@ struct CompactHeader: View {
             }
             Spacer(minLength: 4)
             VStack(alignment: .trailing, spacing: 3) {
-                kvRow("市值", Fmt2.usd(m.marketCap))
-                kvRow("流动性", Fmt2.usd(m.liq))
-                kvRow("24h成交", Fmt2.usd(m.volume?["h24"]))
+                kvRow("市值", GMPx.fiat(m.marketCap))
+                kvRow("流动性", GMPx.fiat(m.liq))
+                kvRow("24h成交", GMPx.fiat(m.volume?["h24"]))
                 kvRow("池龄", age)
             }
         }

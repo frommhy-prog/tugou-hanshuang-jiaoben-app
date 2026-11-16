@@ -862,7 +862,7 @@ struct KLineDetailCard: View {
                     StatTile(title: "开盘 → 收盘", value: GMPx.tp(c.o) + " → " + GMPx.tp(c.c), tint: col)
                     StatTile(title: "涨跌 / 振幅", value: String(format: "%+.1f%% / %.1f%%", chg, amp), tint: col)
                     StatTile(title: "最高 / 最低", value: GMPx.tp(c.h) + " / " + GMPx.tp(c.l))
-                    StatTile(title: "K 线成交额", value: Fmt2.usd(c.v))
+                    StatTile(title: "K 线成交额", value: GMPx.fiat(c.v))
                 }
                 if let r = ratio {
                     let tag = r >= 3 ? "，明显放量" : (r <= 0.3 ? "，明显缩量" : "")
@@ -884,13 +884,13 @@ struct KLineDetailCard: View {
             else { rows.append("早于最深池子创建时间，数据源可能把旧池合并进来了") }
         }
         let liq = vm.main?.liq ?? 0
-        rows.append("当时流动性：公开接口不提供历史流动性，未知（现在 " + Fmt2.usd(liq) + "）")
+        rows.append("当时流动性：公开接口不提供历史流动性，未知（现在 " + GMPx.fiat(liq) + "）")
         if liq > 0 { rows.append(String(format: "本根成交额相当于现流动性的 %.0f%%（按现在的流动性估算，只作量级参考）", c.v / liq * 100)) }
         for p in vm.pairs {
             if p.pairAddress == vm.main?.pairAddress { continue }
             if let cr = p.pairCreatedAt {
                 let sc = cr / 1000
-                if sc >= c.t && sc < c.t + sec { rows.append("本根新增池子：" + (p.dexId ?? "?") + " · " + (p.quoteToken?.symbol ?? "?") + "，现流动性 " + Fmt2.usd(p.liq)) }
+                if sc >= c.t && sc < c.t + sec { rows.append("本根新增池子：" + (p.dexId ?? "?") + " · " + (p.quoteToken?.symbol ?? "?") + "，现流动性 " + GMPx.fiat(p.liq)) }
             }
         }
         return rows
@@ -922,14 +922,14 @@ struct KLineDetailCard: View {
                         Text("覆盖范围内本根没有成交记录").font(.footnote)
                     } else {
                         HStack {
-                            Text("买 " + Fmt2.usd(s.buy) + "·\(s.nb)").foregroundStyle(Color.green)
-                            Text("卖 " + Fmt2.usd(s.sell) + "·\(s.ns)").foregroundStyle(Color.red)
+                            Text("买 " + GMPx.fiat(s.buy) + "·\(s.nb)").foregroundStyle(Color.green)
+                            Text("卖 " + GMPx.fiat(s.sell) + "·\(s.ns)").foregroundStyle(Color.red)
                             Spacer()
-                            Text("净 " + Fmt2.usd(s.net, signed: true)).foregroundStyle(s.net >= 0 ? Color.green : Color.red)
+                            Text("净 " + GMPx.fiat(s.net, signed: true)).foregroundStyle(s.net >= 0 ? Color.green : Color.red)
                         }
                         .font(.subheadline.monospacedDigit())
                         if s.buy + s.sell > 0 { Text(String(format: "买盘占本根成交额 %.0f%%", s.buy / (s.buy + s.sell) * 100)).font(.footnote) }
-                        if let b = big { Text("最大一笔：" + (b.buy ? "买入 " : "卖出 ") + Fmt2.usd(b.usd) + " · " + Addr.short(b.who)).font(.footnote) }
+                        if let b = big { Text("最大一笔：" + (b.buy ? "买入 " : "卖出 ") + GMPx.fiat(b.usd) + " · " + Addr.short(b.who)).font(.footnote) }
                         Text(KDeep.sliceExtra(s.inWin)).font(.footnote)
                     }
                 }
@@ -992,8 +992,8 @@ struct KLineDetailCard: View {
                 Text(Addr.short(w.owner)).font(.caption.monospaced())
                 if vm.chain == .solana, let u = Scan.account(w.owner) { Link(destination: u) { Image(systemName: "arrow.up.right.square") }.font(.caption) }
                 Spacer()
-                Text("买 " + Fmt2.usd(w.buy) + "·\(w.nb)").font(.caption.monospacedDigit()).foregroundStyle(Color.green)
-                Text("卖 " + Fmt2.usd(w.sell) + "·\(w.ns)").font(.caption.monospacedDigit()).foregroundStyle(Color.red)
+                Text("买 " + GMPx.fiat(w.buy) + "·\(w.nb)").font(.caption.monospacedDigit()).foregroundStyle(Color.green)
+                Text("卖 " + GMPx.fiat(w.sell) + "·\(w.ns)").font(.caption.monospacedDigit()).foregroundStyle(Color.red)
             }
             if let p = an?.position {
                 HStack(spacing: 8) {
@@ -1002,7 +1002,7 @@ struct KLineDetailCard: View {
                     Spacer()
                     if let roi = p.roi { Text("综合 " + Fmt2.pct(roi)).font(.caption.weight(.semibold)).foregroundStyle(roi >= 0 ? Color.green : Color.red) }
                 }
-                Text("累计投入 " + Fmt2.usd(p.boughtUsd) + " · 已兑现 " + Fmt2.usd(p.realizedUsd, signed: true) + " · 浮动 " + Fmt2.usd(p.unrealizedUsd, signed: true)).font(.caption2).foregroundStyle(.secondary)
+                Text("累计投入 " + GMPx.fiat(p.boughtUsd) + " · 已兑现 " + GMPx.fiat(p.realizedUsd, signed: true) + " · 浮动 " + GMPx.fiat(p.unrealizedUsd, signed: true)).font(.caption2).foregroundStyle(.secondary)
             } else if cvm.extraLoading.contains(k) {
                 Text("拆解中…").font(.caption2).foregroundStyle(.secondary)
             } else if let e = cvm.extraErr[k] {
@@ -1054,22 +1054,22 @@ struct KLineDetailCard: View {
         var ctx: [String] = []
         if idx > 0 {
             let p = cvm.candles[idx - 1]
-            ctx.append(String(format: "前一根：涨跌%+.1f%%，成交额", KCalc.gain(p) * 100) + Fmt2.usd(p.v))
+            ctx.append(String(format: "前一根：涨跌%+.1f%%，成交额", KCalc.gain(p) * 100) + GMPx.fiat(p.v))
         }
         if idx + 1 < cvm.candles.count {
             let n = cvm.candles[idx + 1]
-            ctx.append(String(format: "后一根：涨跌%+.1f%%，成交额", KCalc.gain(n) * 100) + Fmt2.usd(n.v))
+            ctx.append(String(format: "后一根：涨跌%+.1f%%，成交额", KCalc.gain(n) * 100) + GMPx.fiat(n.v))
         }
         if let hi = cvm.candles.max(by: { $0.h < $1.h }) { ctx.append("已加载范围内最高价 " + String(format: "%.6g", hi.h) + " 美元，出现在 " + TZ.short(hi.date)) }
         ctx.append("已加载 \(cvm.candles.count) 根" + cvm.tf.title + "K线")
         var flow: [String] = []
         if s.coverage == 0 { flow.append("本根不在成交明细覆盖范围内，买卖明细未知") }
         else {
-            flow.append("买 " + Fmt2.usd(s.buy) + "(\(s.nb)笔) 卖 " + Fmt2.usd(s.sell) + "(\(s.ns)笔)" + (s.coverage == 1 ? "（只覆盖本根后半段）" : ""))
+            flow.append("买 " + GMPx.fiat(s.buy) + "(\(s.nb)笔) 卖 " + GMPx.fiat(s.sell) + "(\(s.ns)笔)" + (s.coverage == 1 ? "（只覆盖本根后半段）" : ""))
         }
         var ws: [String] = []
         for w in hits.prefix(5) {
-            var line = Addr.short(w.owner) + " 买" + Fmt2.usd(w.buy) + " 卖" + Fmt2.usd(w.sell)
+            var line = Addr.short(w.owner) + " 买" + GMPx.fiat(w.buy) + " 卖" + GMPx.fiat(w.sell)
             if let p = owners[kNorm(w.owner)]?.position {
                 line += "；入场：" + (p.entry ?? "未知") + "；" + (p.state ?? "")
                 if let roi = p.roi { line += "；综合回报" + Fmt2.pct(roi) }
@@ -1133,7 +1133,7 @@ struct KLineDetailCard: View {
         let range = TZ.short(first.date) + " ~ " + TZ.short(last.date) + " · \(cs.count) 根（" + cvm.tf.title + "）"
         let path = GMPx.tp(first.o) + " → " + GMPx.tp(last.c) + String(format: "（%+.1f%%）", run)
         let hl = "最高 " + GMPx.tp(hi.h) + "（" + TZ.short(hi.date) + "）· 最低 " + GMPx.tp(lo.l) + "（" + TZ.short(lo.date) + "）"
-        let tv = topVol.map { TZ.short($0.date) + " " + Fmt2.usd($0.v) }.joined(separator: "；")
+        let tv = topVol.map { TZ.short($0.date) + " " + GMPx.fiat($0.v) }.joined(separator: "；")
         let now = Date().timeIntervalSince1970
         let w24 = FlowCalc.windows(vm.trades, now: now).first(where: { $0.id == "24h" })
         return VStack(alignment: .leading, spacing: 6) {
@@ -1141,12 +1141,12 @@ struct KLineDetailCard: View {
             row("全程", path)
             row("高低", hl)
             row("距最高", String(format: "%+.1f%%", dd))
-            row("累计成交", Fmt2.usd(total) + "（已加载 K 线汇总）")
+            row("累计成交", GMPx.fiat(total) + "（已加载 K 线汇总）")
             row("成交最大", tv)
             if let u = up { row("最大单根涨", String(format: "%+.1f%% · ", KCalc.gain(u) * 100) + TZ.short(u.date)) }
             if let d = down { row("最大单根跌", String(format: "%+.1f%% · ", KCalc.gain(d) * 100) + TZ.short(d.date)) }
-            if let w = w24, w.total > 0 { row("资金流", "最近成交窗口 买 " + Fmt2.usd(w.buy) + " 卖 " + Fmt2.usd(w.sell) + " 净 " + Fmt2.usd(w.net, signed: true)) }
-            if a.withPos >= 1 { row("大户", "已拆解 \(a.withPos) 个，账面盈利 \(a.profit) 个，合计盈亏 " + Fmt2.usd(a.pnl, signed: true) + "，持仓价值 " + Fmt2.usd(a.valueNow)) }
+            if let w = w24, w.total > 0 { row("资金流", "最近成交窗口 买 " + GMPx.fiat(w.buy) + " 卖 " + GMPx.fiat(w.sell) + " 净 " + GMPx.fiat(w.net, signed: true)) }
+            if a.withPos >= 1 { row("大户", "已拆解 \(a.withPos) 个，账面盈利 \(a.profit) 个，合计盈亏 " + GMPx.fiat(a.pnl, signed: true) + "，持仓价值 " + GMPx.fiat(a.valueNow)) }
             if let c = vm.conc, let t10 = c.top10 { row("集中度", String(format: "前 10 大持有 %.1f%%", t10) + (c.wallets10.map { String(format: "，其中普通钱包 %.1f%%", $0) } ?? "")) }
         }
     }

@@ -106,22 +106,20 @@ struct GMHeader: View {
     private func tagsRow(_ m: DexPair) -> some View {
         let pad: GMLaunchpad? = GMLaunchpad.detect(chain: vm.chain, address: vm.address, dex: m.dexId)
         let mk: String? = GMMarketKind.text(dex: m.dexId, pad: pad)
-        return ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
-                narrChip(m)
-                Text(vm.chain.title).font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
-                if let d = m.dexId, !d.isEmpty { GMDexChip(dex: d) }
-                if let p = pad { Text(p.title).font(.caption2.weight(.semibold)).foregroundStyle(Color.orange).lineLimit(1) }
-                if let t = mk { chipText(t, t == "内盘" ? Color.orange : Color.green) }
-            }
+        return HStack(spacing: 6) {
+            narrChip(m).layoutPriority(0)
+            if let d = m.dexId, !d.isEmpty { GMDexChip(dex: d).fixedSize().layoutPriority(2) }
+            if let p = pad { Text(p.title).font(.caption2.weight(.semibold)).foregroundStyle(Color.orange).lineLimit(1).fixedSize().layoutPriority(1) }
+            if let t = mk { chipText(t, t == "内盘" ? Color.orange : Color.green).fixedSize().layoutPriority(1) }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func titleRow(_ m: DexPair) -> some View {
         let quote: String = m.quoteToken?.symbol ?? ""
         let ls: [(String, URL)] = socials(m) + externals(m)
         return HStack(alignment: .center, spacing: 10) {
-            AvTokenLogo(chain: vm.chain, address: vm.address, symbol: m.baseToken?.symbol ?? vm.symbol, hint: m.info?.imageUrl, size: 48, dex: m.dexId)
+            AvTokenLogo(chain: vm.chain, address: vm.address, symbol: m.baseToken?.symbol ?? vm.symbol, hint: m.info?.imageUrl, size: 44, dex: m.dexId)
             VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(m.baseToken?.symbol ?? vm.symbol).font(.title3.bold()).lineLimit(1)

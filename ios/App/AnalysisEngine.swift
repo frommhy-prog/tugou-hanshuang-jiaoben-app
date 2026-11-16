@@ -58,20 +58,20 @@ enum AnalysisEngine {
             var b = B()
             let src = "Dexscreener 最深池子"
             if liq < 1_000 {
-                b.add("risk", 70, "流动性只有 " + Fmt2.usd(liq) + "，基本无法正常卖出", src)
+                b.add("risk", 70, "流动性只有 " + GMPx.fiat(liq) + "，基本无法正常卖出", src)
                 hard.append("流动性不足 $1,000，实际不可交易")
             } else if liq < 5_000 {
-                b.add("risk", 50, "流动性只有 " + Fmt2.usd(liq) + "，几百美元的卖单就能明显砸价", src)
+                b.add("risk", 50, "流动性只有 " + GMPx.fiat(liq) + "，几百美元的卖单就能明显砸价", src)
             } else if liq < 20_000 {
-                b.add("warn", 25, "流动性偏薄（" + Fmt2.usd(liq) + "），大额进出滑点大", src)
+                b.add("warn", 25, "流动性偏薄（" + GMPx.fiat(liq) + "），大额进出滑点大", src)
             } else if liq < 50_000 {
-                b.add("info", 8, "流动性 " + Fmt2.usd(liq) + "，只能承接小额进出", src)
+                b.add("info", 8, "流动性 " + GMPx.fiat(liq) + "，只能承接小额进出", src)
             } else {
-                b.add("ok", 0, "流动性 " + Fmt2.usd(liq) + "，可承接中等规模进出", src)
+                b.add("ok", 0, "流动性 " + GMPx.fiat(liq) + "，可承接中等规模进出", src)
             }
             if let mc = m.marketCap ?? m.fdv, mc > 0 {
                 let r = liq / mc
-                let basis = "流动性 " + Fmt2.usd(liq) + " ÷ 市值 " + Fmt2.usd(mc)
+                let basis = "流动性 " + GMPx.fiat(liq) + " ÷ 市值 " + GMPx.fiat(mc)
                 if r < 0.02 { b.add("risk", 25, String(format: "流动性仅为市值的 %.1f%%，账面市值远大于实际能卖出的金额", r * 100), basis) }
                 else if r < 0.05 { b.add("warn", 10, String(format: "流动性占市值 %.1f%%，偏低", r * 100), basis) }
             }
@@ -80,7 +80,7 @@ enum AnalysisEngine {
                 else if a < 24 { b.add("warn", 10, String(format: "池子上线仅 %.1f 小时，仍在早期阶段", a), "最深池子创建时间") }
             }
             if let v = m.volume?["h24"], v / liq > 15 {
-                b.add("warn", 10, String(format: "24 小时成交额是流动性的 %.0f 倍，高频炒作或刷量的可能性大", v / liq), "成交额 " + Fmt2.usd(v) + " ÷ 流动性 " + Fmt2.usd(liq))
+                b.add("warn", 10, String(format: "24 小时成交额是流动性的 %.0f 倍，高频炒作或刷量的可能性大", v / liq), "成交额 " + GMPx.fiat(v) + " ÷ 流动性 " + GMPx.fiat(liq))
             }
             if vm.pairs.count >= 2 {
                 let ps = vm.pairs.filter { $0.liq >= 1000 }.compactMap { $0.price }
@@ -121,13 +121,13 @@ enum AnalysisEngine {
             let basis = "按美元成本的平均成本法，已兑现 + 浮动"
             if up >= 0.7 { b.add("warn", 12, "已拆解 " + String(a.withPos) + " 个大户中 " + String(a.profit) + " 个账面盈利（" + String(Int(up * 100)) + "%），多数有利润可兑现，存在抛压", basis) }
             else if up <= 0.3 { b.add("info", 0, "已拆解 " + String(a.withPos) + " 个大户中只有 " + String(a.profit) + " 个盈利，多数被套", basis) }
-            else { b.add("info", 0, "已拆解 " + String(a.withPos) + " 个大户盈亏分化，合计盈亏 " + Fmt2.usd(a.pnl, signed: true), basis) }
+            else { b.add("info", 0, "已拆解 " + String(a.withPos) + " 个大户盈亏分化，合计盈亏 " + GMPx.fiat(a.pnl, signed: true), basis) }
             let early = a.snipers + a.early
             if early >= 3 { b.add("warn", 22, String(a.early) + " 个大户在池子创建 10 分钟内买入（其中 " + String(a.snipers) + " 个在 1 分钟内），疑似内部或狙击筹码", "首次买入时间 − 池子创建时间") }
             else if early >= 1 { b.add("info", 5, String(early) + " 个大户在池子创建 10 分钟内买入", "首次买入时间 − 池子创建时间") }
             if liq > 0, a.valueNow > 0 {
                 let imp = a.valueNow / liq
-                let t = String(format: "已拆解大户的持仓价值合计 %@，相当于池子流动性的 %.0f%%", Fmt2.usd(a.valueNow), imp * 100)
+                let t = String(format: "已拆解大户的持仓价值合计 %@，相当于池子流动性的 %.0f%%", GMPx.fiat(a.valueNow), imp * 100)
                 if imp >= 0.5 { b.add("risk", 30, t + "，集中抛售的价格冲击会很大", "持仓数量 × 现价 ÷ 最深池子流动性") }
                 else if imp >= 0.15 { b.add("warn", 12, t + "，集中抛售会有明显冲击", "持仓数量 × 现价 ÷ 最深池子流动性") }
                 else { b.add("ok", 0, t, "持仓数量 × 现价 ÷ 最深池子流动性") }
@@ -145,9 +145,9 @@ enum AnalysisEngine {
             let now = Date().timeIntervalSince1970
             let ws = FlowCalc.windows(vm.trades, now: now)
             if let w = ws.first(where: { $0.id == "1h" }), w.total >= 500 {
-                let basis = "买入 " + Fmt2.usd(w.buy) + "（" + String(w.nb) + " 笔）/ 卖出 " + Fmt2.usd(w.sell) + "（" + String(w.ns) + " 笔）"
-                if w.sell > w.buy * 1.5 { b.add("warn", 15, "最近 1 小时资金净流出 " + Fmt2.usd(-w.net) + "，卖出明显多于买入", basis) }
-                else if w.buy > w.sell * 1.5 { b.add("ok", 0, "最近 1 小时资金净流入 " + Fmt2.usd(w.net) + "，买盘占优", basis) }
+                let basis = "买入 " + GMPx.fiat(w.buy) + "（" + String(w.nb) + " 笔）/ 卖出 " + GMPx.fiat(w.sell) + "（" + String(w.ns) + " 笔）"
+                if w.sell > w.buy * 1.5 { b.add("warn", 15, "最近 1 小时资金净流出 " + GMPx.fiat(-w.net) + "，卖出明显多于买入", basis) }
+                else if w.buy > w.sell * 1.5 { b.add("ok", 0, "最近 1 小时资金净流入 " + GMPx.fiat(w.net) + "，买盘占优", basis) }
                 else { b.add("info", 0, "最近 1 小时买卖基本均衡", basis) }
             }
             let ad = FlowCalc.addrs(vm.trades)
@@ -276,7 +276,7 @@ enum AnalysisEngine {
         if let a = ageH { basis += String(format: "池龄 %.1f 小时", a) }
         if let v = h24 { basis += (basis.isEmpty ? "" : "，") + String(format: "24h %+.0f%%", v) }
         if let v = h1 { basis += String(format: "，1h %+.0f%%", v) }
-        if m.liq > 0 && m.liq < 1_000 { return ("已归零 / 无流动性", "流动性 " + Fmt2.usd(m.liq) + "，" + basis) }
+        if m.liq > 0 && m.liq < 1_000 { return ("已归零 / 无流动性", "流动性 " + GMPx.fiat(m.liq) + "，" + basis) }
         if let a = ageH, a < 1 { return ("发射期", basis) }
         if let v = h24, v <= -80 { return ("崩盘期", basis) }
         if let a = ageH, a < 72, let v = h24, v >= 50 { return ("拉升期", basis) }

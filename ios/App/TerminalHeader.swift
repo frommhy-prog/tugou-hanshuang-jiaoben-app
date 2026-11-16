@@ -146,10 +146,10 @@ struct TerminalHeader: View {
                     }
                 }
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], alignment: .leading, spacing: 10) {
-                    stat("市值", Fmt2.usd(m.marketCap))
-                    stat("FDV", Fmt2.usd(m.fdv))
-                    stat("流动性", Fmt2.usd(m.liq))
-                    stat("24h 成交", Fmt2.usd(m.volume?["h24"]))
+                    stat("市值", GMPx.fiat(m.marketCap))
+                    stat("FDV", GMPx.fiat(m.fdv))
+                    stat("流动性", GMPx.fiat(m.liq))
+                    stat("24h 成交", GMPx.fiat(m.volume?["h24"]))
                     stat("24h 买/卖", cat(String(tx?.buys ?? 0), "/", String(tx?.sells ?? 0)))
                     stat("池龄", created.map { Fmt2.dur(Date().timeIntervalSince1970 - $0 / 1000) } ?? "—")
                     stat("池子数", String(vm.pairs.count))

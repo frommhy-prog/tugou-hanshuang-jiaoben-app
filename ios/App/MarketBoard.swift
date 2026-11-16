@@ -259,7 +259,7 @@ struct DashboardView: View {
     }
 
     private func sub(_ p: BoardPool) -> String {
-        var s = cat(p.chain.title, " · 流动性 ", Fmt2.usd(p.liq), " · 成交 ", Fmt2.usd(p.vol24))
+        var s = cat(p.chain.title, " · 流动性 ", GMPx.fiat(p.liq), " · 成交 ", GMPx.fiat(p.vol24))
         if let a = p.ageMin { s += " · " + Fmt2.dur(a * 60) }
         return s
     }

@@ -180,7 +180,7 @@ struct PromoCard: View {
         if let p = an.position {
             if let e = p.entry { rows.append("DEV 入场：" + e) }
             if let st = p.state { rows.append("DEV 状态：" + st) }
-            rows.append("DEV 累计买入 " + Fmt2.usd(p.boughtUsd) + "，卖出 " + Fmt2.usd(p.soldUsd))
+            rows.append("DEV 累计买入 " + GMPx.fiat(p.boughtUsd) + "，卖出 " + GMPx.fiat(p.soldUsd))
         }
         let trades = an.trades ?? []
         if let pay = list.filter({ $0.ts > 0 }).map({ $0.ts }).min() {
@@ -192,7 +192,7 @@ struct PromoCard: View {
                 let u = t.usd ?? 0
                 if t.side == "buy" { b += u; nb += 1 } else { s += u; ns += 1 }
             }
-            rows.append("最早一次付款（" + TZ.short(Date(timeIntervalSince1970: pay)) + "）之后：DEV 买 " + Fmt2.usd(b) + "（\(nb) 笔），卖 " + Fmt2.usd(s) + "（\(ns) 笔）")
+            rows.append("最早一次付款（" + TZ.short(Date(timeIntervalSince1970: pay)) + "）之后：DEV 买 " + GMPx.fiat(b) + "（\(nb) 笔），卖 " + GMPx.fiat(s) + "（\(ns) 笔）")
             if trades.isEmpty { rows.append("没有读到 DEV 在这个币上的成交记录（可能从未交易，也可能是数据源没覆盖）") }
             else if let oldest = trades.map({ $0.t }).min(), pay < oldest { rows.append("付款早于读到的最早一笔 DEV 成交（" + TZ.short(Date(timeIntervalSince1970: oldest)) + "），付款后的成交可能没读全") }
         }

@@ -279,7 +279,7 @@ struct CexView: View {
                     Chart(rows) { r in
                         BarMark(x: .value("美元", r.usd), y: .value("币种", r.sym))
                             .foregroundStyle(Color.blue.opacity(0.75))
-                            .annotation(position: .trailing) { Text(Fmt2.usd(r.usd)).font(.system(size: 9)).foregroundStyle(.secondary) }
+                            .annotation(position: .trailing) { Text(GMPx.fiat(r.usd)).font(.system(size: 9)).foregroundStyle(.secondary) }
                     }
                     .chartXAxis(.hidden)
                     .frame(height: CGFloat(rows.count) * 24 + 10)

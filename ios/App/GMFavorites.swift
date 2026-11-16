@@ -300,7 +300,7 @@ struct GMFavoritesRoot: View {
     }
 
     private func valueText(_ it: FavItem) -> String {
-        if mcapMode { return Fmt2.usd(it.mcap) }
+        if mcapMode { return GMPx.fiat(it.mcap) }
         return it.price.map { GMPx.usd($0) } ?? "—"
     }
 
@@ -317,7 +317,7 @@ struct GMFavoritesRoot: View {
                     Text(it.symbol).font(.headline).lineLimit(1)
                     HStack(spacing: 6) {
                         Text(ageText(it)).foregroundStyle(Color.orange)
-                        Text(Fmt2.usd(it.liq)).foregroundStyle(.secondary)
+                        Text(GMPx.fiat(it.liq)).foregroundStyle(.secondary)
                     }
                     .font(.caption)
                     if let n = it.note {
@@ -326,7 +326,7 @@ struct GMFavoritesRoot: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 VStack(alignment: .trailing, spacing: 3) {
-                    Text(Fmt2.usd(vol(it))).font(.subheadline.weight(.semibold).monospacedDigit())
+                    Text(GMPx.fiat(vol(it))).font(.subheadline.weight(.semibold).monospacedDigit())
                     Text(txc(it).map { String($0) } ?? "—").font(.caption).foregroundStyle(.secondary)
                 }
                 .frame(width: 100, alignment: .trailing)

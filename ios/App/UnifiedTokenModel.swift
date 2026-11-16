@@ -736,15 +736,15 @@ final class UTokenVM: ObservableObject {
             if hrs < 1 { out.append(Finding(level: "risk", text: "池子上线不到 1 小时，处于极早期，价格和流动性都可能剧烈变化", basis: "最深池子创建于 " + TZ.format(Date(timeIntervalSince1970: created / 1000)))) }
             else if hrs < 24 { out.append(Finding(level: "warn", text: String(format: "池子上线仅 %.1f 小时，仍在早期阶段", hrs), basis: "最深池子创建于 " + TZ.format(Date(timeIntervalSince1970: created / 1000)))) }
         }
-        if liq > 0 && liq < 5_000 { out.append(Finding(level: "risk", text: "流动性只有 " + Fmt2.usd(liq) + "，几百美元的卖单就能明显砸价", basis: "最深池子流动性（Dexscreener）")) }
-        else if liq > 0 && liq < 20_000 { out.append(Finding(level: "warn", text: "流动性偏薄（" + Fmt2.usd(liq) + "），大额进出滑点大", basis: "最深池子流动性（Dexscreener）")) }
+        if liq > 0 && liq < 5_000 { out.append(Finding(level: "risk", text: "流动性只有 " + GMPx.fiat(liq) + "，几百美元的卖单就能明显砸价", basis: "最深池子流动性（Dexscreener）")) }
+        else if liq > 0 && liq < 20_000 { out.append(Finding(level: "warn", text: "流动性偏薄（" + GMPx.fiat(liq) + "），大额进出滑点大", basis: "最深池子流动性（Dexscreener）")) }
         if let mc = m.marketCap ?? m.fdv, mc > 0, liq > 0 {
             let r = liq / mc
-            if r < 0.02 { out.append(Finding(level: "risk", text: String(format: "流动性仅为市值的 %.1f%%，市值主要靠少量成交撑起，实际能卖出的远小于账面市值", r * 100), basis: "流动性 " + Fmt2.usd(liq) + " ÷ 市值 " + Fmt2.usd(mc))) }
-            else if r < 0.05 { out.append(Finding(level: "warn", text: String(format: "流动性占市值 %.1f%%，偏低", r * 100), basis: "流动性 " + Fmt2.usd(liq) + " ÷ 市值 " + Fmt2.usd(mc))) }
+            if r < 0.02 { out.append(Finding(level: "risk", text: String(format: "流动性仅为市值的 %.1f%%，市值主要靠少量成交撑起，实际能卖出的远小于账面市值", r * 100), basis: "流动性 " + GMPx.fiat(liq) + " ÷ 市值 " + GMPx.fiat(mc))) }
+            else if r < 0.05 { out.append(Finding(level: "warn", text: String(format: "流动性占市值 %.1f%%，偏低", r * 100), basis: "流动性 " + GMPx.fiat(liq) + " ÷ 市值 " + GMPx.fiat(mc))) }
         }
         if let v = m.volume?["h24"], liq > 0, v / liq > 15 {
-            out.append(Finding(level: "warn", text: String(format: "24 小时成交额是流动性的 %.0f 倍，高频炒作或刷量的可能性大", v / liq), basis: "成交额 " + Fmt2.usd(v) + " ÷ 流动性 " + Fmt2.usd(liq)))
+            out.append(Finding(level: "warn", text: String(format: "24 小时成交额是流动性的 %.0f 倍，高频炒作或刷量的可能性大", v / liq), basis: "成交额 " + GMPx.fiat(v) + " ÷ 流动性 " + GMPx.fiat(liq)))
         }
         if pairs.count >= 2 {
             let top = pairs[0].liq
@@ -759,8 +759,8 @@ final class UTokenVM: ObservableObject {
             let now = Date().timeIntervalSince1970
             let ws = FlowCalc.windows(trades, now: now)
             if let w = ws.first(where: { $0.id == "1h" }), w.total >= 500 {
-                if w.sell > w.buy * 1.5 { out.append(Finding(level: "warn", text: "最近 1 小时资金净流出 " + Fmt2.usd(-w.net) + "，卖出明显多于买入", basis: "买入 " + Fmt2.usd(w.buy) + "（\(w.nb) 笔）/ 卖出 " + Fmt2.usd(w.sell) + "（\(w.ns) 笔）")) }
-                else if w.buy > w.sell * 1.5 { out.append(Finding(level: "ok", text: "最近 1 小时资金净流入 " + Fmt2.usd(w.net) + "，买盘占优", basis: "买入 " + Fmt2.usd(w.buy) + "（\(w.nb) 笔）/ 卖出 " + Fmt2.usd(w.sell) + "（\(w.ns) 笔）")) }
+                if w.sell > w.buy * 1.5 { out.append(Finding(level: "warn", text: "最近 1 小时资金净流出 " + GMPx.fiat(-w.net) + "，卖出明显多于买入", basis: "买入 " + GMPx.fiat(w.buy) + "（\(w.nb) 笔）/ 卖出 " + GMPx.fiat(w.sell) + "（\(w.ns) 笔）")) }
+                else if w.buy > w.sell * 1.5 { out.append(Finding(level: "ok", text: "最近 1 小时资金净流入 " + GMPx.fiat(w.net) + "，买盘占优", basis: "买入 " + GMPx.fiat(w.buy) + "（\(w.nb) 笔）/ 卖出 " + GMPx.fiat(w.sell) + "（\(w.ns) 笔）")) }
             }
             let ad = FlowCalc.addrs(trades)
             let gross = trades.reduce(0) { $0 + $1.usd }
@@ -771,7 +771,7 @@ final class UTokenVM: ObservableObject {
             let wash = ad.filter { $0.nb >= 3 && $0.ns >= 3 && abs($0.buy - $0.sell) / max(1, $0.buy + $0.sell) < 0.15 }
             if !wash.isEmpty { out.append(Finding(level: "warn", text: "\(wash.count) 个地址买卖各 ≥3 笔且买卖额接近，可能是套利机器人，也可能是对敲刷量，链上数据无法区分", basis: "买卖额差额 < 15%")) }
             if let big = trades.max(by: { $0.usd < $1.usd }), gross > 0, big.usd / gross > 0.2 {
-                out.append(Finding(level: "info", text: String(format: "最大一笔成交 %@ 占最近成交额的 %.0f%%（%@）", Fmt2.usd(big.usd), big.usd / gross * 100, big.buy ? "买入" : "卖出"), basis: "最近 \(trades.count) 笔成交"))
+                out.append(Finding(level: "info", text: String(format: "最大一笔成交 %@ 占最近成交额的 %.0f%%（%@）", GMPx.fiat(big.usd), big.usd / gross * 100, big.buy ? "买入" : "卖出"), basis: "最近 \(trades.count) 笔成交"))
             }
         }
         if let c = conc {
@@ -783,11 +783,11 @@ final class UTokenVM: ObservableObject {
         let a = agg
         if a.withPos >= 2 {
             let up = Double(a.profit) / Double(a.withPos)
-            out.append(Finding(level: up >= 0.7 ? "warn" : "info", text: "已拆解 \(a.withPos) 个大户：\(a.profit) 个账面盈利（\(Int(up * 100))%），合计盈亏 " + Fmt2.usd(a.pnl, signed: true) + "，" + (up >= 0.7 ? "多数大户有利润可兑现" : (up <= 0.3 ? "多数大户被套" : "盈亏分化")), basis: "按美元成本的平均成本法，已兑现 + 浮动"))
+            out.append(Finding(level: up >= 0.7 ? "warn" : "info", text: "已拆解 \(a.withPos) 个大户：\(a.profit) 个账面盈利（\(Int(up * 100))%），合计盈亏 " + GMPx.fiat(a.pnl, signed: true) + "，" + (up >= 0.7 ? "多数大户有利润可兑现" : (up <= 0.3 ? "多数大户被套" : "盈亏分化")), basis: "按美元成本的平均成本法，已兑现 + 浮动"))
             if a.snipers + a.early >= 3 { out.append(Finding(level: "warn", text: "\(a.early) 个大户在池子创建 10 分钟内买入（其中 \(a.snipers) 个在 1 分钟内），疑似内部或狙击筹码", basis: "首次买入时间 − 池子创建时间")) }
             if liq > 0, a.valueNow > 0 {
                 let imp = a.valueNow / liq
-                out.append(Finding(level: imp >= 0.5 ? "risk" : (imp >= 0.15 ? "warn" : "info"), text: String(format: "已拆解大户的持仓价值合计 %@，相当于池子流动性的 %.0f%%，集中抛售的价格冲击会很大", Fmt2.usd(a.valueNow), imp * 100), basis: "持仓数量 × 现价 ÷ 最深池子流动性"))
+                out.append(Finding(level: imp >= 0.5 ? "risk" : (imp >= 0.15 ? "warn" : "info"), text: String(format: "已拆解大户的持仓价值合计 %@，相当于池子流动性的 %.0f%%，集中抛售的价格冲击会很大", GMPx.fiat(a.valueNow), imp * 100), basis: "持仓数量 × 现价 ÷ 最深池子流动性"))
             }
         }
         if chain == .solana {
@@ -823,11 +823,11 @@ final class UTokenVM: ObservableObject {
         if let c = m?.pairCreatedAt { tok["池龄小时"] = String(format: "%.1f", (Date().timeIntervalSince1970 * 1000 - c) / 3_600_000) }
         var ch: [String: Double] = [:]
         for (k, v) in m?.priceChange ?? [:] { ch["涨跌%_" + k] = v }
-        let ps = pairs.prefix(4).map { ($0.dexId ?? "?") + " 流动性" + Fmt2.usd($0.liq) + " 24h成交" + Fmt2.usd($0.volume?["h24"]) }
+        let ps = pairs.prefix(4).map { ($0.dexId ?? "?") + " 流动性" + GMPx.fiat($0.liq) + " 24h成交" + GMPx.fiat($0.volume?["h24"]) }
         var fl: [String] = []
         if trades.count >= 10 {
             for w in FlowCalc.windows(trades, now: Date().timeIntervalSince1970) where w.total > 0 {
-                fl.append(w.label + "：买" + Fmt2.usd(w.buy) + "(\(w.nb)笔) 卖" + Fmt2.usd(w.sell) + "(\(w.ns)笔)")
+                fl.append(w.label + "：买" + GMPx.fiat(w.buy) + "(\(w.nb)笔) 卖" + GMPx.fiat(w.sell) + "(\(w.ns)笔)")
             }
         }
         var cc: [String: Double] = [:]
@@ -840,7 +840,7 @@ final class UTokenVM: ObservableObject {
         for h in holders.filter({ $0.kind == "wallet" }).prefix(10) {
             guard let r = analyses[h.owner], let p = r.position else { continue }
             var s = "#\(h.rank) 占比" + (h.pct.map { String(format: "%.2f%%", $0) } ?? "?") + " " + (p.entry ?? "入场未知") + " " + (p.state ?? "")
-            s += " 投入" + Fmt2.usd(p.boughtUsd) + " 兑现" + Fmt2.usd(p.realizedUsd) + " 浮动" + Fmt2.usd(p.unrealizedUsd)
+            s += " 投入" + GMPx.fiat(p.boughtUsd) + " 兑现" + GMPx.fiat(p.realizedUsd) + " 浮动" + GMPx.fiat(p.unrealizedUsd)
             if let roi = p.roi { s += String(format: " 回报%.0f%%", roi * 100) }
             hs.append(s)
         }

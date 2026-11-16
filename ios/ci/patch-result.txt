@@ -17,23 +17,23 @@ HAVE gml_clanker
 HAVE gml_virtuals
 HAVE gml_bags
 total 336
-drwxr-xr-x  18 runner  staff    576 Nov 16 09:45 .
-drwxr-xr-x  57 runner  staff   1824 Nov 16 09:45 ..
--rw-r--r--   1 runner  staff   9929 Nov 16 09:45 gmc_arbitrum.png
--rw-r--r--   1 runner  staff   1829 Nov 16 09:45 gmc_base.png
--rw-r--r--   1 runner  staff   5739 Nov 16 09:45 gmc_bsc.png
--rw-r--r--   1 runner  staff   6609 Nov 16 09:45 gmc_ethereum.png
--rw-r--r--   1 runner  staff   5354 Nov 16 09:45 gmc_optimism.png
--rw-r--r--   1 runner  staff   7080 Nov 16 09:45 gmc_polygon.png
--rw-r--r--   1 runner  staff   2783 Nov 16 09:45 gmc_robinhood.png
--rw-r--r--   1 runner  staff   8623 Nov 16 09:45 gmc_solana.png
--rw-r--r--   1 runner  staff   3666 Nov 16 09:45 gml_bags.png
--rw-r--r--   1 runner  staff   2183 Nov 16 09:45 gml_clanker.png
--rw-r--r--   1 runner  staff   1081 Nov 16 09:45 gml_flap.png
--rw-r--r--   1 runner  staff  25521 Nov 16 09:45 gml_fourmeme.png
--rw-r--r--   1 runner  staff  10354 Nov 16 09:45 gml_letsbonk.png
--rw-r--r--   1 runner  staff  10157 Nov 16 09:45 gml_moonshot.png
--rw-r--r--   1 runner  staff  34821 Nov 16 09:45 gml_pumpfun.png
--rw-r--r--   1 runner  staff    588 Nov 16 09:45 gml_virtuals.png
+drwxr-xr-x  18 runner  staff    576 Nov 16 23:24 .
+drwxr-xr-x  59 runner  staff   1888 Nov 16 23:24 ..
+-rw-r--r--   1 runner  staff   9929 Nov 16 23:24 gmc_arbitrum.png
+-rw-r--r--   1 runner  staff   1829 Nov 16 23:24 gmc_base.png
+-rw-r--r--   1 runner  staff   5739 Nov 16 23:24 gmc_bsc.png
+-rw-r--r--   1 runner  staff   6609 Nov 16 23:24 gmc_ethereum.png
+-rw-r--r--   1 runner  staff   5354 Nov 16 23:24 gmc_optimism.png
+-rw-r--r--   1 runner  staff   7080 Nov 16 23:24 gmc_polygon.png
+-rw-r--r--   1 runner  staff   2783 Nov 16 23:24 gmc_robinhood.png
+-rw-r--r--   1 runner  staff   8623 Nov 16 23:24 gmc_solana.png
+-rw-r--r--   1 runner  staff   3666 Nov 16 23:24 gml_bags.png
+-rw-r--r--   1 runner  staff   2183 Nov 16 23:24 gml_clanker.png
+-rw-r--r--   1 runner  staff   1081 Nov 16 23:24 gml_flap.png
+-rw-r--r--   1 runner  staff  25521 Nov 16 23:24 gml_fourmeme.png
+-rw-r--r--   1 runner  staff  10354 Nov 16 23:24 gml_letsbonk.png
+-rw-r--r--   1 runner  staff  10157 Nov 16 23:24 gml_moonshot.png
+-rw-r--r--   1 runner  staff  34821 Nov 16 23:24 gml_pumpfun.png
+-rw-r--r--   1 runner  staff    588 Nov 16 23:24 gml_virtuals.png
 
-PATCH_OK g21_h1 g21_h2 g21_h3 g21_h4 g21_h5 g21_h6 g21_h7 g21_m1 g21_m2 g21_m3 g21_m4 g21_m5 g21_m6 g21_m7 g21_m8 g21_m9 g21_m10 g21_m11 g21_m12 g21_m13 g21_m14 g21_m15 g21_m16 g21_g1 g21_g2 g21_g3 g21_g4 g21_g5 g21_g6 g21_g7 g21_g8 g21_g9 g21_g10 g21_g11 g21_u1 g21_u2 g21_u3 g21_u4 g21_u5 g21_u6 g21_u7 g21_p1 g21_w1 g21_w2 g21_w3 g21_w4 g21_w5 g21_w6
+PATCH_OK g22_px g22_fiat_AnalysisEngine g22_fiat_CexView g22_fiat_CompactHeader g22_fiat_DeepAnalysis g22_fiat_Favorites g22_fiat_GMFavorites g22_h1 g22_h2 g22_fiat_GMKit g22_l1 g22_l2 g22_l3 g22_l4 g22_l5 g22_l6 g22_l7 g22_l8 g22_l9 g22_l10 g22_l11 g22_l12 g22_l13 g22_fiat_GMMetrics g22_cell g22_g1 g22_g2 g22_fiat_LifeSocial g22_fiat_MarketBoard g22_fiat_Narrative g22_fiat_NarrativeEngine g22_fiat_ProChart g22_fiat_Promo g22_fiat_TerminalHeader g22_fiat_UnifiedToken g22_u1 g22_u2 g22_fiat_UnifiedTokenModel g22_fiat_Verdict

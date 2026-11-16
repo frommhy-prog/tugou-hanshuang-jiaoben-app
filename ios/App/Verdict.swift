@@ -166,11 +166,11 @@ enum VerdictEngine {
 
         // 盯盘阈值：现在的数值 + 触发线
         var watch: [String] = []
-        if m.liq > 0 { watch.append(cat("流动性跌破 ", Fmt2.usd(m.liq * 0.7), "（当前 ", Fmt2.usd(m.liq), "，−30%）≈ 疑似撤池")) }
+        if m.liq > 0 { watch.append(cat("流动性跌破 ", GMPx.fiat(m.liq * 0.7), "（当前 ", GMPx.fiat(m.liq), "，−30%）≈ 疑似撤池")) }
         if let p = m.price, p > 0 { watch.append(cat("价格跌破 ", Money.price(p * 0.8), "（当前 ", Money.price(p), "，−20%）")) }
         if let w = vm.conc?.wallets10 { watch.append(cat("前 10 普通钱包占比升到 ", String(format: "%.1f%%", Double(w) + 5), " 以上（当前 ", String(format: "%.1f%%", Double(w)), "）")) }
         if let w1 = FlowCalc.windows(vm.trades, now: Date().timeIntervalSince1970).first(where: { $0.id == "1h" }), w1.total >= 500 {
-            watch.append(cat("1 小时资金净流向转为", w1.net >= 0 ? "净流出" : "净流入", "（当前 ", Fmt2.usd(w1.net, signed: true), "）"))
+            watch.append(cat("1 小时资金净流向转为", w1.net >= 0 ? "净流出" : "净流入", "（当前 ", GMPx.fiat(w1.net, signed: true), "）"))
         }
         let a = vm.agg
         if a.withPos >= 2 {
@@ -186,12 +186,12 @@ enum VerdictEngine {
             deltaTitle = cat("较 ", Fmt2.dur(now - p.t), " 前")
             if p.liq > 0 && m.liq > 0 {
                 let c = m.liq / p.liq - 1
-                if abs(c) >= 0.1 { deltas.append(VerdictDelta(text: cat("流动性 ", pctText(c), "（", Fmt2.usd(p.liq), " → ", Fmt2.usd(m.liq), "）"), good: c > 0)) }
+                if abs(c) >= 0.1 { deltas.append(VerdictDelta(text: cat("流动性 ", pctText(c), "（", GMPx.fiat(p.liq), " → ", GMPx.fiat(m.liq), "）"), good: c > 0)) }
             }
             let mc = m.marketCap ?? m.fdv ?? 0
             if p.mc > 0 && mc > 0 {
                 let c = mc / p.mc - 1
-                if abs(c) >= 0.1 { deltas.append(VerdictDelta(text: cat("市值 ", pctText(c), "（", Fmt2.usd(p.mc), " → ", Fmt2.usd(mc), "）"), good: nil)) }
+                if abs(c) >= 0.1 { deltas.append(VerdictDelta(text: cat("市值 ", pctText(c), "（", GMPx.fiat(p.mc), " → ", GMPx.fiat(mc), "）"), good: nil)) }
             }
             if let a0 = p.w10, let w = vm.conc?.wallets10 {
                 let d = Double(w) - a0
