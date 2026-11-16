@@ -48,8 +48,8 @@ def register(rep, cut):
     rep('g21_m11', M, r'''guard let n = gm.num("holder_count", "stat.holder_count") else { return none }''', r'''let gmN: Double? = gm.num("holder_count", "stat.holder_count")
             guard let n = gmN ?? GMFreeStore.shared.v["holders"] else { return none }''')
     rep('g21_m12', M, r'''rows: [("持有钱包数", String(Int(n))), ("数据来源", "GMGN")])''', r'''rows: [("持有钱包数", String(Int(n))), ("数据来源", gmN != nil ? "GMGN" : (GMFreeStore.shared.src["holders"] ?? "免费数据源"))])''')
-    cut('g21_m13', M, r'''case "devhold":''', r'''case "tax":''', r'''case "devhold":
-            let fs = GMFreeStore.shared
+    # 从 devhold 分支的第一行起，到 tax 分支之前：devhold / sniper / bundler / rat / phishing / fresh
+    cut('g21_m13', M, r'''let r: Double? = gm.num("creator_balance_rate", "stat.creator_hold_rate").map { $0 * 100 }''', r'''case "tax":''', r'''let fs = GMFreeStore.shared
             let gmDev: Double? = gm.num("creator_balance_rate", "stat.creator_hold_rate").map { $0 * 100 }
             let r: Double? = gmDev ?? fs.v["dev"]
             let st: String? = gm.str("creator_token_status")
@@ -154,7 +154,7 @@ def register(rep, cut):
     rep('g21_p1', P, r'''"mult": (cfgMult.isFinite && cfgMult > 0) ? cfgMult : 1.0,''', r'''"mult": (cfgMult.isFinite && cfgMult > 0) ? cfgMult : 1.0,
             "rate": GMPx.rate,
             "cur": GMPx.sym,''')
-    rep('g21_w1', W, r'''var S={raw:[],C:[],idx:{},prec:6,F:1,key:'',mode:'init\'''', r'''var S={raw:[],C:[],idx:{},prec:6,F:1,R:1,cur:'$',key:'',mode:'init\'''')
+    rep('g21_w1', W, r"""prec:6,F:1,key:'',""", r"""prec:6,F:1,R:1,cur:'$',key:'',""")
     rep('g21_w2', W, r'''function fu(v){return '$'+fCN(v);}''', r'''function fu(v){return (S.cur||'$')+fCN(v);}''')
     rep('g21_w3', W, r'''o.text=fu(m[2]);''', r'''o.text=fu(m[2]*(S.R||1));''')
     rep('g21_w4', W, r'''var m=S.cfg.mcap?S.cfg.mult:1,ts=chart.timeScale(),vr=null;var F=1;if(!S.cfg.mcap){var lo0=Infinity;S.raw.forEach(function(r){if(r[3]>0&&r[3]<lo0)lo0=r[3];});''', r'''var R=S.R||1;var m=(S.cfg.mcap?S.cfg.mult:1)*R,ts=chart.timeScale(),vr=null;var F=1;if(!S.cfg.mcap){var lo0=Infinity;S.raw.forEach(function(r){var lw=r[3]*R;if(lw>0&&lw<lo0)lo0=lw;});''')
