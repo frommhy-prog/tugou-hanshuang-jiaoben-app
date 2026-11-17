@@ -9,7 +9,7 @@ struct TSTZMApp: App {
     @Environment(\.scenePhase) private var phase
     @UIApplicationDelegateAdaptor(TSTZAppDelegate.self) private var appDelegate
 
-    init() { TZ.apply(); SourceHub.install() } // 启动即应用统一时区，并开启请求日志
+    init() { TZ.apply(); SourceHub.install(); GateNet.install() } // 启动即应用统一时区，并开启请求日志
 
     var body: some Scene {
         WindowGroup {

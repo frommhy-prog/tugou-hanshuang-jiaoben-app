@@ -109,8 +109,8 @@ struct GMHeader: View {
         return HStack(spacing: 6) {
             narrChip(m).layoutPriority(0)
             if let d = m.dexId, !d.isEmpty { GMDexChip(dex: d).fixedSize().layoutPriority(2) }
-            if let p = pad { Text(p.title).font(.caption2.weight(.semibold)).foregroundStyle(Color.orange).lineLimit(1).fixedSize().layoutPriority(1) }
-            if let t = mk { chipText(t, t == "内盘" ? Color.orange : Color.green).fixedSize().layoutPriority(1) }
+            if let p = pad { GMLaunchChip(pad: p, stage: mk).fixedSize().layoutPriority(1) }
+            if pad == nil, let t = mk { chipText(t, t == "内盘" ? Color.orange : Color.green).fixedSize().layoutPriority(1) }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -153,6 +153,26 @@ struct GMHeader: View {
         }
     }
 
+    @ViewBuilder
+    private func socialIcon(_ name: String) -> some View {
+        if let k = GMBrand.socialKey(name) {
+            GMBrandIcon(key: k, size: 22)
+        } else {
+            chipText(name, Color.accentColor)
+        }
+    }
+
+    private func extIcon(_ name: String) -> some View {
+        HStack(spacing: 4) {
+            if let k = GMBrand.externalKey(name) { GMBrandIcon(key: k, size: 14) }
+            Text(name + " ↗").font(.caption2.weight(.bold))
+        }
+        .padding(.horizontal, 7)
+        .padding(.vertical, 3)
+        .background(Color.secondary.opacity(0.14), in: Capsule())
+        .foregroundStyle(Color.secondary)
+    }
+
     // MARK: 合约 + 社交 + 外部行情
     private func contractRow(_ m: DexPair) -> some View {
         let ss: [(String, URL)] = socials(m)
@@ -169,10 +189,10 @@ struct GMHeader: View {
                 }
                 .buttonStyle(.plain)
                 ForEach(ss.indices, id: \.self) { i in
-                    Link(destination: ss[i].1) { chipText(ss[i].0, Color.accentColor) }
+                    Link(destination: ss[i].1) { socialIcon(ss[i].0) }
                 }
                 ForEach(ex.indices, id: \.self) { i in
-                    Link(destination: ex[i].1) { chipText(ex[i].0 + " ↗", Color.secondary) }
+                    Link(destination: ex[i].1) { extIcon(ex[i].0) }
                 }
             }
         }

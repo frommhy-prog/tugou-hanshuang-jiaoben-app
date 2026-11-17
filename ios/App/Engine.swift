@@ -457,8 +457,8 @@ enum Fmt2 {
         guard let v = v, v.isFinite else { return "未知" }
         let a = abs(v)
         let sign = v < 0 ? "-" : (signed ? "+" : "")
-        if a >= 1_000_000 { return sign + "$" + String(format: "%.2fM", a / 1_000_000) }
-        if a >= 10_000 { return sign + "$" + String(format: "%.1fK", a / 1_000) }
+        if a >= 1_000_000 { return sign + "$" + CNUnit.wrap("", a, 2, "") }
+        if a >= 10_000 { return sign + "$" + CNUnit.wrap("", a, 1, "") }
         if a >= 100 { return sign + "$" + String(format: "%.0f", a) }
         if a >= 1 { return sign + "$" + String(format: "%.2f", a) }
         if a == 0 { return "$0" }
@@ -471,9 +471,9 @@ enum Fmt2 {
     static func qty(_ v: Double?) -> String {
         guard let v = v else { return "未知" }
         let a = abs(v)
-        if a >= 1_000_000_000 { return String(format: "%.2fB", v / 1_000_000_000) }
-        if a >= 1_000_000 { return String(format: "%.2fM", v / 1_000_000) }
-        if a >= 1_000 { return String(format: "%.1fK", v / 1_000) }
+        if a >= 1_000_000_000 { return CNUnit.wrap("", v, 2, "") }
+        if a >= 1_000_000 { return CNUnit.wrap("", v, 2, "") }
+        if a >= 1_000 { return CNUnit.wrap("", v, 1, "") }
         return String(format: "%.2f", v)
     }
     static func buySell(_ b: Int?, _ s: Int?) -> String {

@@ -2,7 +2,7 @@ import Foundation
 import CoreGraphics
 
 // 中文数字缩写：万、亿（不显示 K / M / B）。
-// 全 App 里 String(format: "%.2fM", x / 1_000_000) 这类写法，由补丁 plist24 统一改成 CNUnit.wrap。
+// 全 App 里 CNUnit.wrap("", x, 2, "") 这类写法，由补丁 plist24 统一改成 CNUnit.wrap。
 enum CNUnit {
     static func short(_ v: Double, _ d: Int = 2) -> String {
         if v.isNaN || v.isInfinite { return "—" }

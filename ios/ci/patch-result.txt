@@ -1,39 +1,73 @@
 LOGOS:
-PLACEHOLDER md5=17b0e4c0dec3291821000102feef9779
-HAVE gmc_solana
-HAVE gmc_ethereum
-HAVE gmc_bsc
-HAVE gmc_base
-HAVE gmc_polygon
-HAVE gmc_arbitrum
-HAVE gmc_optimism
-HAVE gmc_robinhood
-HAVE gml_pumpfun
-HAVE gml_fourmeme
-HAVE gml_letsbonk
-HAVE gml_flap
-HAVE gml_moonshot
-HAVE gml_clanker
-HAVE gml_virtuals
-HAVE gml_bags
-total 336
-drwxr-xr-x  18 runner  staff    576 Nov 17 05:55 .
-drwxr-xr-x  60 runner  staff   1920 Nov 17 05:55 ..
--rw-r--r--   1 runner  staff   9929 Nov 17 05:55 gmc_arbitrum.png
--rw-r--r--   1 runner  staff   1829 Nov 17 05:55 gmc_base.png
--rw-r--r--   1 runner  staff   5739 Nov 17 05:55 gmc_bsc.png
--rw-r--r--   1 runner  staff   6609 Nov 17 05:55 gmc_ethereum.png
--rw-r--r--   1 runner  staff   5354 Nov 17 05:55 gmc_optimism.png
--rw-r--r--   1 runner  staff   7080 Nov 17 05:55 gmc_polygon.png
--rw-r--r--   1 runner  staff   2783 Nov 17 05:55 gmc_robinhood.png
--rw-r--r--   1 runner  staff   8623 Nov 17 05:55 gmc_solana.png
--rw-r--r--   1 runner  staff   3666 Nov 17 05:55 gml_bags.png
--rw-r--r--   1 runner  staff   2183 Nov 17 05:55 gml_clanker.png
--rw-r--r--   1 runner  staff   1081 Nov 17 05:55 gml_flap.png
--rw-r--r--   1 runner  staff  25521 Nov 17 05:55 gml_fourmeme.png
--rw-r--r--   1 runner  staff  10354 Nov 17 05:55 gml_letsbonk.png
--rw-r--r--   1 runner  staff  10157 Nov 17 05:55 gml_moonshot.png
--rw-r--r--   1 runner  staff  34821 Nov 17 05:55 gml_pumpfun.png
--rw-r--r--   1 runner  staff    588 Nov 17 05:55 gml_virtuals.png
+ve <- https://dd.dexscreener.com/ds-data/chains/injective.png
+OK   gmc_ink <- https://dd.dexscreener.com/ds-data/chains/ink.png
+OK   gmc_kava <- https://dd.dexscreener.com/ds-data/chains/kava.png
+OK   gmc_linea <- https://dd.dexscreener.com/ds-data/chains/linea.png
+OK   gmc_manta <- https://dd.dexscreener.com/ds-data/chains/manta.png
+OK   gmc_mantle <- https://dd.dexscreener.com/ds-data/chains/mantle.png
+OK   gmc_metis <- https://dd.dexscreener.com/ds-data/chains/metis.png
+OK   gmc_monad <- https://dd.dexscreener.com/ds-data/chains/monad.png
+OK   gmc_moonbeam <- https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/moonbeam/info/logo.png
+OK   gmc_near <- https://dd.dexscreener.com/ds-data/chains/near.png
+OK   gmc_opbnb <- https://dd.dexscreener.com/ds-data/chains/opbnb.png
+OK   gmc_osmosis <- https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/osmosis/info/logo.png
+OK   gmc_plasma <- https://dd.dexscreener.com/ds-data/chains/plasma.png
+OK   gmc_pulsechain <- https://dd.dexscreener.com/ds-data/chains/pulsechain.png
+OK   gmc_ronin <- https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ronin/info/logo.png
+OK   gmc_scroll <- https://dd.dexscreener.com/ds-data/chains/scroll.png
+OK   gmc_sei <- https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/sei/info/logo.png
+OK   gmc_sonic <- https://dd.dexscreener.com/ds-data/chains/sonic.png
+OK   gmc_stellar <- https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&url=https://stellar.org&size=128
+OK   gmc_sui <- https://dd.dexscreener.com/ds-data/chains/sui.png
+OK   gmc_ton <- https://dd.dexscreener.com/ds-data/chains/ton.png
+OK   gmc_tron <- https://dd.dexscreener.com/ds-data/chains/tron.png
+OK   gmc_unichain <- https://dd.dexscreener.com/ds-data/chains/unichain.png
+OK   gmc_worldchain <- https://dd.dexscreener.com/ds-data/chains/worldchain.png
+OK   gmc_zksync <- https://dd.dexscreener.com/ds-data/chains/zksync.png
+OK   gmd_aerodrome <- https://dd.dexscreener.com/ds-data/dexes/aerodrome.png
+OK   gmd_apeswap <- https://dd.dexscreener.com/ds-data/dexes/apeswap.png
+OK   gmd_biswap <- https://dd.dexscreener.com/ds-data/dexes/biswap.png
+OK   gmd_camelot <- https://dd.dexscreener.com/ds-data/dexes/camelot.png
+OK   gmd_fluxbeam <- https://dd.dexscreener.com/ds-data/dexes/fluxbeam.png
+OK   gmd_meteora <- https://dd.dexscreener.com/ds-data/dexes/meteora.png
+OK   gmd_orca <- https://dd.dexscreener.com/ds-data/dexes/orca.png
+OK   gmd_pancakeswap <- https://dd.dexscreener.com/ds-data/dexes/pancakeswap.png
+OK   gmd_pumpswap <- https://dd.dexscreener.com/ds-data/dexes/pumpswap.png
+OK   gmd_raydium <- https://dd.dexscreener.com/ds-data/dexes/raydium.png
+OK   gmd_sushiswap <- https://dd.dexscreener.com/ds-data/dexes/sushiswap.png
+OK   gmd_thena <- https://dd.dexscreener.com/ds-data/dexes/thena.png
+OK   gmd_uniswap <- https://dd.dexscreener.com/ds-data/dexes/uniswap.png
+OK   gmd_velodrome <- https://dd.dexscreener.com/ds-data/dexes/velodrome.png
+OK   gml_heaven <- https://dd.dexscreener.com/ds-data/dexes/heaven.png
+OK   gml_launchlab <- https://dd.dexscreener.com/ds-data/dexes/launchlab.png
+OK   gml_pumpswap <- https://dd.dexscreener.com/ds-data/dexes/pumpswap.png
+MISS gmc_bob
+MISS gmc_coredao
+MISS gmc_flare
+MISS gmc_fraxtal
+MISS gmc_lisk
+MISS gmc_mode
+MISS gmc_okc
+MISS gmc_story
+MISS gmc_taiko
+MISS gmc_xlayer
+MISS gmc_zora
+MISS gmd_lifinity
+MISS gmd_phoenix
+MISS gml_believe
+MISS gml_boop
+MISS gml_daos
+MISS gml_jupstudio
+MISS gml_zora
 
-PATCH_OK g23_l1 g23_l2 g23_l3 g23_l4 g23_l5 g23_l6 g23_u1 g23_u2
+CN_REWRITE 14 ios/App/Engine.swift:5 ios/App/GMLab2.swift:3 ios/App/GMMetrics.swift:2 ios/Shared/CNUnit.swift:1 ios/Shared/Core.swift:3
+FMT_SCAN_LEFT 8
+  ios/App/Avatars.swift:12: case .bsc: return "B"
+  ios/App/Avatars.swift:18: case .okc: return "K"
+  ios/App/DeepAnalysis.swift:386: Tier(name: "中单 $100–1K", lo: 100, hi: 1000),
+  ios/App/DeepAnalysis.swift:387: Tier(name: "大单 $1K–10K", lo: 1000, hi: 10000),
+  ios/App/DeepAnalysis.swift:388: Tier(name: "巨单 ≥ $10K", lo: 10000, hi: Double.greatestFiniteMagnitude),
+  ios/App/GMMarks.swift:190: disc(Color(red: 1.0, green: 0.55, blue: 0.1), Color(red: 1.0, green: 0.8, blue: 0.2), "B", Color.white)
+  ios/App/GMMarks.swift:205: disc(Color(red: 0.2, green: 0.85, blue: 0.4), Color(red: 0.05, green: 0.55, blue: 0.25), "B", Color.white)
+  ios/App/Prefs.swift:231: f.correctionLevel = "M"
+PATCH_OK g24_cn_Engine g24_h1 g24_h2 g24_h3 g24_h4 g24_h5 g24_cn_GMLab2 g24_k1 g24_k2 g24_k3 g24_k4 g24_k5 g24_k6 g24_cn_GMMetrics g24_m1 g24_m2 g24_m3 g24_m4 g24_m5 g24_m6 g24_a1 g24_cn_CNUnit g24_cn_Core

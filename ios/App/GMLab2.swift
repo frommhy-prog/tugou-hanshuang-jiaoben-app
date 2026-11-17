@@ -790,9 +790,9 @@ struct GL2WalletRow: View {
 
     private func tok(_ v: Double) -> String {
         let a: Double = abs(v)
-        if a >= 1e9 { return String(format: "%.2fB", v / 1e9) }
-        if a >= 1e6 { return String(format: "%.2fM", v / 1e6) }
-        if a >= 1e3 { return String(format: "%.1fK", v / 1e3) }
+        if a >= 1e9 { return CNUnit.wrap("", v, 2, "") }
+        if a >= 1e6 { return CNUnit.wrap("", v, 2, "") }
+        if a >= 1e3 { return CNUnit.wrap("", v, 1, "") }
         return String(format: "%.2f", v)
     }
 

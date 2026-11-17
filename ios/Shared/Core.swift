@@ -191,9 +191,9 @@ enum Money {
     static func abbreviate(_ v: Double, symbol: String, decimals: Int) -> String {
         let a = abs(v)
         let sign = v < 0 ? "-" : ""
-        if a >= 1_000_000_000 { return sign + symbol + String(format: "%.2fB", a / 1_000_000_000) }
-        if a >= 1_000_000 { return sign + symbol + String(format: "%.2fM", a / 1_000_000) }
-        if a >= 10_000 { return sign + symbol + String(format: "%.1fK", a / 1_000) }
+        if a >= 1_000_000_000 { return sign + symbol + CNUnit.wrap("", a, 2, "") }
+        if a >= 1_000_000 { return sign + symbol + CNUnit.wrap("", a, 2, "") }
+        if a >= 10_000 { return sign + symbol + CNUnit.wrap("", a, 1, "") }
         return sign + symbol + String(format: "%.\(decimals)f", a)
     }
 

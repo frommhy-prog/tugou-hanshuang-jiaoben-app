@@ -110,7 +110,7 @@ struct GMChainGlyph: View {
 
 // MARK: - 发射台 / 内盘平台
 enum GMLaunchpad {
-    case pump, bonk, fourMeme, flap, moonshot, clanker, virtuals, bags
+    case pump, bonk, fourMeme, flap, moonshot, clanker, virtuals, bags, believe, boop, heaven, launchLab, jupStudio, daos, zora
 
     var title: String {
         switch self {
@@ -122,6 +122,13 @@ enum GMLaunchpad {
         case .clanker: return "Clanker"
         case .virtuals: return "Virtuals"
         case .bags: return "Bags"
+        case .believe: return "Believe"
+        case .boop: return "Boop"
+        case .heaven: return "Heaven"
+        case .launchLab: return "LaunchLab"
+        case .jupStudio: return "Jupiter Studio"
+        case .daos: return "DAOS.FUN"
+        case .zora: return "Zora"
         }
     }
 
@@ -135,6 +142,12 @@ enum GMLaunchpad {
         if d.contains("moonshot") { return .moonshot }
         if d.contains("virtuals") { return .virtuals }
         if d.contains("clanker") { return .clanker }
+        if d.contains("believe") { return .believe }
+        if d.contains("boop") { return .boop }
+        if d.contains("heaven") { return .heaven }
+        if d.contains("launchlab") { return .launchLab }
+        if d.contains("daos") { return .daos }
+        if d.contains("zora") { return .zora }
         if d.contains("bonk") { return .bonk }
         let sol: Bool = (chain == .solana) || (chain == nil && !Addr.isEVM(address))
         if sol {
@@ -203,6 +216,8 @@ struct GMLaunchMark: View {
             disc(Color(red: 0.1, green: 0.8, blue: 0.75), Color(red: 0.05, green: 0.5, blue: 0.6), "V", Color.white)
         case .bags:
             disc(Color(red: 0.2, green: 0.85, blue: 0.4), Color(red: 0.05, green: 0.55, blue: 0.25), "B", Color.white)
+        default:
+            disc(Color(red: 0.35, green: 0.35, blue: 0.4), Color(red: 0.12, green: 0.12, blue: 0.16), String(pad.title.prefix(1)).uppercased(), Color.white)
         }
     }
 }
@@ -220,7 +235,7 @@ struct GMLaunchBadge: View {
             GMLaunchLogo(pad: p, size: d)
                 .frame(width: d, height: d)
                 .clipShape(Circle())
-                .overlay(Circle().stroke(Color.card, lineWidth: 1.5))
+                .overlay(Circle().stroke(GMMarketKind.ring(dex: dex, pad: p), lineWidth: 1.8))
                 .offset(x: size * 0.08, y: -size * 0.08)
         }
     }
@@ -268,6 +283,6 @@ struct GMDexChip: View {
         .padding(.horizontal, 6)
         .padding(.vertical, 2)
         .background(Color.secondary.opacity(0.14), in: Capsule())
-        .task(id: dex) { img = await GMDexIcons.load(dex) }
+        .task(id: dex) { img = await GMDexIcons2.load(dex) }
     }
 }

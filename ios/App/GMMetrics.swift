@@ -5,7 +5,7 @@ enum GMMarketKind {
     // 内盘 = 还在发射台的曲线里；外盘 = 已经毕业到公开 DEX 池
     static func text(dex: String?, pad: GMLaunchpad?) -> String? {
         let d: String = (dex ?? "").lowercased()
-        let inner: [String] = ["pumpfun", "fourmeme", "moonshot", "launchlab", "letsbonk", "bonkfun", "believe", "flap", "virtuals"]
+        let inner: [String] = ["pumpfun", "fourmeme", "moonshot", "launchlab", "letsbonk", "bonkfun", "believe", "flap", "virtuals", "boop", "heaven", "daosfun"]
         for k in inner where d.contains(k) { return "内盘" }
         if pad != nil { return "外盘" }
         return nil
@@ -57,8 +57,8 @@ enum GMMetricCatalog {
     }
 
     static func compact(_ n: Double) -> String {
-        if n >= 1_000_000 { return String(format: "%.2fM", n / 1_000_000) }
-        if n >= 1000 { return String(format: "%.1fK", n / 1000) }
+        if n >= 1_000_000 { return CNUnit.wrap("", n, 2, "") }
+        if n >= 1000 { return CNUnit.wrap("", n, 1, "") }
         return String(format: "%.0f", n)
     }
 
@@ -262,9 +262,10 @@ struct GMMetricStrip: View {
         let v = GMMetricCatalog.eval(id, vm: vm, gm: gm, paid: paid)
         return Button { sheet = GMSheetID(id: id) } label: {
             HStack(alignment: .firstTextBaseline, spacing: 4) {
+                if id == "dexpaid" { GMBrandIcon(key: "dexscreener", size: 12) } else if let em = GMTagIcon.metric(id) { Text(em).font(.system(size: 10)) }
                 Text(title).underline(true, pattern: .dot, color: Color.secondary).font(.system(size: 9.5)).foregroundStyle(Color.secondary)
                 HStack(spacing: 3) {
-                    if let ic = v.icon { Image(systemName: ic).font(.caption2).foregroundStyle(v.color) }
+                    if let ic = v.icon, id != "dexpaid" { Image(systemName: ic).font(.caption2).foregroundStyle(v.color) }
                     Text(v.text).font(.system(size: 11.5, weight: .bold)).foregroundStyle(v.color).lineLimit(1)
                 }
             }
@@ -345,9 +346,12 @@ struct GMMetricSheet: View {
         let pc: Color = (w.profit ?? 0) >= 0 ? Color.green : Color.red
         return HStack(spacing: 8) {
             VStack(alignment: .leading, spacing: 3) {
-                Text(w.name ?? Addr.short(w.addr)).font(.caption.monospaced()).foregroundStyle(Color.primary)
+                HStack(spacing: 4) {
+                    if let bk = GMBrand.match(w.name ?? "") { GMBrandIcon(key: bk, size: 14) }
+                    Text(w.name ?? Addr.short(w.addr)).font(.caption.monospaced()).foregroundStyle(Color.primary)
+                }
                 if !w.tags.isEmpty {
-                    Text(w.tags.prefix(3).joined(separator: " · ")).font(.caption2).foregroundStyle(Color.orange).lineLimit(1)
+                    Text(w.tags.prefix(3).map { GMTagIcon.text($0) }.joined(separator: " · ")).font(.caption2).foregroundStyle(Color.orange).lineLimit(1)
                 }
             }
             Spacer()
@@ -393,7 +397,7 @@ struct GMMetricSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     HStack(spacing: 8) {
-                        if let ic = v.icon { Image(systemName: ic).font(.title).foregroundStyle(v.color) }
+                        if id == "dexpaid" { GMBrandIcon(key: "dexscreener", size: 30) } else if let ic = v.icon { Image(systemName: ic).font(.title).foregroundStyle(v.color) }
                         Text(v.text).font(.system(size: 34, weight: .bold, design: .rounded)).foregroundStyle(v.color)
                     }
                     Text(def?.desc ?? "").font(.subheadline).foregroundStyle(.secondary)
