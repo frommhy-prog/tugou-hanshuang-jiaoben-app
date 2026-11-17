@@ -194,10 +194,10 @@ struct UnifiedTokenRoot: View {
     private func tabBody(_ id: String) -> some View {
         switch id {
         case "trade":
-            GMTradeLabView(vm: vm)
+            GMTradeLab2View(vm: vm)
             flowCard
         case "wallet":
-            GMWalletLabView(vm: vm)
+            GMWalletLab2View(vm: vm)
         case "holder":
             GMTrendCard(vm: vm)
             pageBody(2)

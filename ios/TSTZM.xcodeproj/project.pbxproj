@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		01D07766993E6D0A43B838E7 /* GMLab2.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1071150A4F4644967C94E447 /* GMLab2.swift */; };
 		0788CAAB571C220FB1C31E04 /* Prefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C607B8AF9C14501FAD6CA44 /* Prefs.swift */; };
 		0C7BDEAC4CFD2ED1DC1F8ACB /* gml_letsbonk.png in Resources */ = {isa = PBXBuildFile; fileRef = CA15CD36CF2CB642E77FE40A /* gml_letsbonk.png */; };
 		0EEB2CA979653D66D23F0E02 /* WalletIntel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01247A761DF811FA18EEC166 /* WalletIntel.swift */; };
@@ -116,6 +117,7 @@
 		01247A761DF811FA18EEC166 /* WalletIntel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletIntel.swift; sourceTree = "<group>"; };
 		020FA04C92E44120E6C44132 /* GMMarks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GMMarks.swift; sourceTree = "<group>"; };
 		0C7E5C7130E884980F0BBF26 /* Promo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Promo.swift; sourceTree = "<group>"; };
+		1071150A4F4644967C94E447 /* GMLab2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GMLab2.swift; sourceTree = "<group>"; };
 		1109A3A676575586044A3E71 /* Avatars.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Avatars.swift; sourceTree = "<group>"; };
 		1238E4067C47CA7EDD28A501 /* WalletsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletsView.swift; sourceTree = "<group>"; };
 		1B26015C07FB8923BD2E88CF /* gmc_optimism.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmc_optimism.png; sourceTree = "<group>"; };
@@ -260,6 +262,7 @@
 				8553E2E527B66CAD40C0C0BC /* GMHeader.swift */,
 				AB0E5BBD0AE09FB2E61CE079 /* GMKit.swift */,
 				5B4DBA4653E741D5711C1E1D /* GMLab.swift */,
+				1071150A4F4644967C94E447 /* GMLab2.swift */,
 				83D689604B55D0F1455769A7 /* GMLogos.swift */,
 				020FA04C92E44120E6C44132 /* GMMarks.swift */,
 				32196BB095415FF6E1A0723E /* GMMetrics.swift */,
@@ -470,6 +473,7 @@
 				204F652164C51285BD8B7D62 /* GMHeader.swift in Sources */,
 				FC8D6B1FED267A25533EC1A5 /* GMKit.swift in Sources */,
 				22B1AC56BD2C96AB0CB1D431 /* GMLab.swift in Sources */,
+				01D07766993E6D0A43B838E7 /* GMLab2.swift in Sources */,
 				62E160275C3B35EC90F588FB /* GMLogos.swift in Sources */,
 				F531F2D227F4CB31BE327AD5 /* GMMarks.swift in Sources */,
 				33BB0EDD84202B933D5694DC /* GMMetrics.swift in Sources */,

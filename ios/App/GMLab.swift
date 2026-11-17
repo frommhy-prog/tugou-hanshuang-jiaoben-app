@@ -4,7 +4,7 @@ import SwiftUI
 // 数据：GeckoTerminal 最深池子的最近 300 笔成交（含代币数量、区块号、发起地址）。
 // 所有结论都带数字依据；样本不足的项直接不出，不编数。
 
-struct GLTrade {
+struct GLTrade: Codable {
     let t: Double
     let buy: Bool
     let usd: Double
@@ -420,6 +420,7 @@ final class GMLabStore: ObservableObject {
     static let shared = GMLabStore()
     @Published var trades: [GLTrade] = []
     @Published var rep = GLReport()
+    @Published var rep2 = GL2Report()
     @Published var note: String?
     @Published var loading = false
     private var key = ""
@@ -439,6 +440,16 @@ final class GMLabStore: ObservableObject {
         return b.date(from: s)?.timeIntervalSince1970
     }
 
+    func clearArchive(_ vm: UTokenVM) {
+        let k: String = vm.chain.rawValue + ":" + vm.address.lowercased() + ":" + (vm.main?.pairAddress ?? "")
+        GLArchive.clear(k)
+        trades = []
+        rep = GLReport()
+        rep2 = GL2Report()
+        key = ""
+        Task { await load(vm, force: true) }
+    }
+
     func rebuild(_ vm: UTokenVM) {
         var hd: [String: Double] = [:]
         for h in vm.holders {
@@ -446,6 +457,18 @@ final class GMLabStore: ObservableObject {
         }
         for w in GMFreeStore.shared.wallets where !w.isContract { hd[w.addr.lowercased()] = w.pct }
         rep = GLCalc.build(trades, curPx: vm.main?.price, holders: hd)
+        var hl: [GL2Holder] = []
+        for h in vm.holders where h.kind == "wallet" {
+            if let p = h.pct { hl.append(GL2Holder(addr: h.owner, pct: p, rank: h.rank)) }
+        }
+        if hl.isEmpty {
+            var i: Int = 0
+            for w in GMFreeStore.shared.wallets where !w.isContract {
+                i += 1
+                hl.append(GL2Holder(addr: w.addr, pct: w.pct, rank: i))
+            }
+        }
+        rep2 = GL2Calc.build(trades, curPx: vm.main?.price, holders: hl)
     }
 
     func load(_ vm: UTokenVM, force: Bool = false) async {
@@ -465,6 +488,14 @@ final class GMLabStore: ObservableObject {
             note = nil
         }
         key = k
+        if trades.isEmpty {
+            let pre: [GLTrade] = GLArchive.load(k).sorted { $0.t > $1.t }
+            rep2 = GL2Report()
+            if !pre.isEmpty {
+                trades = pre
+                rebuild(vm)
+            }
+        }
         tAt = Date()
         loading = true
         defer { loading = false }
@@ -505,7 +536,7 @@ final class GMLabStore: ObservableObject {
                 note = "池子暂时没有成交记录"
                 return
             }
-            trades = out.sorted { $0.t > $1.t }
+            trades = GLArchive.merge(k, out)
             note = nil
             rebuild(vm)
         } catch {
