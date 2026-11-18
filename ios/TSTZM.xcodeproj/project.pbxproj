@@ -35,6 +35,7 @@
 		1466808F8F445B8E3D23CE49 /* gmc_solana.png in Resources */ = {isa = PBXBuildFile; fileRef = 3CDE2D7B1A40FDA1A45C27EE /* gmc_solana.png */; };
 		14D7BF2EBEC9E1E82A5F0630 /* LifeSocial.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1B273DC40BF3C1A28998310 /* LifeSocial.swift */; };
 		16968EEB3A06597C1674B4F2 /* gmc_metis.png in Resources */ = {isa = PBXBuildFile; fileRef = 8295B88C020A1A5CC7741F2E /* gmc_metis.png */; };
+		1727C7C699BB3C09CEDD65AC /* GMScout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C819E30294720CDEAF2E5EE /* GMScout.swift */; };
 		18D98081E3B67471D13F483D /* gmc_stellar.png in Resources */ = {isa = PBXBuildFile; fileRef = C6E88895573D9969336328C2 /* gmc_stellar.png */; };
 		197A0EB1B050173C86BF58F6 /* gmd_camelot.png in Resources */ = {isa = PBXBuildFile; fileRef = 0F6CFC6898344A7EA709C058 /* gmd_camelot.png */; };
 		1B25D877E412A3C1E61738A3 /* gmc_aptos.png in Resources */ = {isa = PBXBuildFile; fileRef = D5CB8A2D5FCC4C8CD91C3C05 /* gmc_aptos.png */; };
@@ -68,6 +69,7 @@
 		33289D0649A6644044419B62 /* GMPx.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B7108EEF0FD3673A3957D8C /* GMPx.swift */; };
 		33565189588FD376756AAAC6 /* GMFavorites.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30D6E1EB84CD6EB455797423 /* GMFavorites.swift */; };
 		33BB0EDD84202B933D5694DC /* GMMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32196BB095415FF6E1A0723E /* GMMetrics.swift */; };
+		35A5026C59130E4B864CB5D6 /* GMUsage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 371EFF10E0A2FBB98985FC42 /* GMUsage.swift */; };
 		36B885BB37047BDBF22815E6 /* LiveData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 297D253CA7722FFA9438C607 /* LiveData.swift */; };
 		3AD4663AB2EE02826DE0940C /* gmd_biswap.png in Resources */ = {isa = PBXBuildFile; fileRef = B93F3F5F09332D4C4C927D32 /* gmd_biswap.png */; };
 		3B9524882CEB35F2E8BCEFC0 /* lwc.js in Resources */ = {isa = PBXBuildFile; fileRef = D8A594C95EF6EDFBF18C0067 /* lwc.js */; };
@@ -273,6 +275,7 @@
 		31F236579701A5CB78022B88 /* gmb_goplus.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmb_goplus.png; sourceTree = "<group>"; };
 		32196BB095415FF6E1A0723E /* GMMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GMMetrics.swift; sourceTree = "<group>"; };
 		34FFA054BE0F48B06E2F3C74 /* gmb_dexscreener.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmb_dexscreener.png; sourceTree = "<group>"; };
+		371EFF10E0A2FBB98985FC42 /* GMUsage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GMUsage.swift; sourceTree = "<group>"; };
 		378F41233DFC298525BFCD04 /* gmb_kraken.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmb_kraken.png; sourceTree = "<group>"; };
 		38F3251C7E14756406EC1DBA /* GMBrand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GMBrand.swift; sourceTree = "<group>"; };
 		3ADD5C266E165C6DB8ED9B8F /* KlineExtras.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KlineExtras.swift; sourceTree = "<group>"; };
@@ -302,6 +305,7 @@
 		5B7108EEF0FD3673A3957D8C /* GMPx.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GMPx.swift; sourceTree = "<group>"; };
 		5C2E3CD599853DC1F2E17037 /* gmc_blast.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmc_blast.png; sourceTree = "<group>"; };
 		5C6D8A4EC3121053F0A75432 /* gmb_trezor.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmb_trezor.png; sourceTree = "<group>"; };
+		5C819E30294720CDEAF2E5EE /* GMScout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GMScout.swift; sourceTree = "<group>"; };
 		5CD3F7B2F8BFE53078DB1157 /* TokenSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenSnapshot.swift; sourceTree = "<group>"; };
 		5D40EE1C47297AFBEF15AD6F /* ShareKit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareKit.swift; sourceTree = "<group>"; };
 		5D76E75436A979E7708A3F5B /* Lossy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Lossy.swift; sourceTree = "<group>"; };
@@ -610,7 +614,9 @@
 				32196BB095415FF6E1A0723E /* GMMetrics.swift */,
 				7CD1C11D2C5916216BDAADAC /* GMMore.swift */,
 				5B7108EEF0FD3673A3957D8C /* GMPx.swift */,
+				5C819E30294720CDEAF2E5EE /* GMScout.swift */,
 				BCA662C694111DF61E90A915 /* GMTabs.swift */,
+				371EFF10E0A2FBB98985FC42 /* GMUsage.swift */,
 				8B609522396236B31190CE21 /* HolderFallback.swift */,
 				EB170C801BC58EBC3D10CFCB /* InstallInfo.swift */,
 				3ADD5C266E165C6DB8ED9B8F /* KlineExtras.swift */,
@@ -936,7 +942,9 @@
 				33BB0EDD84202B933D5694DC /* GMMetrics.swift in Sources */,
 				43A85163870988C312FC223F /* GMMore.swift in Sources */,
 				33289D0649A6644044419B62 /* GMPx.swift in Sources */,
+				1727C7C699BB3C09CEDD65AC /* GMScout.swift in Sources */,
 				BEDF87CDB4592FFC6FFE13FD /* GMTabs.swift in Sources */,
+				35A5026C59130E4B864CB5D6 /* GMUsage.swift in Sources */,
 				ED0616353878E86D18D240C5 /* GateNet.swift in Sources */,
 				CB83D289316CC74D6920B57E /* HolderFallback.swift in Sources */,
 				121FCD5DF6BCE7067553C6FB /* InstallInfo.swift in Sources */,

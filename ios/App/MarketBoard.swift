@@ -153,6 +153,8 @@ struct DashboardView: View {
                     .pickerStyle(.segmented)
                     if vm.seg > 0 { chainBar }
                     listCard
+                    GMScoutLink()
+                    GMUsageLink()
                     InstallInfoCard()
                     diagLink
                 }
@@ -160,6 +162,7 @@ struct DashboardView: View {
             }
             .background(Color.page)
             .navigationTitle("盯盘看板")
+            .onReceive(NotificationCenter.default.publisher(for: .gmCloseDash)) { _ in dismiss() }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { Button("完成") { dismiss() } }

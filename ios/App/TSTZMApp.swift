@@ -92,6 +92,7 @@ struct RootView: View {
         }
         .task { await FX.refresh() }
         .task { WatchMonitor.shared.start() }
+        .task { GMScout.shared.start() }
     }
 }
 

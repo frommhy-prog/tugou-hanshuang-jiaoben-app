@@ -281,6 +281,7 @@ enum Net {
     // 在独立任务里发请求：切页、下拉刷新、界面重绘导致上层任务被取消时，请求不会被中途掐断
     //（否则会出现「网络失败：已取消」）。超时、断网等瞬时错误自动重试，最多 3 次。
     static var onLog: (@Sendable (String, String, Int, Int, String?) -> Void)?
+    static var onCount: (@Sendable (String, String, Int) -> Void)? // 请求次数统计（App 端在 GateNet.install 里挂接）
     static var blocked: Set<String> = []
 
     static func fetch(_ req: URLRequest) async throws -> (Data, URLResponse) {
@@ -295,6 +296,7 @@ enum Net {
             let r = try await fetchRaw(req)
             let code = (r.1 as? HTTPURLResponse)?.statusCode ?? 0
             onLog?(host, path, code, Int(Date().timeIntervalSince(t0) * 1000), nil)
+            onCount?(host, path, code)
             return r
         } catch {
             onLog?(host, path, 0, Int(Date().timeIntervalSince(t0) * 1000), message(error))

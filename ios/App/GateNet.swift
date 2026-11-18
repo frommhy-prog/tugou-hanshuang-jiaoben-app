@@ -20,16 +20,17 @@ enum GateRules {
             return GateRule(interval: 2.2, ttl: 30, stale: 1800)
         }
         if h == "api.dexscreener.com" {
-            if p.contains("/token-profiles") || p.contains("/token-boosts") || p.contains("/community-takeovers") || p.contains("/ads") || p.contains("/orders") {
+            if p.contains("/token-profiles") || p.contains("/token-boosts") || p.contains("/community-takeovers") || p.contains("/ads") || p.contains("/orders") || p.contains("/metas") {
                 return GateRule(interval: 1.1, ttl: 30, stale: 600)
             }
             if p.contains("/dex/pairs/") { return GateRule(interval: 0.22, ttl: 2.5, stale: 120) }
             return GateRule(interval: 0.22, ttl: 6, stale: 300)
         }
+        if h == "api.coingecko.com" { return GateRule(interval: 4.0, ttl: 60, stale: 3600) }
         if h == "api.gopluslabs.io" { return GateRule(interval: 1.2, ttl: 180, stale: 7200) }
         if h == "api.rugcheck.xyz" { return GateRule(interval: 1.0, ttl: 120, stale: 3600) }
         if h == "api.honeypot.is" { return GateRule(interval: 1.0, ttl: 120, stale: 3600) }
-        if h == "lite-api.jup.ag" || h == "api.jup.ag" || h == "price.jup.ag" { return GateRule(interval: 0.6, ttl: 15, stale: 300) }
+        if h == "lite-api.jup.ag" || h == "api.jup.ag" || h == "price.jup.ag" { return GateRule(interval: 2.1, ttl: 15, stale: 300) }
         if h.hasSuffix("blockscout.com") { return GateRule(interval: 0.5, ttl: 30, stale: 600) }
         return nil
     }
@@ -112,6 +113,11 @@ final class GateCore: @unchecked Sendable {
         return myId
     }
 
+    // 没有任何排队 / 在途的网关请求 = 空闲（今日雷达只在空闲时自动扫描）
+    func idle() -> Bool {
+        return q.sync { waiters.isEmpty }
+    }
+
     func cancel(key: String, id: Int) {
         q.async {
             guard var ws = self.waiters[key] else { return }
@@ -169,6 +175,7 @@ final class GateCore: @unchecked Sendable {
             giveUp(job, nil, now)
             return
         }
+        GMUsage.shared.hit(GMUsage.provider(host: host) ?? host) // 真实发出的请求才计数（命中缓存 / 合并的重复请求不算）
         let task = session.dataTask(with: job.req) { [weak self] data, resp, err in
             guard let self = self else { return }
             self.q.async { self.finish(job, host: host, data: data, resp: resp, err: err) }
@@ -314,5 +321,10 @@ final class GateProtocol: URLProtocol {
 enum GateNet {
     static func install() {
         URLProtocol.registerClass(GateProtocol.self)
+        // 非网关域名（GMGN / OKX / 你的 Worker）的请求次数在 Net.fetch 层统计；网关域名在网关里按真实发出的请求统计
+        Net.onCount = { host, _, _ in
+            if GateRules.rule(host: host, path: "/") != nil { return }
+            if let p = GMUsage.provider(host: host) { GMUsage.shared.hit(p) }
+        }
     }
 }

@@ -56,6 +56,7 @@ struct SettingsView: View {
                     if let p = pingText { Text(p).font(.footnote).foregroundStyle(.secondary) }
                 }
                 Section("数据与密钥") {
+                    NavigationLink { GMUsageView() } label: { Label("API 用量控制台（今日剩余 / 本月已用）", systemImage: "gauge.with.dots.needle.67percent") }
                     NavigationLink("API 密钥与额度") { KeysView() }
                     NavigationLink { ConnectorsView() } label: { Label("MCP 连接器", systemImage: "puzzlepiece.extension") }
                 }

@@ -1,46 +1,6 @@
 LOGOS:
-ve <- https://dd.dexscreener.com/ds-data/chains/injective.png
-OK   gmc_ink <- https://dd.dexscreener.com/ds-data/chains/ink.png
-OK   gmc_kava <- https://dd.dexscreener.com/ds-data/chains/kava.png
-OK   gmc_linea <- https://dd.dexscreener.com/ds-data/chains/linea.png
-OK   gmc_manta <- https://dd.dexscreener.com/ds-data/chains/manta.png
-OK   gmc_mantle <- https://dd.dexscreener.com/ds-data/chains/mantle.png
-OK   gmc_metis <- https://dd.dexscreener.com/ds-data/chains/metis.png
-OK   gmc_monad <- https://dd.dexscreener.com/ds-data/chains/monad.png
-OK   gmc_moonbeam <- https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/moonbeam/info/logo.png
-OK   gmc_near <- https://dd.dexscreener.com/ds-data/chains/near.png
-OK   gmc_opbnb <- https://dd.dexscreener.com/ds-data/chains/opbnb.png
-OK   gmc_osmosis <- https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/osmosis/info/logo.png
-OK   gmc_plasma <- https://dd.dexscreener.com/ds-data/chains/plasma.png
-OK   gmc_pulsechain <- https://dd.dexscreener.com/ds-data/chains/pulsechain.png
-OK   gmc_ronin <- https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ronin/info/logo.png
-OK   gmc_scroll <- https://dd.dexscreener.com/ds-data/chains/scroll.png
-OK   gmc_sei <- https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/sei/info/logo.png
-OK   gmc_sonic <- https://dd.dexscreener.com/ds-data/chains/sonic.png
-OK   gmc_stellar <- https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&url=https://stellar.org&size=128
-OK   gmc_sui <- https://dd.dexscreener.com/ds-data/chains/sui.png
-OK   gmc_ton <- https://dd.dexscreener.com/ds-data/chains/ton.png
-OK   gmc_tron <- https://dd.dexscreener.com/ds-data/chains/tron.png
-OK   gmc_unichain <- https://dd.dexscreener.com/ds-data/chains/unichain.png
-OK   gmc_worldchain <- https://dd.dexscreener.com/ds-data/chains/worldchain.png
-OK   gmc_zksync <- https://dd.dexscreener.com/ds-data/chains/zksync.png
-OK   gmd_aerodrome <- https://dd.dexscreener.com/ds-data/dexes/aerodrome.png
-OK   gmd_apeswap <- https://dd.dexscreener.com/ds-data/dexes/apeswap.png
-OK   gmd_biswap <- https://dd.dexscreener.com/ds-data/dexes/biswap.png
-OK   gmd_camelot <- https://dd.dexscreener.com/ds-data/dexes/camelot.png
-OK   gmd_fluxbeam <- https://dd.dexscreener.com/ds-data/dexes/fluxbeam.png
-OK   gmd_meteora <- https://dd.dexscreener.com/ds-data/dexes/meteora.png
-OK   gmd_orca <- https://dd.dexscreener.com/ds-data/dexes/orca.png
-OK   gmd_pancakeswap <- https://dd.dexscreener.com/ds-data/dexes/pancakeswap.png
-OK   gmd_pumpswap <- https://dd.dexscreener.com/ds-data/dexes/pumpswap.png
-OK   gmd_raydium <- https://dd.dexscreener.com/ds-data/dexes/raydium.png
-OK   gmd_sushiswap <- https://dd.dexscreener.com/ds-data/dexes/sushiswap.png
-OK   gmd_thena <- https://dd.dexscreener.com/ds-data/dexes/thena.png
-OK   gmd_uniswap <- https://dd.dexscreener.com/ds-data/dexes/uniswap.png
-OK   gmd_velodrome <- https://dd.dexscreener.com/ds-data/dexes/velodrome.png
-OK   gml_heaven <- https://dd.dexscreener.com/ds-data/dexes/heaven.png
-OK   gml_launchlab <- https://dd.dexscreener.com/ds-data/dexes/launchlab.png
-OK   gml_pumpswap <- https://dd.dexscreener.com/ds-data/dexes/pumpswap.png
+PLACEHOLDERS 1
+SUMMARY ok=0 have=127 miss=18 files=127
 MISS gmc_bob
 MISS gmc_coredao
 MISS gmc_flare
@@ -60,14 +20,14 @@ MISS gml_daos
 MISS gml_jupstudio
 MISS gml_zora
 
-CN_REWRITE 14 ios/App/Engine.swift:5 ios/App/GMLab2.swift:3 ios/App/GMMetrics.swift:2 ios/Shared/CNUnit.swift:1 ios/Shared/Core.swift:3
+CN_REWRITE 0 
 FMT_SCAN_LEFT 8
   ios/App/Avatars.swift:12: case .bsc: return "B"
   ios/App/Avatars.swift:18: case .okc: return "K"
   ios/App/DeepAnalysis.swift:386: Tier(name: "中单 $100–1K", lo: 100, hi: 1000),
   ios/App/DeepAnalysis.swift:387: Tier(name: "大单 $1K–10K", lo: 1000, hi: 10000),
   ios/App/DeepAnalysis.swift:388: Tier(name: "巨单 ≥ $10K", lo: 10000, hi: Double.greatestFiniteMagnitude),
-  ios/App/GMMarks.swift:190: disc(Color(red: 1.0, green: 0.55, blue: 0.1), Color(red: 1.0, green: 0.8, blue: 0.2), "B", Color.white)
-  ios/App/GMMarks.swift:205: disc(Color(red: 0.2, green: 0.85, blue: 0.4), Color(red: 0.05, green: 0.55, blue: 0.25), "B", Color.white)
+  ios/App/GMMarks.swift:203: disc(Color(red: 1.0, green: 0.55, blue: 0.1), Color(red: 1.0, green: 0.8, blue: 0.2), "B", Color.white)
+  ios/App/GMMarks.swift:218: disc(Color(red: 0.2, green: 0.85, blue: 0.4), Color(red: 0.05, green: 0.55, blue: 0.25), "B", Color.white)
   ios/App/Prefs.swift:231: f.correctionLevel = "M"
-PATCH_OK g24_cn_Engine g24_h1 g24_h2 g24_h3 g24_h4 g24_h5 g24_cn_GMLab2 g24_k1 g24_k2 g24_k3 g24_k4 g24_k5 g24_k6 g24_cn_GMMetrics g24_m1 g24_m2 g24_m3 g24_m4 g24_m5 g24_m6 g24_a1 g24_cn_CNUnit g24_cn_Core
+PATCH_OK g25_g1 g25_g2 g25_g3 g25_g4 g25_g5 g25_g6 g25_b1 g25_b2 g25_s1 g25_a1 g25_c1 g25_c2
