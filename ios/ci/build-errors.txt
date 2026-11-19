@@ -1,1 +1,4 @@
+/Users/runner/work/tugou-hanshuang-jiaoben-app/tugou-hanshuang-jiaoben-app/ios/App/GMFree.swift:429:29: error: ambiguous use of 'init(chain:addr:)'
+/Users/runner/work/tugou-hanshuang-jiaoben-app/tugou-hanshuang-jiaoben-app/ios/App/GMGNApi.swift:233:8: error: invalid redeclaration of 'GMWalletMenuContent'
 /Users/runner/work/tugou-hanshuang-jiaoben-app/tugou-hanshuang-jiaoben-app/ios/App/GMScout.swift:627:21: error: the compiler is unable to type-check this expression in reasonable time; try breaking up the expression into distinct sub-expressions
+/Users/runner/work/tugou-hanshuang-jiaoben-app/tugou-hanshuang-jiaoben-app/ios/App/GXSettings.swift:5:8: error: invalid redeclaration of 'SettingsView'

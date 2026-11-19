@@ -10,6 +10,7 @@
 		009813F2B525737169449BF8 /* gmc_harmony.png in Resources */ = {isa = PBXBuildFile; fileRef = AFBC0E4137754AA4F1382824 /* gmc_harmony.png */; };
 		01C157203477AC7B1D1D0491 /* gmb_trust.png in Resources */ = {isa = PBXBuildFile; fileRef = B5D153219D22873E61C868BF /* gmb_trust.png */; };
 		01D07766993E6D0A43B838E7 /* GMLab2.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1071150A4F4644967C94E447 /* GMLab2.swift */; };
+		0267286FA59F45C5521D945E /* GXBadges.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03397E234BD14CA1D8BDE6D5 /* GXBadges.swift */; };
 		02D0DF399B45DBA1B5BA9081 /* gmd_pancakeswap.png in Resources */ = {isa = PBXBuildFile; fileRef = E6F6ED7B49F7020E803CEA09 /* gmd_pancakeswap.png */; };
 		049C4424D84F2E08A8981729 /* gmd_aerodrome.png in Resources */ = {isa = PBXBuildFile; fileRef = 1333B2CC1A858D2E5111C0A3 /* gmd_aerodrome.png */; };
 		04DA547274DDA23D78C741E9 /* gmc_avalanche.png in Resources */ = {isa = PBXBuildFile; fileRef = 59A90DFD2BADC6B9D9A56CD7 /* gmc_avalanche.png */; };
@@ -71,6 +72,7 @@
 		33BB0EDD84202B933D5694DC /* GMMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32196BB095415FF6E1A0723E /* GMMetrics.swift */; };
 		35A5026C59130E4B864CB5D6 /* GMUsage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 371EFF10E0A2FBB98985FC42 /* GMUsage.swift */; };
 		36B885BB37047BDBF22815E6 /* LiveData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 297D253CA7722FFA9438C607 /* LiveData.swift */; };
+		36E5D499B4687C7CC5A0843D /* GXShare.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4B47A4822C8C9910132E339 /* GXShare.swift */; };
 		3AD4663AB2EE02826DE0940C /* gmd_biswap.png in Resources */ = {isa = PBXBuildFile; fileRef = B93F3F5F09332D4C4C927D32 /* gmd_biswap.png */; };
 		3B9524882CEB35F2E8BCEFC0 /* lwc.js in Resources */ = {isa = PBXBuildFile; fileRef = D8A594C95EF6EDFBF18C0067 /* lwc.js */; };
 		3CB2F39F83DE5926CC1E8476 /* gmb_kraken.png in Resources */ = {isa = PBXBuildFile; fileRef = 378F41233DFC298525BFCD04 /* gmb_kraken.png */; };
@@ -86,6 +88,7 @@
 		447331B73B04C4305E1A49E9 /* gmc_sui.png in Resources */ = {isa = PBXBuildFile; fileRef = 75B4D4E7EA935B57731B183A /* gmc_sui.png */; };
 		44BDE24088A9E3DAE74930FC /* EvmToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE7637A10277EAFDC835A549 /* EvmToken.swift */; };
 		4583A13EC49BA57EEC2237EB /* gmb_bonkbot.png in Resources */ = {isa = PBXBuildFile; fileRef = 0BF1F3647860808E3ED7A295 /* gmb_bonkbot.png */; };
+		47968092AE7BDF0E80BE7396 /* GXSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD95C3FFB546552D61AA88A5 /* GXSettings.swift */; };
 		4860DD9793017549A7570BB3 /* NarrativeEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73CFCC2315F9C5FC44446522 /* NarrativeEngine.swift */; };
 		487DE13F75AF4CC4BE0DE4C2 /* AlertsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B7F096839FC46B047B6C59E /* AlertsView.swift */; };
 		4AA2CB0AFC34FA27E34AD55D /* gmc_pulsechain.png in Resources */ = {isa = PBXBuildFile; fileRef = 625C6A9503449EC25BD9EE2E /* gmc_pulsechain.png */; };
@@ -100,11 +103,14 @@
 		57EC9D91C4EB90B12202FD5A /* gmb_gate.png in Resources */ = {isa = PBXBuildFile; fileRef = AA51D119B77EC735F9B42F0B /* gmb_gate.png */; };
 		5A544E0B1A4E989058D3C173 /* gmc_monad.png in Resources */ = {isa = PBXBuildFile; fileRef = 444B4F35F8C7255E617D4B17 /* gmc_monad.png */; };
 		5ABBC68FE950B8D026080703 /* gmc_opbnb.png in Resources */ = {isa = PBXBuildFile; fileRef = 20DF2A7C005009D5C12A921F /* gmc_opbnb.png */; };
+		5E800D9DCCB37FD935E8BA43 /* GXData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38AC309DC012B344738B60C3 /* GXData.swift */; };
 		62E160275C3B35EC90F588FB /* GMLogos.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83D689604B55D0F1455769A7 /* GMLogos.swift */; };
 		639AD5F5B1052DF5C9FBC897 /* gmb_safepal.png in Resources */ = {isa = PBXBuildFile; fileRef = 31758588549A82786553C516 /* gmb_safepal.png */; };
 		69F46EE989CF1C563F28313B /* Narrative.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D643379E866F39F21887438 /* Narrative.swift */; };
+		6B182B49229E7594A1E7B502 /* GXWallet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A753253238D1EFCDD72209E8 /* GXWallet.swift */; };
 		6C3F4D1C3C0414BBC025E763 /* CNUnit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 112596944A623B5118B64F7C /* CNUnit.swift */; };
 		6D1A0FC06668AB01955E26DC /* gmc_tron.png in Resources */ = {isa = PBXBuildFile; fileRef = 7201D46BCBA7C23AFC8F95B1 /* gmc_tron.png */; };
+		71ACEFB8A56B13FEA2D8A4B8 /* GXHolders.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CD95A27D642518B2940D88D /* GXHolders.swift */; };
 		71DF3DEEBD7A2EF147EA7F1F /* gmb_ledger.png in Resources */ = {isa = PBXBuildFile; fileRef = A3C38D1F3E5CE6DFF165370B /* gmb_ledger.png */; };
 		725909C0DDDE5C505819596A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = ED3DE87E29C3A948998C5EFE /* Assets.xcassets */; };
 		73819CB32EEE1CEAC3C2829A /* gml_heaven.png in Resources */ = {isa = PBXBuildFile; fileRef = A9F3A8BF354294F491B77B89 /* gml_heaven.png */; };
@@ -123,6 +129,8 @@
 		82C61329787F09C8624AF563 /* gmc_bsc.png in Resources */ = {isa = PBXBuildFile; fileRef = B621E5B198437609C7A6EDB0 /* gmc_bsc.png */; };
 		888BAE269F91061D19437371 /* gmc_plasma.png in Resources */ = {isa = PBXBuildFile; fileRef = 25820E78990F31A29E63416B /* gmc_plasma.png */; };
 		8CF5F57C5A07EEFBA83DC3B2 /* gmc_cardano.png in Resources */ = {isa = PBXBuildFile; fileRef = 7B299D7838425DB73F0F7D60 /* gmc_cardano.png */; };
+		8E74D30D07189FF60954FD49 /* GXClipboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2622BE0117EDB0E781136453 /* GXClipboard.swift */; };
+		8E9FB743731362D8C93416C9 /* GXTokenSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C6D5B45541B20067D488583 /* GXTokenSheet.swift */; };
 		9286AC10AA5251E6FB13833E /* gmb_bscscan.png in Resources */ = {isa = PBXBuildFile; fileRef = 3FDD2824B6D68EC3EF795A6D /* gmb_bscscan.png */; };
 		93266E944C65DEF7CE1FF743 /* Core.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F8DB1833F2D784C2C5EFAF3 /* Core.swift */; };
 		96887AD51009F1A7E3E1825E /* Favorites.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FADC9E6DFF520C0314AE2D /* Favorites.swift */; };
@@ -141,6 +149,7 @@
 		A69DBB315F5AB51153B04866 /* gmc_kava.png in Resources */ = {isa = PBXBuildFile; fileRef = A530ABE6C257FB85EEAC5B21 /* gmc_kava.png */; };
 		A785F2851A65BFAAF2CF4EBB /* gmb_bananagun.png in Resources */ = {isa = PBXBuildFile; fileRef = 42D914B8A4380948EF0B2F86 /* gmb_bananagun.png */; };
 		A7CB6EE8C7F3501432AC81A6 /* ShareKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D40EE1C47297AFBEF15AD6F /* ShareKit.swift */; };
+		A8CDCFAD11BE941AAEE2DBBA /* GXApps.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33641097D8DB36AA1DF1E0D0 /* GXApps.swift */; };
 		AAD894D208ED996EE676FFAD /* gmc_moonbeam.png in Resources */ = {isa = PBXBuildFile; fileRef = 6382F5A7C6E6E4E505A0096F /* gmc_moonbeam.png */; };
 		AC80C3C30268BEB70B6003AB /* gmb_bybit.png in Resources */ = {isa = PBXBuildFile; fileRef = 56DE2859DFA7B1642DB9B1DD /* gmb_bybit.png */; };
 		ACA59C68EDA15C8FDDB89F6C /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE73CF7AA13A5E168372E867 /* SettingsView.swift */; };
@@ -236,6 +245,7 @@
 		01247A761DF811FA18EEC166 /* WalletIntel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletIntel.swift; sourceTree = "<group>"; };
 		0129EF2BC2D4034B735079BD /* gmb_basescan.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmb_basescan.png; sourceTree = "<group>"; };
 		020FA04C92E44120E6C44132 /* GMMarks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GMMarks.swift; sourceTree = "<group>"; };
+		03397E234BD14CA1D8BDE6D5 /* GXBadges.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GXBadges.swift; sourceTree = "<group>"; };
 		03F81438FD074D9E2261D85B /* gmb_photon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmb_photon.png; sourceTree = "<group>"; };
 		065C2F32657A34A29DFDD760 /* gmb_okxwallet.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmb_okxwallet.png; sourceTree = "<group>"; };
 		073406E5B323C2EE9A7F72EA /* gmb_rabby.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmb_rabby.png; sourceTree = "<group>"; };
@@ -266,6 +276,7 @@
 		2401F2E60F741E05288CE4F3 /* gmc_worldchain.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmc_worldchain.png; sourceTree = "<group>"; };
 		256372FFEFB505A9789D76EC /* gmc_arbitrum.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmc_arbitrum.png; sourceTree = "<group>"; };
 		25820E78990F31A29E63416B /* gmc_plasma.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmc_plasma.png; sourceTree = "<group>"; };
+		2622BE0117EDB0E781136453 /* GXClipboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GXClipboard.swift; sourceTree = "<group>"; };
 		2890869849141BD7FEE5D263 /* gmc_hyperevm.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmc_hyperevm.png; sourceTree = "<group>"; };
 		297D253CA7722FFA9438C607 /* LiveData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveData.swift; sourceTree = "<group>"; };
 		2BFD9C0F8353AD8D9C21B711 /* AnalysisEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisEngine.swift; sourceTree = "<group>"; };
@@ -274,9 +285,11 @@
 		31758588549A82786553C516 /* gmb_safepal.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmb_safepal.png; sourceTree = "<group>"; };
 		31F236579701A5CB78022B88 /* gmb_goplus.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmb_goplus.png; sourceTree = "<group>"; };
 		32196BB095415FF6E1A0723E /* GMMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GMMetrics.swift; sourceTree = "<group>"; };
+		33641097D8DB36AA1DF1E0D0 /* GXApps.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GXApps.swift; sourceTree = "<group>"; };
 		34FFA054BE0F48B06E2F3C74 /* gmb_dexscreener.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmb_dexscreener.png; sourceTree = "<group>"; };
 		371EFF10E0A2FBB98985FC42 /* GMUsage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GMUsage.swift; sourceTree = "<group>"; };
 		378F41233DFC298525BFCD04 /* gmb_kraken.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmb_kraken.png; sourceTree = "<group>"; };
+		38AC309DC012B344738B60C3 /* GXData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GXData.swift; sourceTree = "<group>"; };
 		38F3251C7E14756406EC1DBA /* GMBrand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GMBrand.swift; sourceTree = "<group>"; };
 		3ADD5C266E165C6DB8ED9B8F /* KlineExtras.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KlineExtras.swift; sourceTree = "<group>"; };
 		3BA06F5732ACE5C3814A86E9 /* gmb_youtube.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmb_youtube.png; sourceTree = "<group>"; };
@@ -318,6 +331,7 @@
 		673CC854C3F5AED8B597D392 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 		6C607B8AF9C14501FAD6CA44 /* Prefs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Prefs.swift; sourceTree = "<group>"; };
 		6C6BFBD0D5E4827465265700 /* gmc_hedera.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmc_hedera.png; sourceTree = "<group>"; };
+		6C6D5B45541B20067D488583 /* GXTokenSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GXTokenSheet.swift; sourceTree = "<group>"; };
 		7201D46BCBA7C23AFC8F95B1 /* gmc_tron.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmc_tron.png; sourceTree = "<group>"; };
 		72BB888BB8FE9BBC2D8CEF64 /* AIChain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIChain.swift; sourceTree = "<group>"; };
 		730245BD97E7AE5900609CDF /* gmb_upbit.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmb_upbit.png; sourceTree = "<group>"; };
@@ -346,12 +360,14 @@
 		964E2740DF3EEED4DAB66026 /* gmc_ethereum.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmc_ethereum.png; sourceTree = "<group>"; };
 		993CB96F3659514DC4544090 /* gmb_etherscan.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmb_etherscan.png; sourceTree = "<group>"; };
 		9C95F0B945D8429F12CB463F /* gmc_mantle.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmc_mantle.png; sourceTree = "<group>"; };
+		9CD95A27D642518B2940D88D /* GXHolders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GXHolders.swift; sourceTree = "<group>"; };
 		9D18E0A62134484E930D7156 /* gmb_x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmb_x.png; sourceTree = "<group>"; };
 		9D294844D3A702F3E3CC5550 /* UnifiedToken.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedToken.swift; sourceTree = "<group>"; };
 		9F9C22C1AD55735BA4544E59 /* gmb_gecko.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmb_gecko.png; sourceTree = "<group>"; };
 		9FA3B9C7812C993701A27982 /* gmb_phantom.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmb_phantom.png; sourceTree = "<group>"; };
 		A3C38D1F3E5CE6DFF165370B /* gmb_ledger.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmb_ledger.png; sourceTree = "<group>"; };
 		A530ABE6C257FB85EEAC5B21 /* gmc_kava.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmc_kava.png; sourceTree = "<group>"; };
+		A753253238D1EFCDD72209E8 /* GXWallet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GXWallet.swift; sourceTree = "<group>"; };
 		A846E14FCEA19326341094DD /* gmc_gnosis.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmc_gnosis.png; sourceTree = "<group>"; };
 		A905647DB2236E5227FE9C5D /* gmc_osmosis.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmc_osmosis.png; sourceTree = "<group>"; };
 		A9F0BD6C5861DF726DBF0E18 /* gmd_sushiswap.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmd_sushiswap.png; sourceTree = "<group>"; };
@@ -361,6 +377,7 @@
 		AAA29AC4AFA1A8D88D6A5C8F /* gml_clanker.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gml_clanker.png; sourceTree = "<group>"; };
 		AADC0DADC1BA55C7432ECDE6 /* gmb_debank.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmb_debank.png; sourceTree = "<group>"; };
 		AB0E5BBD0AE09FB2E61CE079 /* GMKit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GMKit.swift; sourceTree = "<group>"; };
+		AD95C3FFB546552D61AA88A5 /* GXSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GXSettings.swift; sourceTree = "<group>"; };
 		AF483F2182C818D05032DCCB /* GMGNApi.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GMGNApi.swift; sourceTree = "<group>"; };
 		AFBC0E4137754AA4F1382824 /* gmc_harmony.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmc_harmony.png; sourceTree = "<group>"; };
 		B004E904A0335CB3599577FF /* gmd_pumpswap.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmd_pumpswap.png; sourceTree = "<group>"; };
@@ -368,6 +385,7 @@
 		B200A6A130BB1EC37332FAAD /* gmb_rugcheck.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmb_rugcheck.png; sourceTree = "<group>"; };
 		B320CF6DD5395173B9260FE4 /* gmc_ink.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmc_ink.png; sourceTree = "<group>"; };
 		B4614D3FD4A7584DABE91791 /* gml_flap.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gml_flap.png; sourceTree = "<group>"; };
+		B4B47A4822C8C9910132E339 /* GXShare.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GXShare.swift; sourceTree = "<group>"; };
 		B5157A34444D3CBAA16F1DC8 /* TokenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenView.swift; sourceTree = "<group>"; };
 		B52B86FED019EB02D2546D63 /* gmb_backpack.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmb_backpack.png; sourceTree = "<group>"; };
 		B5D153219D22873E61C868BF /* gmb_trust.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmb_trust.png; sourceTree = "<group>"; };
@@ -617,6 +635,15 @@
 				5C819E30294720CDEAF2E5EE /* GMScout.swift */,
 				BCA662C694111DF61E90A915 /* GMTabs.swift */,
 				371EFF10E0A2FBB98985FC42 /* GMUsage.swift */,
+				33641097D8DB36AA1DF1E0D0 /* GXApps.swift */,
+				03397E234BD14CA1D8BDE6D5 /* GXBadges.swift */,
+				2622BE0117EDB0E781136453 /* GXClipboard.swift */,
+				38AC309DC012B344738B60C3 /* GXData.swift */,
+				9CD95A27D642518B2940D88D /* GXHolders.swift */,
+				AD95C3FFB546552D61AA88A5 /* GXSettings.swift */,
+				B4B47A4822C8C9910132E339 /* GXShare.swift */,
+				6C6D5B45541B20067D488583 /* GXTokenSheet.swift */,
+				A753253238D1EFCDD72209E8 /* GXWallet.swift */,
 				8B609522396236B31190CE21 /* HolderFallback.swift */,
 				EB170C801BC58EBC3D10CFCB /* InstallInfo.swift */,
 				3ADD5C266E165C6DB8ED9B8F /* KlineExtras.swift */,
@@ -945,6 +972,15 @@
 				1727C7C699BB3C09CEDD65AC /* GMScout.swift in Sources */,
 				BEDF87CDB4592FFC6FFE13FD /* GMTabs.swift in Sources */,
 				35A5026C59130E4B864CB5D6 /* GMUsage.swift in Sources */,
+				A8CDCFAD11BE941AAEE2DBBA /* GXApps.swift in Sources */,
+				0267286FA59F45C5521D945E /* GXBadges.swift in Sources */,
+				8E74D30D07189FF60954FD49 /* GXClipboard.swift in Sources */,
+				5E800D9DCCB37FD935E8BA43 /* GXData.swift in Sources */,
+				71ACEFB8A56B13FEA2D8A4B8 /* GXHolders.swift in Sources */,
+				47968092AE7BDF0E80BE7396 /* GXSettings.swift in Sources */,
+				36E5D499B4687C7CC5A0843D /* GXShare.swift in Sources */,
+				8E9FB743731362D8C93416C9 /* GXTokenSheet.swift in Sources */,
+				6B182B49229E7594A1E7B502 /* GXWallet.swift in Sources */,
 				ED0616353878E86D18D240C5 /* GateNet.swift in Sources */,
 				CB83D289316CC74D6920B57E /* HolderFallback.swift in Sources */,
 				121FCD5DF6BCE7067553C6FB /* InstallInfo.swift in Sources */,

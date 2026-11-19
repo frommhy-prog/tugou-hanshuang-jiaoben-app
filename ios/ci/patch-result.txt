@@ -30,4 +30,4 @@ FMT_SCAN_LEFT 8
   ios/App/GMMarks.swift:203: disc(Color(red: 1.0, green: 0.55, blue: 0.1), Color(red: 1.0, green: 0.8, blue: 0.2), "B", Color.white)
   ios/App/GMMarks.swift:218: disc(Color(red: 0.2, green: 0.85, blue: 0.4), Color(red: 0.05, green: 0.55, blue: 0.25), "B", Color.white)
   ios/App/Prefs.swift:231: f.correctionLevel = "M"
-PATCH_OK g25_g1 g25_g2 g25_g3 g25_g4 g25_g5 g25_g6 g25_b1 g25_b2 g25_s1 g25_a1 g25_c1 g25_c2
+PATCH_OK (none new)
