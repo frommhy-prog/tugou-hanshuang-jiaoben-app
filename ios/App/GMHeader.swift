@@ -8,6 +8,7 @@ struct GMHeader: View {
     @AppStorage("kMcap", store: Cfg.defaults) private var mcapMode = false
     @State private var copied = false
     @State private var narr: NarrReport?
+    @State private var showTokenSheet = false
 
     private func col(_ v: Double?) -> Color {
         guard let v = v else { return .secondary }
@@ -108,6 +109,7 @@ struct GMHeader: View {
         let mk: String? = GMMarketKind.text(dex: m.dexId, pad: pad)
         return HStack(spacing: 6) {
             narrChip(m).layoutPriority(0)
+            GXBadgeRow(vm: vm, pair: m).fixedSize().layoutPriority(3)
             if let d = m.dexId, !d.isEmpty { GMDexChip(dex: d).fixedSize().layoutPriority(2) }
             if let p = pad { GMLaunchChip(pad: p, stage: mk).fixedSize().layoutPriority(1) }
             if pad == nil, let t = mk { chipText(t, t == "内盘" ? Color.orange : Color.green).fixedSize().layoutPriority(1) }
@@ -119,7 +121,10 @@ struct GMHeader: View {
         let quote: String = m.quoteToken?.symbol ?? ""
         let ls: [(String, URL)] = socials(m) + externals(m)
         return HStack(alignment: .center, spacing: 10) {
-            AvTokenLogo(chain: vm.chain, address: vm.address, symbol: m.baseToken?.symbol ?? vm.symbol, hint: m.info?.imageUrl, size: 44, dex: m.dexId)
+            Button { showTokenSheet = true } label: {
+                AvTokenLogo(chain: vm.chain, address: vm.address, symbol: m.baseToken?.symbol ?? vm.symbol, hint: m.info?.imageUrl, size: 44, dex: m.dexId)
+            }
+            .buttonStyle(.plain)
             VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(m.baseToken?.symbol ?? vm.symbol).font(.title3.bold()).lineLimit(1)
@@ -191,9 +196,7 @@ struct GMHeader: View {
                 ForEach(ss.indices, id: \.self) { i in
                     Link(destination: ss[i].1) { socialIcon(ss[i].0) }
                 }
-                ForEach(ex.indices, id: \.self) { i in
-                    Link(destination: ex[i].1) { extIcon(ex[i].0) }
-                }
+                GXAppIcons(chain: vm.chain, addr: vm.address, pair: m.pairAddress, size: 22)
             }
         }
     }
@@ -254,6 +257,7 @@ struct GMHeader: View {
         VStack(alignment: .leading, spacing: 8) {
             titleRow(m)
             contractRow(m)
+            GXNarrLine(vm: vm)
             headline(m, h24)
             GMMetricStrip(vm: vm)
             changeRow(m)
@@ -265,5 +269,7 @@ struct GMHeader: View {
             if let m = vm.main { content(m) }
         }
         .task(id: nKey) { await loadNarr() }
+        .task(id: nKey) { await GXInfoStore.shared.load(vm: vm) }
+        .sheet(isPresented: $showTokenSheet) { GXTokenSheet(vm: vm) }
     }
 }

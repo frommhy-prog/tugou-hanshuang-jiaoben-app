@@ -95,6 +95,20 @@ enum GXSrc {
         return (m.desc == nil && m.x == nil && m.tg == nil && m.web == nil && m.created == nil) ? nil : m
     }
 
+    // 币安 Web3 公共接口：Dev 持仓、聪明钱 / KOL / 专业用户持仓（不需要 Key）
+    static func binanceDynamic(_ chain: Chain, _ addr: String) async -> [String: Double] {
+        let ids: [Chain: String] = [.eth: "1", .bsc: "56", .base: "8453", .solana: "CT_501"]
+        guard let cid = ids[chain] else { return [:] }
+        let u: String = "https://web3.binance.com/bapi/defi/v4/public/wallet-direct/buw/wallet/market/token/dynamic/info?chainId=" + cid + "&contractAddress=" + addr
+        guard let o = await GXNet.json(u, headers: ["User-Agent": "binance-web3/1.1 (Skill)"]) as? [String: Any], let d = o["data"] as? [String: Any] else { return [:] }
+        let map: [(String, String)] = [("dev", "devHoldingPercent"), ("smartN", "smartMoneyHolders"), ("smartPct", "smartMoneyHoldingPercent"), ("kolN", "kolHolders"), ("kolPct", "kolHoldingPercent"), ("proN", "proHolders"), ("proPct", "proHoldingPercent"), ("kyc", "kycHolderCount")]
+        var out: [String: Double] = [:]
+        for (k, f) in map {
+            if let v = gmNum(d[f]) { out[k] = v }
+        }
+        return out
+    }
+
     // GeckoTerminal 代币资料
     static func geckoInfo(_ chain: Chain, _ addr: String) async -> GXMeta? {
         let u: String = "https://api.geckoterminal.com/api/v2/networks/" + chain.geckoId + "/tokens/" + addr + "/info"
@@ -197,6 +211,7 @@ final class GXInfoStore: ObservableObject {
     @Published var tgPosts: [String] = []
     @Published var website: String?
     @Published var created: Date?
+    @Published var bin: [String: Double] = [:]
     @Published var loading = false
     private var at = Date.distantPast
 
@@ -220,7 +235,7 @@ final class GXInfoStore: ObservableObject {
         if k != key {
             desc = ""; descZh = ""; descSrc = ""; summary = ""
             xHandle = nil; xProfile = nil; tweets = []
-            tgHandle = nil; tgPosts = []; website = nil; created = nil
+            tgHandle = nil; tgPosts = []; website = nil; created = nil; bin = [:]
         }
         key = k
         at = Date()
@@ -240,8 +255,10 @@ final class GXInfoStore: ObservableObject {
         }
         async let bm = GXSrc.binanceMeta(chain, addr)
         async let gk = GXSrc.geckoInfo(chain, addr)
+        async let bd = GXSrc.binanceDynamic(chain, addr)
         let b: GXMeta? = await bm
         let g: GXMeta? = await gk
+        let dyn: [String: Double] = await bd
         if k != key { return }
         var text: String = ""
         var src: String = ""
@@ -275,6 +292,7 @@ final class GXInfoStore: ObservableObject {
         tgPosts = tgp
         website = web
         created = b?.created
+        bin = dyn
         var line: String = short(zh ?? text, 96)
         if !line.isEmpty, !src.isEmpty { line += "（" + src + "）" }
         summary = line

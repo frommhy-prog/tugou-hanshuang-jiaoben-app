@@ -102,6 +102,14 @@ final class GXHoldersStore: ObservableObject {
         let d: GXDerivedVals = derived
         let fs = GMFreeStore.shared
         switch id {
+        case "devhold":
+            if gm.num("creator_balance_rate", "stat.creator_hold_rate") != nil || gm.str("creator_token_status") != nil || fs.v["dev"] != nil { return nil }
+            let bin2: [String: Double] = GXInfoStore.shared.key == GXInfoStore.k(vm) ? GXInfoStore.shared.bin : [:]
+            guard let dv = bin2["dev"] else { return nil }
+            return GMVal(text: String(format: "%.1f%%", dv), color: dv > 5 ? Color.red : Color.orange, rows: [
+                ("创建者持仓占比", String(format: "%.2f%%", dv)),
+                ("数据来源", "币安 Web3（公共接口，不需要 Key）"),
+            ])
         case "sniper":
             if gm.num("sniper_count", "wallet_tags_stat.sniper_wallets") != nil || gm.sniperHold() != nil { return nil }
             if fs.v["sniper"] != nil || fs.v["sniperN"] != nil { return nil }
@@ -115,6 +123,17 @@ final class GXHoldersStore: ObservableObject {
             ])
         case "smart":
             if gm.num("wallet_tags_stat.smart_wallets") != nil || fs.v["smartN"] != nil || fs.v["kolN"] != nil { return nil }
+            let bin: [String: Double] = GXInfoStore.shared.key == GXInfoStore.k(vm) ? GXInfoStore.shared.bin : [:]
+            if bin["smartN"] != nil || bin["kolN"] != nil {
+                let sn: Int = Int(bin["smartN"] ?? 0)
+                let kn: Int = Int(bin["kolN"] ?? 0)
+                return GMVal(text: String(sn) + "/" + String(kn), color: sn > 0 ? Color.green : Color.secondary, rows: [
+                    ("聪明钱钱包", String(sn) + " 个，持有 " + String(format: "%.3f%%", bin["smartPct"] ?? 0)),
+                    ("KOL 钱包", String(kn) + " 个，持有 " + String(format: "%.3f%%", bin["kolPct"] ?? 0)),
+                    ("专业用户", String(Int(bin["proN"] ?? 0)) + " 个，持有 " + String(format: "%.3f%%", bin["proPct"] ?? 0)),
+                    ("数据来源", "币安 Web3（公共接口，不需要 Key）"),
+                ])
+            }
             if d.intelN < 3 { return nil }
             return GMVal(text: String(d.smartN) + "/—", color: d.smartN > 0 ? Color.green : Color.secondary, rows: [
                 ("样本内聪明钱大户", String(d.smartN) + " 个，合计持有 " + String(format: "%.2f%%", d.smartPct)),

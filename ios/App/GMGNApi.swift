@@ -235,11 +235,7 @@ struct GMWalletMenuContent: View {
     let addr: String
 
     var body: some View {
-        let ls = GMWalletLinks.items(chain, addr)
-        ForEach(ls.indices, id: \.self) { i in
-            Link(ls[i].0, destination: ls[i].1)
-        }
-        Button("复制地址") { UIPasteboard.general.string = addr }
+        GXWalletMenuBody(chain: chain, addr: addr)
     }
 }
 

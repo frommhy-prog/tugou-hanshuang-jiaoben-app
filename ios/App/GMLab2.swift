@@ -746,11 +746,7 @@ struct GMTradeLab2View: View {
                                 Text(GMPx.fiat(t.usd)).font(.caption.weight(.semibold).monospacedDigit()).foregroundStyle(t.buy ? Color.green : Color.red)
                                 Text(t.px > 0 ? GMPx.usd(t.px) : "—").font(.caption2.monospacedDigit()).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.7)
                                 Spacer(minLength: 2)
-                                Menu {
-                                    GMWalletMenuContent(chain: vm.chain, addr: t.who)
-                                } label: {
-                                    Text(Addr.short(t.who)).font(.caption2.monospaced()).foregroundStyle(Color.accentColor)
-                                }
+                                GXWalletLabel(chain: vm.chain, addr: t.who)
                             }
                         }
                         if shown < rows.count {
@@ -846,11 +842,7 @@ struct GL2WalletRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 6) {
-                Menu {
-                    GMWalletMenuContent(chain: vm.chain, addr: w.addr)
-                } label: {
-                    Text(Addr.short(w.addr)).font(.caption.monospaced()).foregroundStyle(Color.accentColor)
-                }
+                GXWalletLabel(chain: vm.chain, addr: w.addr)
                 Button(action: onWatch) {
                     Image(systemName: watched ? "star.fill" : "star").font(.caption).foregroundStyle(watched ? Color.yellow : Color.secondary)
                 }
@@ -951,11 +943,7 @@ struct GMWalletLab2View: View {
 
     private func rankRow(_ w: GL2Wallet) -> some View {
         HStack(spacing: 8) {
-            Menu {
-                GMWalletMenuContent(chain: vm.chain, addr: w.addr)
-            } label: {
-                Text(Addr.short(w.addr)).font(.caption.monospaced()).foregroundStyle(Color.accentColor)
-            }
+            GXWalletLabel(chain: vm.chain, addr: w.addr)
             Text(w.status).font(.caption2).foregroundStyle(.secondary)
             Spacer()
             Text(GMPx.fiat(w.pnl, signed: true)).font(.caption.weight(.bold).monospacedDigit()).foregroundStyle(w.pnl >= 0 ? Color.green : Color.red)
@@ -968,11 +956,7 @@ struct GMWalletLab2View: View {
         let col: Color = !m.seen ? Color.secondary : (m.net > 0 ? Color.green : Color.red)
         return HStack(spacing: 8) {
             Text("#" + String(m.holder.rank)).font(.caption2.monospacedDigit()).foregroundStyle(.secondary).frame(width: 28, alignment: .leading)
-            Menu {
-                GMWalletMenuContent(chain: vm.chain, addr: m.holder.addr)
-            } label: {
-                Text(Addr.short(m.holder.addr)).font(.caption.monospaced()).foregroundStyle(Color.accentColor)
-            }
+            GXWalletLabel(chain: vm.chain, addr: m.holder.addr)
             Text(String(format: "%.2f%%", m.holder.pct)).font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
             Spacer()
             Text(act).font(.caption2.weight(.semibold)).foregroundStyle(col)

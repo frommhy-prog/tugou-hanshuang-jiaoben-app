@@ -9,6 +9,7 @@ struct UnifiedTokenRoot: View {
     @State private var hist: [HistoryItem] = QueryHistory.items.filter { $0.kind == "token" }
     @State private var expanded: Set<String> = []
     @State private var shareSheet = false
+    @State private var showGXShare = false
     @State private var shareItems: [Any] = []
     @State private var showAlert = false
     @State private var showDash = false
@@ -61,7 +62,7 @@ struct UnifiedTokenRoot: View {
             flowCard
             poolsCard
         case 2:
-            HoldersIntelButton(vm: vm)
+            GXHoldersInline(vm: vm)
             HolderDeepCard(vm: vm)
             holdersCard
         case 3:
@@ -136,6 +137,7 @@ struct UnifiedTokenRoot: View {
             .onChange(of: vm.main?.price) { _, _ in GMPx.sync(vm.main) }
             .onAppear { GMPx.sync(vm.main); Task { await GMPx.ensureFX() } }
             .sheet(isPresented: $shareSheet) { ShareSheet(items: shareItems) }
+            .sheet(isPresented: $showGXShare) { GXShareSheet(vm: vm) }
             .sheet(isPresented: $showAlert) { AlertEditor(prefill: alertPrefill) { } }
             .task(id: vm.address) {
                 if vm.address.isEmpty { return }
@@ -660,8 +662,7 @@ struct UnifiedTokenRoot: View {
 
     // MARK: 分享
     private func shareToken() {
-        shareItems = ShareKit.tokenItems(vm)
-        shareSheet = true
+        showGXShare = true
     }
 }
 

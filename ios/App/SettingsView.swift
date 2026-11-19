@@ -2,7 +2,7 @@ import SwiftUI
 import PhotosUI
 import UIKit
 
-struct SettingsView: View {
+struct SettingsViewLegacy: View {
     @AppStorage("theme") private var theme = "system"
     @AppStorage("currency", store: Cfg.defaults) private var currency = "USD"
     @AppStorage("aiAuto", store: Cfg.defaults) private var aiAuto = true

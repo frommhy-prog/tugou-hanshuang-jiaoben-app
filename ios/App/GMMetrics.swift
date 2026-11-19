@@ -72,6 +72,7 @@ enum GMMetricCatalog {
             return GMVal(text: String(format: "%.1f%%", v), color: pctColor(v, lo, hi), rows: [("占比", String(format: "%.2f%%", v))] + extra + [("数据来源", "GMGN")])
         }
 
+        if let gx = GXHoldersStore.shared.override(id, vm: vm, gm: gm) { return gx }
         switch id {
         case "top10":
             var v: Double? = gm.num("top_10_holder_rate", "stat.top_10_holder_rate").map { $0 * 100 }
@@ -250,6 +251,9 @@ struct GMMetricStrip: View {
     @State private var paid: GMPaid?
     @State private var sheet: GMSheetID?
     @ObservedObject private var fr = GMFreeStore.shared
+    @ObservedObject private var gxd = GXHoldersStore.shared
+    @ObservedObject private var gxi = GXInfoStore.shared
+    @AppStorage("gxChip", store: Cfg.defaults) private var chipStyle = "icon"
     @State private var showEditor = false
 
     private var ids: [String] {
@@ -260,18 +264,9 @@ struct GMMetricStrip: View {
     private func cell(_ id: String) -> some View {
         let title: String = GMMetricCatalog.def(id)?.title ?? id
         let v = GMMetricCatalog.eval(id, vm: vm, gm: gm, paid: paid)
+        let compact: Bool = chipStyle == "icon"
         return Button { sheet = GMSheetID(id: id) } label: {
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                if id == "dexpaid" { GMBrandIcon(key: "dexscreener", size: 12) } else if let em = GMTagIcon.metric(id) { Text(em).font(.system(size: 10)) }
-                Text(title).underline(true, pattern: .dot, color: Color.secondary).font(.system(size: 9.5)).foregroundStyle(Color.secondary)
-                HStack(spacing: 3) {
-                    if let ic = v.icon, id != "dexpaid" { Image(systemName: ic).font(.caption2).foregroundStyle(v.color) }
-                    Text(v.text).font(.system(size: 11.5, weight: .bold)).foregroundStyle(v.color).lineLimit(1)
-                }
-            }
-            .padding(.horizontal, 7).padding(.vertical, -2.5)
-            .padding(.vertical, 6)
-            .background(Color.secondary.opacity(0.1), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            GXChipView(id: id, title: title, v: v, compact: compact)
         }
         .buttonStyle(.plain)
     }

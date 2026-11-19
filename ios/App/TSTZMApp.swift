@@ -69,6 +69,7 @@ struct RootView: View {
     @AppStorage("currency", store: Cfg.defaults) private var currency = "USD"
     @ObservedObject private var router = AppRouter.shared
     @State private var needSetup = Cfg.token.isEmpty
+    @ObservedObject private var clip = GXClip.shared
 
     var body: some View {
         TabView(selection: $router.tab) {
@@ -93,6 +94,11 @@ struct RootView: View {
         .task { await FX.refresh() }
         .task { WatchMonitor.shared.start() }
         .task { GMScout.shared.start() }
+        .sheet(item: $clip.card) { c in GXClipSheet(card: c) }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            Task { await GXClip.shared.check() }
+        }
+        .task { await GXClip.shared.check() }
     }
 }
 
