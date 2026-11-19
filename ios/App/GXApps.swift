@@ -144,13 +144,35 @@ enum GXApp: String, CaseIterable, Identifiable {
         UIApplication.shared.open(l.url)
     }
 
+    // 本地打包的图标（CI 从官方站点抓取）；没有就返回 nil
+    static func localIcon(_ key: String) -> UIImage? { GMLogoFiles.bundle("gmb_" + key) }
+
     // 菜单里的小图标：原色，不被系统染成单色
     static func menuIcon(_ key: String) -> Image {
-        guard let ui = GMLogoFiles.bundle("gmb_" + key) else { return Image(systemName: "arrow.up.right.square") }
+        guard let ui = localIcon(key) else { return Image(systemName: "arrow.up.right.square") }
         let s = CGSize(width: 24, height: 24)
         let r = UIGraphicsImageRenderer(size: s)
         let out: UIImage = r.image { _ in ui.draw(in: CGRect(origin: CGPoint.zero, size: s)) }.withRenderingMode(.alwaysOriginal)
         return Image(uiImage: out)
+    }
+}
+
+// App 图标：FOMO 这类新加入的优先读本地文件，缺图时用字母头像；其余沿用统一的品牌图标
+struct GXAppLogo: View {
+    let app: GXApp
+    let chain: Chain
+    var size: CGFloat = 22
+
+    var body: some View {
+        if app == .fomo {
+            if let ui = GXApp.localIcon("fomo") {
+                Image(uiImage: ui).resizable().scaledToFit().frame(width: size, height: size).clipShape(RoundedRectangle(cornerRadius: size * 0.22, style: .continuous))
+            } else {
+                AvLetterDot(text: "F", seed: "fomo", size: size)
+            }
+        } else {
+            GMBrandIcon(key: app.brand(chain), size: size)
+        }
     }
 }
 
@@ -168,7 +190,7 @@ struct GXAppIcons: View {
         HStack(spacing: 9) {
             ForEach(ls) { l in
                 Button { GXApp.open(l) } label: {
-                    GMBrandIcon(key: l.app.brand(chain), size: size)
+                    GXAppLogo(app: l.app, chain: chain, size: size)
                 }
                 .buttonStyle(.plain)
             }
@@ -178,8 +200,8 @@ struct GXAppIcons: View {
     }
 }
 
-// 钱包地址的跳转菜单：每项带 App 图标
-struct GMWalletMenuContent: View {
+// 钱包地址的跳转菜单：每项带 App 图标（由补丁替换掉 GMGNApi.swift 里原来的同名文字菜单）
+struct GXWalletMenuBody: View {
     let chain: Chain
     let addr: String
 
@@ -211,7 +233,7 @@ struct GXAppToggleRow: View {
     var body: some View {
         Toggle(isOn: $on) {
             HStack(spacing: 10) {
-                GMBrandIcon(key: app.brand(.solana), size: 26)
+                GXAppLogo(app: app, chain: .solana, size: 26)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(app.title).font(.subheadline.weight(.semibold))
                     if !app.note.isEmpty { Text(app.note).font(.caption2).foregroundStyle(.secondary) }
