@@ -150,7 +150,6 @@ enum GXShareBuilder {
                 links.append([l.app.title, l.url.absoluteString])
             }
         }
-        let df = ISO8601DateFormatter()
         return [
             "v": 1,
             "title": sym,
@@ -159,7 +158,6 @@ enum GXShareBuilder {
             "sections": sections,
             "links": links,
         ]
-        _ = df
     }
 
     static func upload(_ snap: [String: Any]) async -> (URL?, String) {

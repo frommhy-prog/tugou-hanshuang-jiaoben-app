@@ -96,7 +96,9 @@ struct GXChipView: View {
     }
 
     var body: some View {
-        if compact {
+        if compact && v.text == "—" {
+            EmptyView()
+        } else if compact {
             HStack(spacing: 2) {
                 if id == "dexpaid" {
                     GMBrandIcon(key: "dexscreener", size: 12)
