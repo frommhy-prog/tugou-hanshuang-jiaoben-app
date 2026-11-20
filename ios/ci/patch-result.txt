@@ -30,4 +30,4 @@ FMT_SCAN_LEFT 8
   ios/App/GMMarks.swift:203: disc(Color(red: 1.0, green: 0.55, blue: 0.1), Color(red: 1.0, green: 0.8, blue: 0.2), "B", Color.white)
   ios/App/GMMarks.swift:218: disc(Color(red: 0.2, green: 0.85, blue: 0.4), Color(red: 0.05, green: 0.55, blue: 0.25), "B", Color.white)
   ios/App/Prefs.swift:231: f.correctionLevel = "M"
-PATCH_OK g26_gn_menu g26_hd_state g26_hd_badge g26_hd_logo g26_hd_narr g26_hd_icons g26_hd_body g26_lab2_wallet g26_met_props g26_met_cell g26_met_eval g26_dt_fn g26_dt_pub g26_dt_reset g26_dt_fetch g26_dt_set g26_hs_dev g26_hs_smart g26_set_rename g26_app_state g26_app_clip g26_ut_holders g26_ut_state g26_ut_sheet g26_ut_share g26_brands_fomo
+PATCH_OK g27_sc_status g27_sc_heat g27_sc_token g27_sc_summary g27_sc_helpers

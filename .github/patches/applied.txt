@@ -231,6 +231,11 @@ g26_ut_holders
 g26_ut_share
 g26_ut_sheet
 g26_ut_state
+g27_sc_heat
+g27_sc_helpers
+g27_sc_status
+g27_sc_summary
+g27_sc_token
 h14_ad_hist
 h14_ad_row
 h14_ad_state

@@ -600,12 +600,31 @@ struct GMScoutView: View {
         }
     }
 
+    private func scanLine(_ r: GMScoutReport) -> String {
+        let t: String = TZ.format(Date(timeIntervalSince1970: r.at))
+        let n: String = String(r.calls)
+        return ["上次扫描 ", t, "，用掉 ", n, " 次请求"].joined()
+    }
+
+    private func heatLine(_ c: GMScoutChain) -> String {
+        let v: String = GMPx.fiat(c.vol24)
+        let a: String = String(c.txns)
+        let b: String = String(c.pools)
+        return ["24h 成交 ", v, " · ", a, " 笔 · ", b, " 个热门池"].joined()
+    }
+
+    private func tokenLine(_ chain: Chain, _ t: GMScoutToken) -> String {
+        let l: String = GMPx.fiat(t.liq)
+        let v: String = GMPx.fiat(t.vol24)
+        return [chain.title, " · 流动性 ", l, " · 24h 成交 ", v].joined()
+    }
+
     private var statusCard: some View {
         Card {
             VStack(alignment: .leading, spacing: 4) {
                 Text(sc.status).font(.footnote.weight(.semibold))
                 if let r = sc.report {
-                    Text("上次扫描 " + TZ.format(Date(timeIntervalSince1970: r.at)) + "，用掉 " + String(r.calls) + " 次请求").font(.caption2).foregroundStyle(.secondary)
+                    Text(scanLine(r)).font(.caption2).foregroundStyle(.secondary)
                 }
                 Text("自动规则：App 在前台、近 1 分钟 API 没怎么用、没有排队请求时扫，每 30 分钟一次；扫描请求排在你的操作后面，有每日预算（见 API 用量控制台）。").font(.caption2).foregroundStyle(.secondary)
             }
@@ -624,7 +643,7 @@ struct GMScoutView: View {
                         ProgressView(value: min(1, max(0, c.heat / 100)))
                         Text(String(format: "%.0f", c.heat)).font(.caption.weight(.bold).monospacedDigit()).frame(width: 28, alignment: .trailing)
                     }
-                    Text("24h 成交 " + GMPx.fiat(c.vol24) + " · " + String(c.txns) + " 笔 · " + String(c.pools) + " 个热门池").font(.caption2).foregroundStyle(.secondary)
+                    Text(heatLine(c)).font(.caption2).foregroundStyle(.secondary)
                 }
             }
         }
@@ -683,7 +702,7 @@ struct GMScoutView: View {
                             .background(col.opacity(0.2), in: Capsule())
                             .foregroundStyle(col)
                     }
-                    Text(chain.title + " · 流动性 " + GMPx.fiat(t.liq) + " · 24h 成交 " + GMPx.fiat(t.vol24)).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                    Text(tokenLine(chain, t)).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
                     Text(t.oks.prefix(4).joined(separator: " · ")).font(.caption2).foregroundStyle(Color.green).lineLimit(3)
                     if !t.warns.isEmpty {
                         Text("注意：" + t.warns.joined(separator: " · ")).font(.caption2).foregroundStyle(Color.orange).lineLimit(3)
@@ -742,7 +761,10 @@ struct GMScoutLink: View {
     private var summary: String {
         guard let r = sc.report else { return "还没扫描过：API 有空余时自动找热门链、可靠代币、聪明钱" }
         let top: String = r.chains.first.flatMap { Chain(rawValue: $0.id)?.title } ?? "—"
-        return "最热的链 " + top + " · 可靠代币 " + String(r.tokens.count) + " 个 · 聪明钱 " + String(r.wallets.count) + " 个 · " + TZ.format(Date(timeIntervalSince1970: r.at))
+        let nT: String = String(r.tokens.count)
+        let nW: String = String(r.wallets.count)
+        let tm: String = TZ.format(Date(timeIntervalSince1970: r.at))
+        return ["最热的链 ", top, " · 可靠代币 ", nT, " 个 · 聪明钱 ", nW, " 个 · ", tm].joined()
     }
 
     var body: some View {
