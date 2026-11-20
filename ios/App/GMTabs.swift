@@ -110,9 +110,12 @@ struct GMTabsSection<Content: View>: View {
                                             .foregroundStyle(cur == t.id ? Color.accentColor : Color.secondary)
                                     } else {
                                         VStack(spacing: 4) {
-                                            Text(t.title)
-                                                .font(.subheadline.weight(cur == t.id ? .bold : .regular))
-                                                .foregroundStyle(cur == t.id ? Color.primary : Color.secondary)
+                                            HStack(spacing: 4) {
+                                                Image(systemName: t.icon).font(.system(size: 13, weight: .semibold)).foregroundStyle(cur == t.id ? t.color : Color.secondary)
+                                                Text(t.title)
+                                                    .font(.subheadline.weight(cur == t.id ? .bold : .regular))
+                                                    .foregroundStyle(cur == t.id ? Color.primary : Color.secondary)
+                                            }
                                             Capsule().fill(cur == t.id ? Color.accentColor : Color.clear).frame(height: 2.5)
                                         }
                                     }
@@ -241,8 +244,7 @@ struct GMTabSettings: View {
             }
             .onChange(of: def) { _, v in GMTabState.shared.sel = v }
             Button("排序与显示…") { edit = true }
-            Text("K 线下面这一排就是分析分页：交易记录、钱包分析、持有者、流动性、综合研判、合约安全、叙事社交、庄家情报、更多工具。").font(.caption).foregroundStyle(.secondary)
-        }
+                    }
         .sheet(isPresented: $edit) { GMTabEditor() }
     }
 }

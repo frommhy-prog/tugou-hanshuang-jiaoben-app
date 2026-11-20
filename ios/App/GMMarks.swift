@@ -110,7 +110,7 @@ struct GMChainGlyph: View {
 
 // MARK: - 发射台 / 内盘平台
 enum GMLaunchpad {
-    case pump, bonk, fourMeme, flap, moonshot, clanker, virtuals, bags, believe, boop, heaven, launchLab, jupStudio, daos, zora
+    case pump, bonk, fourMeme, flap, moonshot, clanker, virtuals, bags, believe, boop, heaven, launchLab, jupStudio, daos, zora, pons
 
     var title: String {
         switch self {
@@ -129,6 +129,7 @@ enum GMLaunchpad {
         case .jupStudio: return "Jupiter Studio"
         case .daos: return "DAOS.FUN"
         case .zora: return "Zora"
+        case .pons: return "Pons"
         }
     }
 
@@ -148,6 +149,7 @@ enum GMLaunchpad {
         if d.contains("launchlab") { return .launchLab }
         if d.contains("daos") { return .daos }
         if d.contains("zora") { return .zora }
+        if d.contains("pons") { return .pons }
         if d.contains("bonk") { return .bonk }
         let sol: Bool = (chain == .solana) || (chain == nil && !Addr.isEVM(address))
         if sol {
@@ -160,6 +162,7 @@ enum GMLaunchpad {
             if a.hasSuffix("7777") || a.hasSuffix("8888") { return .flap }
         }
         if chain == .base && a.hasSuffix("b07") { return .clanker }
+        if chain == .robinhood && GXPonsStore.shared.has(a) { return .pons }
         return nil
     }
 }

@@ -102,6 +102,8 @@ struct GXChipView: View {
             HStack(spacing: 2) {
                 if id == "dexpaid" {
                     GMBrandIcon(key: "dexscreener", size: 12)
+                } else if GXAveGlyph.has(id) {
+                    GXAveIcon(id: id, color: v.color, size: 13)
                 } else if let em = GMTagIcon.metric(id) {
                     Text(em).font(.system(size: 11))
                 } else {
@@ -115,11 +117,13 @@ struct GXChipView: View {
             }
             .padding(.horizontal, 6)
             .padding(.vertical, 5)
-            .background(v.color.opacity(0.12), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+            .background(Color.secondary.opacity(0.1), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         } else {
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 if id == "dexpaid" {
                     GMBrandIcon(key: "dexscreener", size: 12)
+                } else if GXAveGlyph.has(id) {
+                    GXAveIcon(id: id, color: v.color, size: 12)
                 } else if let em = GMTagIcon.metric(id) {
                     Text(em).font(.system(size: 10))
                 }
@@ -143,12 +147,10 @@ struct GXNarrLine: View {
         let t: String = info.line(vm: vm)
         Button { open = true } label: {
             HStack(alignment: .top, spacing: 5) {
-                Text("叙事")
-                    .font(.system(size: 10, weight: .heavy))
-                    .padding(.horizontal, 5)
-                    .padding(.vertical, 1)
-                    .background(Color.purple.opacity(0.18), in: Capsule())
+                Image(systemName: "text.quote")
+                    .font(.system(size: 11, weight: .bold))
                     .foregroundStyle(Color.purple)
+                    .padding(.top, 2)
                 Text(t)
                     .font(.caption)
                     .foregroundStyle(Color.primary)

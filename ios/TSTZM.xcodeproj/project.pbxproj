@@ -56,6 +56,7 @@
 		2360CB964AD6CAD1D0525C66 /* Promo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C7E5C7130E884980F0BBF26 /* Promo.swift */; };
 		24DE6BBFE270B44BCA27C739 /* gmc_celo.png in Resources */ = {isa = PBXBuildFile; fileRef = 5DE78C063A49AC62D927484E /* gmc_celo.png */; };
 		252EDC4E36B32E5719302589 /* gmc_ink.png in Resources */ = {isa = PBXBuildFile; fileRef = B320CF6DD5395173B9260FE4 /* gmc_ink.png */; };
+		25401370A1EC04B93BE09BD7 /* GXAve.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55C2B2F5B42A586E67C714E1 /* GXAve.swift */; };
 		2543EBC981762B2EDD3756D9 /* gmd_meteora.png in Resources */ = {isa = PBXBuildFile; fileRef = 818157AE69B358E67BCA75D7 /* gmd_meteora.png */; };
 		25607726AC5D4643121A3B74 /* gml_clanker.png in Resources */ = {isa = PBXBuildFile; fileRef = AAA29AC4AFA1A8D88D6A5C8F /* gml_clanker.png */; };
 		263A6766139C3F2B068DC71F /* gmb_phantom.png in Resources */ = {isa = PBXBuildFile; fileRef = 9FA3B9C7812C993701A27982 /* gmb_phantom.png */; };
@@ -308,6 +309,7 @@
 		4B7F096839FC46B047B6C59E /* AlertsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertsView.swift; sourceTree = "<group>"; };
 		4F58FEAC39F1A1D875B0F70B /* gmb_bubblemaps.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmb_bubblemaps.png; sourceTree = "<group>"; };
 		52A8726F75DAC3DAF7473660 /* gmc_cronos.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmc_cronos.png; sourceTree = "<group>"; };
+		55C2B2F5B42A586E67C714E1 /* GXAve.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GXAve.swift; sourceTree = "<group>"; };
 		55F0CC90C62127A851DB12D8 /* gmc_linea.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmc_linea.png; sourceTree = "<group>"; };
 		56DE2859DFA7B1642DB9B1DD /* gmb_bybit.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmb_bybit.png; sourceTree = "<group>"; };
 		59A90DFD2BADC6B9D9A56CD7 /* gmc_avalanche.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gmc_avalanche.png; sourceTree = "<group>"; };
@@ -636,6 +638,7 @@
 				BCA662C694111DF61E90A915 /* GMTabs.swift */,
 				371EFF10E0A2FBB98985FC42 /* GMUsage.swift */,
 				33641097D8DB36AA1DF1E0D0 /* GXApps.swift */,
+				55C2B2F5B42A586E67C714E1 /* GXAve.swift */,
 				03397E234BD14CA1D8BDE6D5 /* GXBadges.swift */,
 				2622BE0117EDB0E781136453 /* GXClipboard.swift */,
 				38AC309DC012B344738B60C3 /* GXData.swift */,
@@ -973,6 +976,7 @@
 				BEDF87CDB4592FFC6FFE13FD /* GMTabs.swift in Sources */,
 				35A5026C59130E4B864CB5D6 /* GMUsage.swift in Sources */,
 				A8CDCFAD11BE941AAEE2DBBA /* GXApps.swift in Sources */,
+				25401370A1EC04B93BE09BD7 /* GXAve.swift in Sources */,
 				0267286FA59F45C5521D945E /* GXBadges.swift in Sources */,
 				8E74D30D07189FF60954FD49 /* GXClipboard.swift in Sources */,
 				5E800D9DCCB37FD935E8BA43 /* GXData.swift in Sources */,

@@ -83,6 +83,7 @@ struct GL2Wallet: Identifiable {
     var holdCost: Double = 0
     var unrealized: Double?
     var preSellUsd: Double = 0
+    var preSellAmt: Double = 0
     var holdSecs: [Double] = []
     var wins: Int = 0
     var losses: Int = 0
@@ -134,6 +135,9 @@ struct GL2Report {
     var moves: [GL2Move] = []
     var winners: [GL2Wallet] = []
     var losers: [GL2Wallet] = []
+    var netBuyers: [GL2Wallet] = []
+    var netSellers: [GL2Wallet] = []
+    var covered: Double = 0
 }
 
 // MARK: - 计算
@@ -250,7 +254,10 @@ enum GL2Calc {
                         if arr[0].amt <= 1e-12 { arr.removeFirst() }
                     }
                     lots[t.who] = arr
-                    if rem > 0 { w.preSellUsd += rem * t.px }
+                    if rem > 0 {
+                        w.preSellUsd += rem * t.px
+                        w.preSellAmt += rem
+                    }
                 }
             }
             ws[t.who] = w
@@ -368,6 +375,18 @@ enum GL2Calc {
         out.moves = moves
         out.winners = Array(list.filter { $0.pnl > 0 && $0.roi != nil }.sorted { $0.pnl > $1.pnl }.prefix(5))
         out.losers = Array(list.filter { $0.pnl < 0 && $0.roi != nil }.sorted { $0.pnl < $1.pnl }.prefix(5))
+        func flowNet(_ w: GL2Wallet) -> Double { return w.buyUsd - w.sellUsd }
+        let buyers: [GL2Wallet] = list.filter { flowNet($0) > 0 }.sorted { flowNet($0) > flowNet($1) }
+        let sellers: [GL2Wallet] = list.filter { flowNet($0) < 0 }.sorted { flowNet($0) < flowNet($1) }
+        out.netBuyers = Array(buyers.prefix(5))
+        out.netSellers = Array(sellers.prefix(5))
+        var grossAll: Double = 0
+        var grossMatched: Double = 0
+        for w in list {
+            grossAll += w.gross
+            if w.roi != nil { grossMatched += w.gross }
+        }
+        out.covered = grossAll > 0 ? grossMatched / grossAll * 100 : 0
 
         // 结论
         var ins: [GLInsight] = []
@@ -951,6 +970,16 @@ struct GMWalletLab2View: View {
         }
     }
 
+    private func flowRow(_ w: GL2Wallet) -> some View {
+        let net: Double = w.buyUsd - w.sellUsd
+        return HStack(spacing: 8) {
+            GXWalletLabel(chain: vm.chain, addr: w.addr)
+            if w.status == "老仓卖出" { Image(systemName: "clock.arrow.circlepath").font(.caption2).foregroundStyle(Color.orange) }
+            Spacer()
+            Text(GMPx.fiat(net, signed: true)).font(.caption.weight(.bold).monospacedDigit()).foregroundStyle(net >= 0 ? Color.green : Color.red)
+        }
+    }
+
     private func moveRow(_ m: GL2Move) -> some View {
         let act: String = !m.seen ? "窗口内没有成交" : (m.net > 0 ? "增持 " + GMPx.fiat(m.net, signed: true) : "减持 " + GMPx.fiat(m.net, signed: true))
         let col: Color = !m.seen ? Color.secondary : (m.net > 0 ? Color.green : Color.red)
@@ -978,7 +1007,7 @@ struct GMWalletLab2View: View {
                     if lab.trades.isEmpty {
                         Text(lab.note ?? "读取成交…").font(.footnote).foregroundStyle(.secondary)
                     } else {
-                        GLNote(text: "窗口 " + Fmt2.dur(r.span) + "、" + String(all.count) + " 个活跃地址。盈亏按 FIFO 把窗口内的买入和卖出配对；窗口之前的仓位没有成本，只标记为老仓。点 ☆ 可关注钱包，点地址跳转 GMGN / 浏览器。")
+                        GLNote(text: "窗口 " + Fmt2.dur(r.span) + "、" + String(all.count) + " 个地址 · 成本能配对的成交额占 " + String(format: "%.0f%%", r.covered) + "，其余是窗口前的老仓，盈亏记不到")
                         Picker("排序", selection: $sort) {
                             Text("成交额").tag(0)
                             Text("盈亏").tag(1)
@@ -989,16 +1018,31 @@ struct GMWalletLab2View: View {
                     }
                 }
             }
+            if !r.netBuyers.isEmpty || !r.netSellers.isEmpty {
+                Card {
+                    VStack(alignment: .leading, spacing: 8) {
+                        if !r.netBuyers.isEmpty {
+                            Label("净买入", systemImage: "arrow.down.circle.fill").font(.subheadline.weight(.semibold)).foregroundStyle(Color.green)
+                            ForEach(r.netBuyers) { flowRow($0) }
+                        }
+                        if !r.netSellers.isEmpty {
+                            if !r.netBuyers.isEmpty { Divider() }
+                            Label("净卖出", systemImage: "arrow.up.circle.fill").font(.subheadline.weight(.semibold)).foregroundStyle(Color.red)
+                            ForEach(r.netSellers) { flowRow($0) }
+                        }
+                    }
+                }
+            }
             if !r.winners.isEmpty || !r.losers.isEmpty {
                 Card {
                     VStack(alignment: .leading, spacing: 8) {
                         if !r.winners.isEmpty {
-                            Text("赚得最多").font(.subheadline.weight(.semibold))
+                            Label("赚得最多", systemImage: "trophy.fill").font(.subheadline.weight(.semibold)).foregroundStyle(Color.green)
                             ForEach(r.winners) { rankRow($0) }
                         }
                         if !r.losers.isEmpty {
                             Divider()
-                            Text("亏得最多").font(.subheadline.weight(.semibold))
+                            Label("亏得最多", systemImage: "arrow.down.right.circle.fill").font(.subheadline.weight(.semibold)).foregroundStyle(Color.red)
                             ForEach(r.losers) { rankRow($0) }
                         }
                     }

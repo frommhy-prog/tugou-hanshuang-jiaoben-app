@@ -7,7 +7,7 @@ enum GMLogoFiles {
 
     static func bundle(_ name: String) -> UIImage? {
         if let c = cache[name] { return c }
-        guard let p = Bundle.main.path(forResource: name, ofType: "png"), let i = UIImage(contentsOfFile: p) else { return nil }
+        guard let p = Bundle.main.path(forResource: name, ofType: "png"), let i = UIImage(contentsOfFile: p) else { return GXEmbedded.image(name) }
         cache[name] = i
         return i
     }
@@ -54,6 +54,7 @@ extension GMLaunchpad {
         case .jupStudio: return "jupstudio"
         case .daos: return "daos"
         case .zora: return "zora"
+        case .pons: return "pons"
         }
     }
 }

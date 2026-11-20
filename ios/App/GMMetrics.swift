@@ -5,7 +5,7 @@ enum GMMarketKind {
     // 内盘 = 还在发射台的曲线里；外盘 = 已经毕业到公开 DEX 池
     static func text(dex: String?, pad: GMLaunchpad?) -> String? {
         let d: String = (dex ?? "").lowercased()
-        let inner: [String] = ["pumpfun", "fourmeme", "moonshot", "launchlab", "letsbonk", "bonkfun", "believe", "flap", "virtuals", "boop", "heaven", "daosfun"]
+        let inner: [String] = ["pumpfun", "fourmeme", "moonshot", "launchlab", "letsbonk", "bonkfun", "believe", "flap", "virtuals", "boop", "heaven", "daosfun", "pons"]
         for k in inner where d.contains(k) { return "内盘" }
         if pad != nil { return "外盘" }
         return nil
@@ -278,7 +278,6 @@ struct GMMetricStrip: View {
                 Button { showEditor = true } label: {
                     VStack(spacing: 2) {
                         Image(systemName: "slider.horizontal.3").font(.footnote)
-                        Text("调").font(.caption2)
                     }
                     .foregroundStyle(Color.accentColor)
                     .padding(.horizontal, 12)

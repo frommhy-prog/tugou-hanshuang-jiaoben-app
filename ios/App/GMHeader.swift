@@ -9,6 +9,7 @@ struct GMHeader: View {
     @State private var copied = false
     @State private var narr: NarrReport?
     @State private var showTokenSheet = false
+    @ObservedObject private var pons = GXPons.shared
 
     private func col(_ v: Double?) -> Color {
         guard let v = v else { return .secondary }
@@ -149,9 +150,11 @@ struct GMHeader: View {
                 Button { NotificationCenter.default.post(name: .gmAlert, object: nil) } label: { Label("设提醒", systemImage: "bell.badge") }
                 Divider()
                 ForEach(ls.indices, id: \.self) { i in
-                    Link(ls[i].0, destination: ls[i].1)
+                    Link(destination: ls[i].1) {
+                        Label { Text(ls[i].0) } icon: { GXIcons.menuImage(ls[i].0) }
+                    }
                 }
-                Button("复制合约地址") { UIPasteboard.general.string = vm.address }
+                Button { UIPasteboard.general.string = vm.address } label: { Label("复制合约地址", systemImage: "doc.on.doc") }
             } label: {
                 Image(systemName: "ellipsis.circle").font(.title3)
             }
@@ -196,7 +199,6 @@ struct GMHeader: View {
                 ForEach(ss.indices, id: \.self) { i in
                     Link(destination: ss[i].1) { socialIcon(ss[i].0) }
                 }
-                GXAppIcons(chain: vm.chain, addr: vm.address, pair: m.pairAddress, size: 22)
             }
         }
     }
@@ -270,6 +272,7 @@ struct GMHeader: View {
         }
         .task(id: nKey) { await loadNarr() }
         .task(id: nKey) { await GXInfoStore.shared.load(vm: vm) }
+        .task(id: nKey) { await GXPons.shared.check(chain: vm.chain, address: vm.address) }
         .sheet(isPresented: $showTokenSheet) { GXTokenSheet(vm: vm) }
     }
 }
