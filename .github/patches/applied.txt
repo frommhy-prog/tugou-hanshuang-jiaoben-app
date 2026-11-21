@@ -411,6 +411,16 @@ p30-w-note
 p30-w-presellamt
 p30-w-presellamt2
 p30-w-win
+p31-chip-pad
+p31-curve-a
+p31-curve-b
+p31-fetch-cands
+p31-fetch-hd
+p31-fetch-pons
+p31-kind-sig
+p31-pons-chain
+p31-strip-obs
+p31-val-pad
 promo_guard
 promo_state
 rc_hn

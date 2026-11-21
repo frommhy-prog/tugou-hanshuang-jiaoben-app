@@ -102,6 +102,8 @@ struct GXChipView: View {
             HStack(spacing: 2) {
                 if id == "dexpaid" {
                     GMBrandIcon(key: "dexscreener", size: 12)
+                } else if let p = v.pad {
+                    GMLaunchLogo(pad: p, size: 15)
                 } else if GXAveGlyph.has(id) {
                     GXAveIcon(id: id, color: v.color, size: 13)
                 } else if let em = GMTagIcon.metric(id) {

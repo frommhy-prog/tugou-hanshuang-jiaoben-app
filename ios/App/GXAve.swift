@@ -96,11 +96,12 @@ enum GXEmbedded {
     }
 }
 
-// MARK: - Pons（Robinhood Chain 发射台）识别：代币合约的创建者是 Pons 发币工厂合约
+// MARK: - Pons（Robinhood Chain 发射台）识别：直接问 Pons 官方文档公布的两代工厂合约，同时读出是否已毕业（内盘 / 外盘）
 final class GXPonsStore: @unchecked Sendable {
     static let shared = GXPonsStore()
     private let lock = NSLock()
     private var set: Set<String> = []
+    private var grad: [String: Bool] = [:]
 
     func has(_ a: String) -> Bool {
         lock.lock()
@@ -108,9 +109,16 @@ final class GXPonsStore: @unchecked Sendable {
         return set.contains(a.lowercased())
     }
 
-    func add(_ a: String) {
+    func graduated(_ a: String) -> Bool? {
+        lock.lock()
+        defer { lock.unlock() }
+        return grad[a.lowercased()]
+    }
+
+    func add(_ a: String, graduated: Bool?) {
         lock.lock()
         set.insert(a.lowercased())
+        if let g = graduated { grad[a.lowercased()] = g }
         lock.unlock()
     }
 }
@@ -121,23 +129,55 @@ final class GXPons: ObservableObject {
     @Published var n: Int = 0
     private var running: Set<String> = []
     private var done: Set<String> = []
+    private var tries: [String: Int] = [:]
 
-    // Pons V2 发币工厂（官方文档公布的地址）
-    static let factories: Set<String> = ["0x7ed598bcef8bd9edd8c97a195c6d13f40801ec7e"]
+    // 官方文档：现行工厂 + 旧工厂（Robinhood Chain，chainId 4663）
+    static let factories: [String] = ["0xA5aAb3F0c6EeadF30Ef1D3Eb997108E976351feB", "0x0c37a24F5D23A486FA692d1500881d698B1F77a4"]
+    static let rpc: String = "https://rpc.mainnet.chain.robinhood.com"
+
+    private func ethCall(_ to: String, _ data: String) async -> String? {
+        guard let u = URL(string: GXPons.rpc) else { return nil }
+        var req = URLRequest(url: u, timeoutInterval: 12)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let call: [String: Any] = ["to": to, "data": data]
+        let body: [String: Any] = ["jsonrpc": "2.0", "id": 1, "method": "eth_call", "params": [call, "latest"]]
+        req.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        guard let r = try? await URLSession.shared.data(for: req),
+              let o = (try? JSONSerialization.jsonObject(with: r.0)) as? [String: Any],
+              let res = o["result"] as? String else { return nil }
+        return res
+    }
+
+    // 返回值第 i 个 32 字节字是否非零
+    private func word(_ hex: String, _ i: Int) -> Bool? {
+        let chars: [Character] = Array(hex)
+        if chars.count < (i + 1) * 64 { return nil }
+        return chars[(i * 64)..<((i + 1) * 64)].contains(where: { $0 != "0" })
+    }
 
     func check(chain: Chain, address: String) async {
-        guard chain == .robinhood else { return }
+        guard chain == .robinhood, address.count == 42 else { return }
         let a: String = address.lowercased()
         if done.contains(a) || running.contains(a) { return }
         running.insert(a)
         defer { running.remove(a) }
-        guard let o = await GXNet.json("https://robinhoodchain.blockscout.com/api/v2/addresses/" + a) as? [String: Any] else { return }
-        done.insert(a)
-        let c: String = ((o["creator_address_hash"] as? String) ?? "").lowercased()
-        if GXPons.factories.contains(c) {
-            GXPonsStore.shared.add(a)
+        let arg: String = String(repeating: "0", count: 24) + String(a.dropFirst(2))
+        for f in GXPons.factories {
+            // getLaunchedToken(address)：第 12 个字 exists = 是这个工厂发的币
+            guard let res = await ethCall(f, "0x3cf28b5a" + arg) else { continue }
+            if word(String(res.dropFirst(2)), 11) != true { continue }
+            var g: Bool? = nil
+            // graduationStatus(address)：第 3 个字 graduated = 已毕业（外盘）
+            if let r2 = await ethCall(f, "0x98d652f1" + arg) { g = word(String(r2.dropFirst(2)), 2) }
+            GXPonsStore.shared.add(a, graduated: g)
+            done.insert(a)
             n += 1
+            return
         }
+        let t: Int = (tries[a] ?? 0) + 1
+        tries[a] = t
+        if t >= 3 { done.insert(a) }
     }
 }
 

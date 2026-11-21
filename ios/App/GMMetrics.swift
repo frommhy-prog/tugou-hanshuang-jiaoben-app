@@ -3,7 +3,8 @@ import UIKit
 
 enum GMMarketKind {
     // 内盘 = 还在发射台的曲线里；外盘 = 已经毕业到公开 DEX 池
-    static func text(dex: String?, pad: GMLaunchpad?) -> String? {
+    static func text(dex: String?, pad: GMLaunchpad?, addr: String? = nil) -> String? {
+        if pad == .pons, let a = addr, let g = GXPonsStore.shared.graduated(a) { return g ? "外盘" : "内盘" }
         let d: String = (dex ?? "").lowercased()
         let inner: [String] = ["pumpfun", "fourmeme", "moonshot", "launchlab", "letsbonk", "bonkfun", "believe", "flap", "virtuals", "boop", "heaven", "daosfun", "pons"]
         for k in inner where d.contains(k) { return "内盘" }
@@ -17,6 +18,7 @@ struct GMVal {
     var color: Color
     var icon: String? = nil
     var rows: [(String, String)] = []
+    var pad: GMLaunchpad? = nil
 }
 
 struct GMMetricDef {
@@ -220,10 +222,10 @@ enum GMMetricCatalog {
         case "curve":
             let d: String? = vm.main?.dexId
             let pad: GMLaunchpad? = GMLaunchpad.detect(chain: vm.chain, address: vm.address, dex: d)
-            guard let t = GMMarketKind.text(dex: d, pad: pad) else {
+            guard let t = GMMarketKind.text(dex: d, pad: pad, addr: vm.address) else {
                 return GMVal(text: "—", color: Color.secondary, rows: [("说明", "不是发射台发的币，没有内外盘之分")])
             }
-            return GMVal(text: t, color: t == "内盘" ? Color.orange : Color.green, rows: [("当前交易所", d ?? "未知"), ("发射台", pad?.title ?? "未识别")])
+            return GMVal(text: t, color: t == "内盘" ? Color.orange : Color.green, rows: [("当前交易所", d ?? "未知"), ("发射台", pad?.title ?? "未识别")], pad: pad)
         default:
             return none
         }
@@ -253,6 +255,7 @@ struct GMMetricStrip: View {
     @ObservedObject private var fr = GMFreeStore.shared
     @ObservedObject private var gxd = GXHoldersStore.shared
     @ObservedObject private var gxi = GXInfoStore.shared
+    @ObservedObject private var gxp = GXPons.shared
     @AppStorage("gxChip", store: Cfg.defaults) private var chipStyle = "icon"
     @State private var showEditor = false
 
