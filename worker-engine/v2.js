@@ -3,13 +3,16 @@ import { makeV2 as makeBase } from './v2base.js';
 import { makeAI } from './ai.js';
 import { makeIntel } from './intel.js';
 import { installUsage, usageReport } from './usage.js';
+import { makeStore } from './store.js';
 export function makeV2(h) {
   const base = makeBase(h);
   const A = makeAI(h);
   const I = makeIntel(h);
+  const ST = makeStore(h);
   async function route(env, p, q, req) {
     installUsage(env); // 每次请求先登记 env，并保证全局 fetch 已被计数包装
     if (p === '/e/usage') return usageReport(env);
+    if (p.startsWith('/e/store/')) return ST.route(env, p, q, req); // 储存区：手动扫过的代币/钱包入库 + 二次核对
     if (p === '/e/ai' || p === '/e/v2/ai') return A.ai(env, await req.json());
     if (p === '/e/v2/narrative') return A.narrative(env, await req.json());
     if (p === '/e/v2/aitest') return A.test(env);
