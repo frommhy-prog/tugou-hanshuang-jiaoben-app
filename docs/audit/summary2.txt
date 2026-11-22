@@ -1,0 +1,517 @@
+
+==== BONK solana
+DEX token-pairs/v1 status=200 n=30 liqSum=720947 vol24Sum=202990 buys24=7620 sells24=6823
+   pool orca wp quote=SOL liq=207940 vol24=100247 price=0.000002082 mcap=183291726
+   pool meteora DLMM quote=USDC liq=180307 vol24=81859 price=0.000002083 mcap=183327297
+   pool orca wp quote=SOL liq=91008 vol24=409 price=0.000002056 mcap=180958976
+   pool orca wp quote=SOL liq=53530 vol24=1407 price=0.000002082 mcap=183281520
+DEX latest/tokens status=200 n(chain)=30 liqSum=720947 vol24Sum=202990
+DEX tokens/v1 n=1
+GT pools status=200 n=20 reserveSum=805820 vol24Sum=205750 buys24=6830
+GT token status=200 vol24=207825.540793021 reserveTotal=1355466
+BIN dynamic status=200 code=000000
+   B price=0.000002082848158534086405386602398092
+   B aggPrice=0.000002082847813395528336
+   B nativeTokenPrice=70.507737716092818900821548821548821652
+   B volume24h=194916.69731506609196761695
+   B volume24hBuy=107451.82423046104030126612
+   B volume24hSell=87464.87308460505166635083
+   B binanceDexSwitch=true
+   B volume24hNetBinance=6.853002741969176040061
+   B volume24hBinance=46.791940382175863959939
+   B volume24hBuyBinance=26.82247156207252
+   B volume24hSellBinance=19.969468820103343959939
+   B volume4h=55823.80156813080704690059
+   B volume4hBuy=34576.82960794511850843996
+   B volume4hSell=21246.97196018568853846063
+   B volume4hNetBinance=0
+   B volume4hBinance=0
+   B volume4hBuyBinance=0
+   B volume4hSellBinance=0
+   B volume1h=3332.57696216090623547798
+   B volume1hBuy=1265.60248048970536681509
+   B volume1hSell=2066.97448167120086866289
+   B volume1hNetBinance=0
+   B volume1hBinance=0
+   B volume1hBuyBinance=0
+   B volume1hSellBinance=0
+   B volume5m=259.02356983200745623716
+   B volume5mBuy=118.96097640061557092865
+   B volume5mSell=140.06259343139188530851
+   B volume5mNetBinance=0
+   B volume5mBinance=0
+   B volume5mBuyBinance=0
+   B volume5mSellBinance=0
+   B count24h=9307
+   B count24hBuy=4830
+   B count24hSell=4477
+   B count24hBinance=5
+   B count24hBuyBinance=2
+   B count24hSellBinance=3
+   B count4h=2379
+   B count4hBuy=870
+   B count4hSell=1509
+   B count4hBinance=0
+   B count4hBuyBinance=0
+   B count4hSellBinance=0
+   B count1h=238
+   B count1hBuy=116
+   B count1hSell=122
+   B count1hBinance=0
+   B count1hBuyBinance=0
+   B count1hSellBinance=0
+   B count5m=15
+   B count5mBuy=4
+   B count5mSell=11
+   B count5mBinance=0
+   B count5mBuyBinance=0
+   B count5mSellBinance=0
+   B percentChange5m=0.13
+   B percentChange1h=-0.38
+   B percentChange4h=2.83
+   B percentChange24h=4.02
+   B marketCap=183278742.23158423638232978106930326611269802034288
+   B totalSupply=87994288724616.51764
+   B circulatingSupply=87994288724616.51764
+   B allChainCirculatingSupply=87994288724616.515625
+   B priceHigh24h=0.000002110259887397659991864174587519
+   B priceLow24h=0.000001994648246917873406780334841328
+   B holders=1019778
+   B fdv=183278742.23158423638232978106930326611269802034288
+   B liquidity=759561.8437281655877988775276852093689
+   B launchTime=1726214893000
+   B top10HoldersPercentage=40.5414478282053798
+   B holdersSmartMoneyPercent=0.000092331393331
+   B holdersInfluencersPercent=0.0041319398856172
+   B kycHolderCount=2812
+   B allChainMaxSupply=88872433754423.19
+   B maxSupply=87994288724616.51764
+   B bnUniqueHolders=2808
+   B bnHoldingPercent=0.021374
+   B bnAvgBuyPrice=0.000010234270539208
+   B bnAvgSellPrice=0.000010256017951478
+   B bnTraders=3431
+   B kolHolders=436
+   B kolHoldingPercent=0.005065
+   B proHolders=4190
+   B proHoldingPercent=0.065002
+   B newWalletHolders=26965
+   B newWalletHoldingPercent=0.413914
+   B insiderHoldingPercent=0.083105
+   B bundlerHolders=1939
+   B bundlerHoldingPercent=0.463176
+   B smartMoneyHolders=27
+   B smartMoneyHoldingPercent=0.000029
+
+==== WIF solana
+DEX token-pairs/v1 status=200 n=30 liqSum=3846662 vol24Sum=209889 buys24=4863 sells24=4797
+   pool raydium  quote=SOL liq=3686204 vol24=139166 price=0.1208 mcap=120719607
+   pool orca wp quote=SOL liq=90245 vol24=65798 price=0.1207 mcap=120638003
+   pool raydium CPMM quote=$WIF liq=19741 vol24=3107 price=0.00006389 mcap=63898
+   pool meteora DYN quote=SOL liq=12169 vol24=49 price=0.1184 mcap=118314641
+DEX latest/tokens status=200 n(chain)=30 liqSum=3846661 vol24Sum=209889
+DEX tokens/v1 n=1
+GT pools status=200 n=20 reserveSum=3865827 vol24Sum=239504 buys24=5029
+GT token status=200 vol24=239464.411764244 reserveTotal=2523153
+BIN dynamic status=200 code=000000
+   B price=0.120749656246364921369067622568238677
+   B aggPrice=0.12080830445060015543
+   B nativeTokenPrice=70.31197753877464764449020000000000006
+   B volume24h=208562.59818960152076865102
+   B volume24hBuy=105398.18528093252987158509
+   B volume24hSell=103164.41290866899089706593
+   B binanceDexSwitch=true
+   B volume24hNetBinance=0
+   B volume24hBinance=0
+   B volume24hBuyBinance=0
+   B volume24hSellBinance=0
+   B volume4h=19270.21989490594507673936
+   B volume4hBuy=15894.49658370076050211208
+   B volume4hSell=3375.72331120518457462728
+   B volume4hNetBinance=0
+   B volume4hBinance=0
+   B volume4hBuyBinance=0
+   B volume4hSellBinance=0
+   B volume1h=3989.29666304540181427557
+   B volume1hBuy=3242.78244937243055335305
+   B volume1hSell=746.51421367297126092252
+   B volume1hNetBinance=0
+   B volume1hBinance=0
+   B volume1hBuyBinance=0
+   B volume1hSellBinance=0
+   B volume5m=1850.02596960616732705305
+   B volume5mBuy=1602.85289634242033890566
+   B volume5mSell=247.17307326374698814739
+   B volume5mNetBinance=0
+   B volume5mBinance=0
+   B volume5mBuyBinance=0
+   B volume5mSellBinance=0
+   B count24h=7921
+   B count24hBuy=4072
+   B count24hSell=3849
+   B count24hBinance=0
+   B count24hBuyBinance=0
+   B count24hSellBinance=0
+   B count4h=1145
+   B count4hBuy=505
+   B count4hSell=640
+   B count4hBinance=0
+   B count4hBuyBinance=0
+   B count4hSellBinance=0
+   B count1h=267
+   B count1hBuy=111
+   B count1hSell=156
+   B count1hBinance=0
+   B count1hBuyBinance=0
+   B count1hSellBinance=0
+   B count5m=67
+   B count5mBuy=34
+   B count5mSell=33
+   B count5mBinance=0
+   B count5mBuyBinance=0
+   B count5mSellBinance=0
+   B percentChange5m=0.16
+   B percentChange1h=0.59
+   B percentChange4h=3.93
+   B percentChange24h=3.59
+   B marketCap=120609160.2597410593619193183923228598157960579637
+   B totalSupply=998836468.8481
+   B circulatingSupply=998836468.8481
+   B allChainCirculatingSupply=998836468.8481
+   B priceHigh24h=0.121333702812921654613511907790678591
+   B priceLow24h=0.114438884718528859861335704033887863
+   B holders=264191
+   B fdv=120609160.2597410593619193183923228598157960579637
+   B liquidity=3864237.84589250077499793243390093785696
+   B launchTime=1726214586000
+   B top10HoldersPercentage=45.7619799603774226
+   B holdersSmartMoneyPercent=0.0000039727845532
+   B holdersInfluencersPercent=0.0082259471285158
+   B kycHolderCount=1232
+   B allChainMaxSupply=998840592.989347
+   B maxSupply=998836468.8481
+   B bnUniqueHolders=1232
+   B bnHoldingPercent=0.016996
+   B bnAvgBuyPrice=0.49853923304597143
+   B bnAvgSellPrice=0.506524588298534426
+   B bnTraders=881
+   B kolHolders=188
+   B kolHoldingPercent=0.004249
+   B proHolders=2599
+   B proHoldingPercent=0.044484
+   B newWalletHolders=13560
+   B newWalletHoldingPercent=0.179513
+   B insiderHoldingPercent=0.028678
+   B bundlerHolders=610
+   B bundlerHoldingPercent=0.360362
+   B smartMoneyHolders=16
+   B smartMoneyHoldingPercent=0.001919
+   B devMigratedPercent=100
+
+==== PEPE eth
+DEX token-pairs/v1 status=200 n=30 liqSum=25359952 vol24Sum=980531 buys24=538 sells24=709
+   pool uniswap v2 quote=WETH liq=22956717 vol24=907225 price=0.000003422 mcap=1416334726
+   pool uniswap v3 quote=WETH liq=2078512 vol24=38044 price=0.000003419 mcap=1414723949
+   pool aero  quote=WETH liq=148435 vol24=11457 price=0.000003421 mcap=1415769302
+   pool uniswap v4 quote=ETH liq=37534 vol24=266 price=0.000003407 mcap=1409892365
+DEX latest/tokens status=200 n(chain)=19 liqSum=25347162 vol24Sum=980412
+DEX tokens/v1 n=1
+GT pools status=200 n=20 reserveSum=25386292 vol24Sum=998930 buys24=547
+GT token status=200 vol24=998683.637941011 reserveTotal=12357501
+BIN dynamic status=200 code=000000
+   B price=0.000003421531049490215348249259246176
+   B aggPrice=0.0000034223126144178748674
+   B nativeTokenPrice=1706.8680417501423
+   B volume24h=977279.91025639678044671586
+   B volume24hBuy=460865.00429361578183271429
+   B volume24hSell=516414.90596278099861400157
+   B binanceDexSwitch=true
+   B volume24hNetBinance=23.14807536841200162988851949787551
+   B volume24hBinance=89.50605809035784232132933854908881
+   B volume24hBuyBinance=56.32706672938492197560892902348216
+   B volume24hSellBinance=33.17899136097292034572040952560665
+   B volume4h=165369.647172287551853934
+   B volume4hBuy=76331.7443305017357203986
+   B volume4hSell=89037.9028417858161335354
+   B volume4hNetBinance=-5.34261118007846996267019879835384
+   B volume4hBinance=15.34682575743375196867565630164616
+   B volume4hBuyBinance=5.00210728867764100300272875164616
+   B volume4hSellBinance=10.34471846875611096567292755
+   B volume1h=24857.14496511894743466717
+   B volume1hBuy=24699.06572292723773249547
+   B volume1hSell=158.0792421917097021717
+   B volume1hNetBinance=-5.34261118007846996267019879835384
+   B volume1hBinance=15.34682575743375196867565630164616
+   B volume1hBuyBinance=5.00210728867764100300272875164616
+   B volume1hSellBinance=10.34471846875611096567292755
+   B volume5m=934.24158329786466565943
+   B volume5mBuy=934.24158329786466565943
+   B volume5mSell=0
+   B volume5mNetBinance=0
+   B volume5mBinance=0
+   B volume5mBuyBinance=0
+   B volume5mSellBinance=0
+   B count24h=1114
+   B count24hBuy=480
+   B count24hSell=634
+   B count24hBinance=38
+   B count24hBuyBinance=5
+   B count24hSellBinance=33
+   B count4h=196
+   B count4hBuy=81
+   B count4hSell=115
+   B count4hBinance=2
+   B count4hBuyBinance=1
+   B count4hSellBinance=1
+   B count1h=24
+   B count1hBuy=21
+   B count1hSell=3
+   B count1hBinance=2
+   B count1hBuyBinance=1
+   B count1hSellBinance=1
+   B count5m=2
+   B count5mBuy=2
+   B count5mSell=0
+   B count5mBinance=0
+   B count5mBuyBinance=0
+   B count5mSellBinance=0
+   B percentChange5m=-0.17
+   B percentChange1h=0.1
+   B percentChange4h=2.26
+   B percentChange24h=2.51
+   B marketCap=1415734861.1062204616403928489455236593149627153339571529565
+   B totalSupply=420689899644011.345266333139582774
+   B circulatingSupply=413772326081084.443993495960798573
+   B allChainCirculatingSupply=413772350095630.40630647
+   B priceHigh24h=0.00000347136130743338764117819694474
+   B priceLow24h=0.000003305268756333320439744379835701
+   B holders=575070
+   B fdv=1439403553.8389075103959529564549191579283059955394416343949
+   B liquidity=25404221.79363171319366059416959045195454
+   B launchTime=1681492871000
+   B top10HoldersPercentage=39.3225277681023083
+   B kycHolderCount=11954
+   B allChainMaxSupply=413772350095630.40630647
+   B maxSupply=413772326081084.443993495960798573
+   B bnUniqueHolders=11940
+   B bnHoldingPercent=0.034579
+   B bnAvgBuyPrice=0.0000070376804126254121793040499020869097796135499470520775
+   B bnAvgSellPrice=0.0000076405497799009384008541769386638674038114152619103058
+   B bnTraders=4108
+   B kolHolders=118
+   B kolHoldingPercent=1.733196
+   B newWalletHolders=7265
+   B newWalletHoldingPercent=0.112051
+   B bundlerHolders=100
+   B bundlerHoldingPercent=0.008957
+   B devHolders=1
+   B devHoldingPercent=0
+   B smartMoneyHolders=2
+   B smartMoneyHoldingPercent=0.000001
+
+==== BRETT base
+DEX token-pairs/v1 status=200 n=30 liqSum=1523132 vol24Sum=44225 buys24=714 sells24=970
+   pool uniswap v3 quote=WETH liq=791872 vol24=1025 price=0.003183 mcap=31551382
+   pool aerodrome  quote=WETH liq=489263 vol24=20762 price=0.003152 mcap=31238451
+   pool pancakeswap  quote=WETH liq=117736 vol24=0 price=0.003178 mcap=31496116
+   pool uniswap v3 quote=WETH liq=68994 vol24=3701 price=0.003163 mcap=31351055
+DEX latest/tokens status=200 n(chain)=30 liqSum=1523132 vol24Sum=44225
+DEX tokens/v1 n=1
+GT pools status=429 n=0 reserveSum=0 vol24Sum=0 buys24=0
+GT token status=429 vol24=undefined reserveTotal=0
+BIN dynamic status=200 code=000000
+   B price=0.003152561668175732528341166965707364
+   B aggPrice=0.0031536016706326401704
+   B nativeTokenPrice=1707.05071852641889760225667227106766
+   B volume24h=44043.3185637759084046931
+   B volume24hBuy=15697.06697542512354534819
+   B volume24hSell=28346.25158835078485934491
+   B binanceDexSwitch=true
+   B volume24hNetBinance=41.70132735853202750085355188510553
+   B volume24hBinance=73.58318468841102750085355188510553
+   B volume24hBuyBinance=57.64225602347152750085355188510553
+   B volume24hSellBinance=15.9409286649395
+   B volume4h=9453.39040875685167384599
+   B volume4hBuy=3011.40654219428310793841
+   B volume4hSell=6441.98386656256856590758
+   B volume4hNetBinance=0
+   B volume4hBinance=0
+   B volume4hBuyBinance=0
+   B volume4hSellBinance=0
+   B volume1h=2709.66570147243456634214
+   B volume1hBuy=1185.24068817429349629767
+   B volume1hSell=1524.42501329814107004447
+   B volume1hNetBinance=0
+   B volume1hBinance=0
+   B volume1hBuyBinance=0
+   B volume1hSellBinance=0
+   B volume5m=88.0625000910598740858
+   B volume5mBuy=9.04631679831227539625
+   B volume5mSell=79.01618329274759868955
+   B volume5mNetBinance=0
+   B volume5mBinance=0
+   B volume5mBuyBinance=0
+   B volume5mSellBinance=0
+   B count24h=1419
+   B count24hBuy=617
+   B count24hSell=802
+   B count24hBinance=4
+   B count24hBuyBinance=3
+   B count24hSellBinance=1
+   B count4h=255
+   B count4hBuy=102
+   B count4hSell=153
+   B count4hBinance=0
+   B count4hBuyBinance=0
+   B count4hSellBinance=0
+   B count1h=58
+   B count1hBuy=34
+   B count1hSell=24
+   B count1hBinance=0
+   B count1hBuyBinance=0
+   B count1hSellBinance=0
+   B count5m=12
+   B count5mBuy=4
+   B count5mSell=8
+   B count5mBinance=0
+   B count5mBuyBinance=0
+   B count5mSellBinance=0
+   B percentChange5m=0
+   B percentChange1h=-0.16
+   B percentChange4h=1.86
+   B percentChange24h=0.9
+   B marketCap=31240529.826828613121951308146889228135236723615483499463638
+   B totalSupply=9999997544.340006294456944163
+   B circulatingSupply=9909569776.919326347109559864
+   B allChainCirculatingSupply=9999997544.72314378
+   B priceHigh24h=0.003253160621449980188509384909421154
+   B priceLow24h=0.003084234835836336127437720862168616
+   B holders=891966
+   B fdv=31525608.940137759054656013261634546207434130239737417145916
+   B liquidity=1522326.00206313725743002349489805096492
+   B launchTime=1709041137000
+   B top10HoldersPercentage=32.5555097458055495
+   B kycHolderCount=2239
+   B allChainMaxSupply=9999997544.723145
+   B maxSupply=9909569776.919326347109559864
+   B bnUniqueHolders=2234
+   B bnHoldingPercent=0.121504
+   B bnAvgBuyPrice=0.023000267928755594
+   B bnAvgSellPrice=0.020658314481905823
+   B bnTraders=885
+   B kolHolders=68
+   B kolHoldingPercent=0.001672
+   B proHolders=430
+   B proHoldingPercent=0.05177
+   B bundlerHolders=268
+   B bundlerHoldingPercent=0.498147
+   B devHolders=1
+   B devHoldingPercent=0.0002
+   B smartMoneyHolders=1
+   B smartMoneyHoldingPercent=0
+
+==== CAKE bsc
+DEX token-pairs/v1 status=200 n=30 liqSum=14068515 vol24Sum=1298895 buys24=7369 sells24=6757
+   pool pancakeswap v3 quote=USDT liq=4551074 vol24=178972 price=1.50 mcap=524658236
+   pool pancakeswap v3 quote=WBNB liq=3325031 vol24=56742 price=1.50 mcap=525043664
+   pool uniswap  quote=USDT liq=2759074 vol24=614 price=1.49 mcap=524465782
+   pool uniswap v4 quote=USDT liq=1007963 vol24=0 price=1.49 mcap=521046029
+DEX latest/tokens status=200 n(chain)=30 liqSum=14068515 vol24Sum=1298896
+DEX tokens/v1 n=1
+GT pools status=429 n=0 reserveSum=0 vol24Sum=0 buys24=0
+GT token status=429 vol24=undefined reserveTotal=0
+BIN dynamic status=200 code=000000
+   B price=1.49893016112422886905928227135043908
+   B aggPrice=1.498927389955677156
+   B nativeTokenPrice=552.830269313601078387
+   B volume24h=812111.71393403154315091783
+   B volume24hBuy=425303.14687183274386858958
+   B volume24hSell=386808.56706219879928232825
+   B binanceDexSwitch=true
+   B volume24hNetBinance=-217.00367604046683563207247523619444
+   B volume24hBinance=366.10960919063230593537739228368802
+   B volume24hBuyBinance=74.55296657508273515165245852374679
+   B volume24hSellBinance=291.55664261554957078372493375994123
+   B volume4h=193880.70999032284690258036
+   B volume4hBuy=119741.33580613646401600179
+   B volume4hSell=74139.37418418638288657857
+   B volume4hNetBinance=5.56788015147962856449538139156787
+   B volume4hBinance=14.41996573469057660182606520724175
+   B volume4hBuyBinance=9.99392294308510258316072329940481
+   B volume4hSellBinance=4.42604279160547401866534190783694
+   B volume1h=46623.31292329606546124538
+   B volume1hBuy=32216.40446483041230471441
+   B volume1hSell=14406.90845846565315653097
+   B volume1hNetBinance=0
+   B volume1hBinance=0
+   B volume1hBuyBinance=0
+   B volume1hSellBinance=0
+   B volume5m=13751.90849254274494451422
+   B volume5mBuy=11632.42100779819042264249
+   B volume5mSell=2119.48748474455452187173
+   B volume5mNetBinance=0
+   B volume5mBinance=0
+   B volume5mBuyBinance=0
+   B volume5mSellBinance=0
+   B count24h=5463
+   B count24hBuy=2820
+   B count24hSell=2643
+   B count24hBinance=18
+   B count24hBuyBinance=5
+   B count24hSellBinance=13
+   B count4h=1207
+   B count4hBuy=641
+   B count4hSell=566
+   B count4hBinance=5
+   B count4hBuyBinance=2
+   B count4hSellBinance=3
+   B count1h=237
+   B count1hBuy=130
+   B count1hSell=107
+   B count1hBinance=0
+   B count1hBuyBinance=0
+   B count1hSellBinance=0
+   B count5m=62
+   B count5mBuy=47
+   B count5mSell=15
+   B count5mBinance=0
+   B count5mBuyBinance=0
+   B count5mSellBinance=0
+   B percentChange5m=-0.03
+   B percentChange1h=0.44
+   B percentChange4h=2.77
+   B percentChange24h=4.55
+   B marketCap=524140311.41876553180058240398392387025415676891350208382675
+   B totalSupply=5874225835.751051201610995531
+   B circulatingSupply=349676272.459318165615386437
+   B allChainCirculatingSupply=332230847.3568801
+   B priceHigh24h=1.50218716396073130452961409357755104
+   B priceLow24h=1.43335737891348589080358271442324975
+   B holders=1895530
+   B fdv=8805054278.4624311657241832969580890472417926047739826927677
+   B liquidity=11331531.768462494697625305520566637868
+   B launchTime=1619167423000
+   B top10HoldersPercentage=3.2338598442451122
+   B holdersDevPercent=0
+   B holdersSmartMoneyPercent=0.000001405615302
+   B holdersInfluencersPercent=0.001410800773208
+   B kycHolderCount=19800
+   B allChainMaxSupply=400000000
+   B maxSupply=349676272.459318165615386437
+   B bnUniqueHolders=19726
+   B bnHoldingPercent=0.023095
+   B bnAvgBuyPrice=2.258707418329889123
+   B bnAvgSellPrice=2.271114302011702857
+   B bnTraders=25010
+   B kolHolders=348
+   B kolHoldingPercent=0.001231
+   B proHolders=5466
+   B proHoldingPercent=0.000152
+   B newWalletHolders=18354
+   B newWalletHoldingPercent=0.028944
+   B bundlerHolders=1571
+   B bundlerHoldingPercent=0.066743
+   B smartMoneyHolders=7
+   B smartMoneyHoldingPercent=0
+   B fomoHolders=1086
+   B fomoHoldingPercent=0.002494
