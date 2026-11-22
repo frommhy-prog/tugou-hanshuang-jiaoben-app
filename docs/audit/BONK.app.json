@@ -1,0 +1,275 @@
+{
+ "chain": "solana",
+ "address": "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+ "fetchedAt": 1795349089337,
+ "cacheTtlSec": 60,
+ "minPollIntervalSec": 60,
+ "fresh": false,
+ "cached": false,
+ "apiCost": {
+  "endpoint": "token",
+  "dexscreener": "1-2",
+  "geckoterminal": "1",
+  "goplus": "1",
+  "honeypot": "0-1",
+  "blockscout_pro": "0-3",
+  "etherscan": "0-2",
+  "alchemy_logscan_pages": "0-10",
+  "lp_rpc": "0-2",
+  "paidPromotion": "1",
+  "fallback": "0-2",
+  "note": "全量体检并行 8 家上游；日志扫描页数随币龄浮动，老币页多、新币页少",
+  "costText": "dexscreener 1-2次、geckoterminal 1次、goplus 1次、honeypot 0-1次、blockscout_pro 0-3次、etherscan 0-2次、alchemy_logscan_pages 0-10次、lp_rpc 0-2次、paidPromotion 1次、fallback 0-2次"
+ },
+ "price": {
+  "name": "Bonk",
+  "symbol": "Bonk",
+  "priceUsd": 0.000002078,
+  "liquidityUsd": 207579.21,
+  "liquidityBase": 72998893063,
+  "liquidityQuote": 791.3343,
+  "baseTokenAddress": "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+  "quoteTokenAddress": "So11111111111111111111111111111111111111112",
+  "quoteTokenSymbol": "SOL",
+  "volume24hUsd": 100201.56,
+  "totalVolume24hUsd": 100201.56,
+  "totalLiquidityUsd": 207579.21,
+  "priceChange5mPct": -0.25,
+  "priceChange1hPct": -0.53,
+  "priceChange24hPct": 3.75,
+  "txns5m": {
+   "buys": 4,
+   "sells": 8
+  },
+  "txns1h": {
+   "buys": 145,
+   "sells": 84
+  },
+  "txns24h": {
+   "buys": 4138,
+   "sells": 4002
+  },
+  "pairAddress": "5zpyutJu9ee6jFymDGoK7F6S5Kczqtc9FomP3ueKuyA9",
+  "pairCreatedAt": 1671980424000,
+  "dexId": "orca",
+  "labels": [
+   "wp"
+  ],
+  "boostsActive": null,
+  "source": "dexscreener",
+  "allPairs": [
+   {
+    "pairAddress": "5zpyutJu9ee6jFymDGoK7F6S5Kczqtc9FomP3ueKuyA9",
+    "dexId": "orca",
+    "labels": [
+     "wp"
+    ],
+    "priceUsd": 0.000002078,
+    "liquidityUsd": 207579.21,
+    "volume24hUsd": 100201.56,
+    "pairCreatedAt": 1671980424000,
+    "baseTokenSymbol": "Bonk",
+    "quoteTokenSymbol": "SOL"
+   }
+  ]
+ },
+ "holders": 2114761,
+ "topHoldersPct": null,
+ "topHolders": null,
+ "holdersSource": null,
+ "tradeFlow": {
+  "m5": {
+   "buys": 4,
+   "sells": 8,
+   "buySharePct": 33.33,
+   "buySellRatio": 0.5
+  },
+  "h1": {
+   "buys": 145,
+   "sells": 84,
+   "buySharePct": 63.32,
+   "buySellRatio": 1.73
+  },
+  "h24": {
+   "buys": 4138,
+   "sells": 4002,
+   "buySharePct": 50.84,
+   "buySellRatio": 1.03
+  },
+  "source": "dexscreener",
+  "moneyFlowNote": "5 分钟/1 小时/24 小时买卖笔数只能说买盘笔数占优还是卖盘笔数占优，不能据此定庄家出货还是散户抢筹：Dex 笔数不区分大户还是散户，也不给每笔金额，净流入金额算不出，不编；笔数是 Dex 最深池子那一对的，不是全市场所有池子合计"
+ },
+ "solanaAuthorities": {
+  "mintAuthority": null,
+  "freezeAuthority": null,
+  "mintRenounced": true,
+  "freezeRenounced": true,
+  "source": "rugcheck",
+  "note": "Mint/Freeze Authority 来自 RugCheck 已查字段，不是另跑 Solsniper 脚本；稳定币的发行方权限不单独当跑路信号，总结里已有豁免"
+ },
+ "buyTax": null,
+ "sellTax": null,
+ "honeypot": null,
+ "renounced": null,
+ "mintable": false,
+ "blacklist": null,
+ "lpLocked": true,
+ "lpBurnPct": null,
+ "lpTopHolder": null,
+ "lpTopHolderPct": null,
+ "lpTopHolderIsContract": null,
+ "lpError": null,
+ "poolAge": 1427.9,
+ "marketCapUsd": null,
+ "totalSupplyTokens": null,
+ "totalSupplyRaw": null,
+ "txns5m": {
+  "buys": 4,
+  "sells": 8
+ },
+ "txns1h": {
+  "buys": 145,
+  "sells": 84
+ },
+ "txns24h": {
+  "buys": 4138,
+  "sells": 4002
+ },
+ "totalVolume24hUsd": 100201.56,
+ "totalLiquidityUsd": 207579.21,
+ "volumePoolRatio": 0.4827,
+ "liquidityBase": 72998893063,
+ "liquidityQuote": 791.3343,
+ "quoteTokenSymbol": "SOL",
+ "priceChange5mPct": -0.25,
+ "priceChange1hPct": -0.53,
+ "swapFeePct": null,
+ "swapFeeError": null,
+ "gasPriceGwei": null,
+ "realHolders": null,
+ "allPairs": [
+  {
+   "pairAddress": "5zpyutJu9ee6jFymDGoK7F6S5Kczqtc9FomP3ueKuyA9",
+   "dexId": "orca",
+   "labels": [
+    "wp"
+   ],
+   "priceUsd": 0.000002078,
+   "liquidityUsd": 207579.21,
+   "volume24hUsd": 100201.56,
+   "pairCreatedAt": 1671980424000,
+   "baseTokenSymbol": "Bonk",
+   "quoteTokenSymbol": "SOL"
+  }
+ ],
+ "internalMarket": {
+  "platform": "pump.fun",
+  "status": "graduated_external",
+  "dexIds": [
+   "orca"
+  ],
+  "note": "Pump.fun 前端 API 自 2026-09-24 起 404；本版链上曲线 PDA 已接（seeds bonding-curve+mints，程序 6EF8…，价=virtualSol/virtualToken×SOL价），曲线未毕业即内盘、已毕业曲线清空改走外盘；无 Dex 对且无曲线账户的 pump 币标 unknown_no_dex_pair"
+ },
+ "multiSource": {
+  "priceDexUsd": 0.000002078,
+  "priceGeckoUsd": null,
+  "priceDiscrepancyPct": null,
+  "pricePrimary": "dexscreener",
+  "holdersPro": null,
+  "holdersSecurity": 2114761,
+  "holdersLogScan": null,
+  "goplusError": "solana_no_goplus",
+  "honeypotError": "solana_no_honeypot",
+  "queryTimeMs": 484
+ },
+ "contractQuote": {
+  "four": null,
+  "pump": {
+   "source": "pump_curve",
+   "pda": "HYdTodMngpgXxJAMxqiN5E8p1SMzTy24eNM2Y3yWpuj2",
+   "bump": 255,
+   "error": "curve_account_not_found",
+   "rpcError": null
+  },
+  "pool": null,
+  "poolError": null,
+  "coingecko": null,
+  "coingeckoError": null,
+  "primaryPriceUsd": 0.000002078,
+  "primarySource": "dexscreener",
+  "dexPriceUsd": 0.000002078,
+  "discrepancyPct": null,
+  "primaryNote": null
+ },
+ "quoteUsd": 0.000002078,
+ "quoteSource": "dexscreener",
+ "internalMarketGecko": null,
+ "paidPromotion": {
+  "orders": [],
+  "boosts": [],
+  "hasPaidPromotion": false,
+  "orderTypes": [],
+  "orderStatuses": [],
+  "boostsActive": null,
+  "source": "dexscreener_orders",
+  "error": null,
+  "note": "只覆盖 Dexscreener 付费推广（Boost 与付费订单），X/Telegram/KOL 付费与 Ave/GMGN 付费置顶无公开免费接口，本字段不覆盖"
+ },
+ "backupSources": {
+  "price": [
+   "dexscreener",
+   "geckoterminal",
+   "coingecko_single",
+   "exchange_spot_gate_kraken_coinbase",
+   "evm_pool_known_or_factory"
+  ],
+  "security": [
+   "goplus",
+   "honeypot_is",
+   "etherscan_source"
+  ],
+  "holdersTop10Creator": [
+   "blockscout_pro",
+   "alchemy_logscan",
+   "public_rpc_logscan",
+   "goplus_honeypot_holders"
+  ],
+  "lp": [
+   "alchemy_lp",
+   "public_rpc_lp_burn"
+  ]
+ },
+ "creatorHistory": null,
+ "risk": "yellow",
+ "riskSource": "rugcheck",
+ "security": {
+  "source": "rugcheck",
+  "flags": {
+   "score": 101,
+   "scoreNormalised": 7,
+   "risks": [
+    {
+     "name": "Mutable metadata",
+     "value": "",
+     "description": "Token metadata can be changed by the owner",
+     "score": 100,
+     "level": "warn"
+    }
+   ],
+   "mintAuthority": null,
+   "freezeAuthority": null,
+   "rugged": false
+  }
+ },
+ "securityError": null,
+ "bsError": null,
+ "bsProError": null,
+ "etherscanError": null,
+ "logScan": null,
+ "tradeLinks": {
+  "ave": "https://ave.ai/token/DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263-solana",
+  "gmgn": "https://gmgn.ai/solana/token/DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+  "dexscreener": "https://dexscreener.com/solana/5zpyutJu9ee6jFymDGoK7F6S5Kczqtc9FomP3ueKuyA9",
+  "xSearch": "https://x.com/search?q=%24Bonk"
+ }
+}

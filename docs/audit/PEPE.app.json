@@ -1,0 +1,409 @@
+{
+ "chain": "eth",
+ "address": "0x6982508145454Ce325dDbE47a25d4ec3d2311933",
+ "fetchedAt": 1795349110164,
+ "cacheTtlSec": 60,
+ "minPollIntervalSec": 60,
+ "fresh": false,
+ "cached": false,
+ "apiCost": {
+  "endpoint": "token",
+  "dexscreener": "1-2",
+  "geckoterminal": "1",
+  "goplus": "1",
+  "honeypot": "0-1",
+  "blockscout_pro": "0-3",
+  "etherscan": "0-2",
+  "alchemy_logscan_pages": "0-10",
+  "lp_rpc": "0-2",
+  "paidPromotion": "1",
+  "fallback": "0-2",
+  "note": "全量体检并行 8 家上游；日志扫描页数随币龄浮动，老币页多、新币页少",
+  "costText": "dexscreener 1-2次、geckoterminal 1次、goplus 1次、honeypot 0-1次、blockscout_pro 0-3次、etherscan 0-2次、alchemy_logscan_pages 0-10次、lp_rpc 0-2次、paidPromotion 1次、fallback 0-2次"
+ },
+ "price": {
+  "name": "Pepe",
+  "symbol": "PEPE",
+  "priceUsd": 0.000003422,
+  "liquidityUsd": 22956717.03,
+  "liquidityBase": 3353322692492,
+  "liquidityQuote": 6715.6009,
+  "baseTokenAddress": "0x6982508145454Ce325dDbE47a25d4ec3d2311933",
+  "quoteTokenAddress": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+  "quoteTokenSymbol": "WETH",
+  "volume24hUsd": 907323.84,
+  "totalVolume24hUsd": 907323.84,
+  "totalLiquidityUsd": 22956717.03,
+  "priceChange5mPct": null,
+  "priceChange1hPct": 0.35,
+  "priceChange24hPct": 2.53,
+  "txns5m": {
+   "buys": 0,
+   "sells": 0
+  },
+  "txns1h": {
+   "buys": 10,
+   "sells": 1
+  },
+  "txns24h": {
+   "buys": 220,
+   "sells": 303
+  },
+  "pairAddress": "0xA43fe16908251ee70EF74718545e4FE6C5cCEc9f",
+  "pairCreatedAt": 1681492871000,
+  "dexId": "uniswap",
+  "labels": [
+   "v2"
+  ],
+  "boostsActive": null,
+  "source": "dexscreener",
+  "allPairs": [
+   {
+    "pairAddress": "0xA43fe16908251ee70EF74718545e4FE6C5cCEc9f",
+    "dexId": "uniswap",
+    "labels": [
+     "v2"
+    ],
+    "priceUsd": 0.000003422,
+    "liquidityUsd": 22956717.03,
+    "volume24hUsd": 907323.84,
+    "pairCreatedAt": 1681492871000,
+    "baseTokenSymbol": "PEPE",
+    "quoteTokenSymbol": "WETH"
+   }
+  ]
+ },
+ "holders": 575077,
+ "topHoldersPct": 39.32,
+ "topHolders": [
+  {
+   "address": "0xF977814e90dA44bFA03b6295A0616a897441aceC",
+   "value": "50162736194264694000000000000000",
+   "sharePct": 11.92,
+   "isContract": null
+  },
+  {
+   "address": "0x1d48963DD8FAdA6aB5C2C7b92Eba81ECC5030270",
+   "value": "27247969229997646104356460249562",
+   "sharePct": 6.47,
+   "isContract": null
+  },
+  {
+   "address": "0x5a52E96BAcdaBb82fd05763E25335261B270Efcb",
+   "value": "21345663499491704877378668900100",
+   "sharePct": 5.07,
+   "isContract": null
+  },
+  {
+   "address": "0x3f9a8345729eA842708E080e238C92731e5699b8",
+   "value": "13057603300415549090732239043031",
+   "sharePct": 3.1,
+   "isContract": null
+  },
+  {
+   "address": "0x611f7bF868a6212f871e89F7e44684045DdFB09d",
+   "value": "12203857752799351751872716941006",
+   "sharePct": 2.9,
+   "isContract": null
+  },
+  {
+   "address": "0xc93e48d89F2d6DBc1672908aA68Ce7c24d0413B4",
+   "value": "11610000000130020000000000000000",
+   "sharePct": 2.75,
+   "isContract": null
+  },
+  {
+   "address": "0xbf45fB5D20BC3D0954188773e803b4E30E87E0b8",
+   "value": "8051614074754317072250000000000",
+   "sharePct": 1.91,
+   "isContract": null
+  },
+  {
+   "address": "0x9b0c45d46D386cEdD98873168C36efd0DcBa8d46",
+   "value": "7283340770120826672873000000000",
+   "sharePct": 1.73,
+   "isContract": null
+  },
+  {
+   "address": "0x176F3DAb24a159341c0509bB36B833E7fdd0a132",
+   "value": "7268180950036540000000000000000",
+   "sharePct": 1.72,
+   "isContract": null
+  },
+  {
+   "address": "0xc671b05671A7cD3080C6ceAe79d284Bdde0ef271",
+   "value": "7194936833107445625597336641656",
+   "sharePct": 1.71,
+   "isContract": null
+  }
+ ],
+ "holdersSource": "blockscout_pro",
+ "tradeFlow": {
+  "m5": {
+   "buys": 0,
+   "sells": 0,
+   "buySharePct": null,
+   "buySellRatio": null
+  },
+  "h1": {
+   "buys": 10,
+   "sells": 1,
+   "buySharePct": 90.91,
+   "buySellRatio": 10
+  },
+  "h24": {
+   "buys": 220,
+   "sells": 303,
+   "buySharePct": 42.07,
+   "buySellRatio": 0.73
+  },
+  "source": "dexscreener",
+  "moneyFlowNote": "5 分钟/1 小时/24 小时买卖笔数只能说买盘笔数占优还是卖盘笔数占优，不能据此定庄家出货还是散户抢筹：Dex 笔数不区分大户还是散户，也不给每笔金额，净流入金额算不出，不编；笔数是 Dex 最深池子那一对的，不是全市场所有池子合计"
+ },
+ "solanaAuthorities": null,
+ "buyTax": 0,
+ "sellTax": 0,
+ "honeypot": false,
+ "renounced": true,
+ "mintable": false,
+ "blacklist": true,
+ "lpLocked": false,
+ "lpBurnPct": 0,
+ "lpTopHolder": "0x6982508145454ce325ddbe47a25d4ec3d2311933",
+ "lpTopHolderPct": 99.4,
+ "lpTopHolderIsContract": true,
+ "lpError": null,
+ "poolAge": 1317.8,
+ "marketCapUsd": 1439600836.581807,
+ "totalSupplyTokens": 420689899644011.4,
+ "totalSupplyRaw": "420689899644011345266333139582774",
+ "txns5m": {
+  "buys": 0,
+  "sells": 0
+ },
+ "txns1h": {
+  "buys": 10,
+  "sells": 1
+ },
+ "txns24h": {
+  "buys": 220,
+  "sells": 303
+ },
+ "totalVolume24hUsd": 907323.84,
+ "totalLiquidityUsd": 22956717.03,
+ "volumePoolRatio": 0.0395,
+ "liquidityBase": 3353322692492,
+ "liquidityQuote": 6715.6009,
+ "quoteTokenSymbol": "WETH",
+ "priceChange5mPct": null,
+ "priceChange1hPct": 0.35,
+ "swapFeePct": 0.3,
+ "swapFeeError": null,
+ "gasPriceGwei": 0.120461107,
+ "realHolders": null,
+ "allPairs": [
+  {
+   "pairAddress": "0xA43fe16908251ee70EF74718545e4FE6C5cCEc9f",
+   "dexId": "uniswap",
+   "labels": [
+    "v2"
+   ],
+   "priceUsd": 0.000003422,
+   "liquidityUsd": 22956717.03,
+   "volume24hUsd": 907323.84,
+   "pairCreatedAt": 1681492871000,
+   "baseTokenSymbol": "PEPE",
+   "quoteTokenSymbol": "WETH"
+  }
+ ],
+ "internalMarket": {
+  "platform": null,
+  "status": "external_only",
+  "externalPools": [
+   {
+    "pairAddress": "0xA43fe16908251ee70EF74718545e4FE6C5cCEc9f",
+    "dexId": "uniswap",
+    "labels": [
+     "v2"
+    ],
+    "priceUsd": 0.000003422,
+    "liquidityUsd": 22956717.03,
+    "volume24hUsd": 907323.84,
+    "pairCreatedAt": 1681492871000,
+    "baseTokenSymbol": "PEPE",
+    "quoteTokenSymbol": "WETH"
+   }
+  ],
+  "note": "本链无统一免费内盘接口（Base/ETH 等发射台各异、无统一代理余额法），本版只给外盘多池，内盘不编数"
+ },
+ "multiSource": {
+  "priceDexUsd": 0.000003422,
+  "priceGeckoUsd": null,
+  "priceDiscrepancyPct": null,
+  "pricePrimary": "dexscreener",
+  "holdersPro": 575309,
+  "holdersSecurity": 575077,
+  "holdersLogScan": null,
+  "goplusError": "goplus_code_4029",
+  "honeypotError": null,
+  "queryTimeMs": 4633
+ },
+ "contractQuote": {
+  "four": null,
+  "pump": null,
+  "pool": {
+   "source": "evm_pool_v2",
+   "pair": "0xA43fe16908251ee70EF74718545e4FE6C5cCEc9f",
+   "token0": "0x6982508145454ce325ddbe47a25d4ec3d2311933",
+   "token1": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+   "quoteToken": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+   "poolKind": "v2",
+   "reserves": {
+    "reserve0": "3353322692492670956340724943937",
+    "reserve1": "6715600979083336423201"
+   },
+   "sqrtPriceX96": null,
+   "priceQuote": 2.0026706627781586e-9,
+   "quotePriceUsd": 1708.74,
+   "quotePriceSource": "dexscreener",
+   "priceUsd": 0.000003422043468315551
+  },
+  "poolError": null,
+  "coingecko": null,
+  "coingeckoError": null,
+  "primaryPriceUsd": 0.000003422043468315551,
+  "primarySource": "evm_pool_v2",
+  "dexPriceUsd": 0.000003422,
+  "discrepancyPct": 0
+ },
+ "quoteUsd": 0.000003422043468315551,
+ "quoteSource": "evm_pool_v2",
+ "internalMarketGecko": null,
+ "paidPromotion": {
+  "orders": [
+   {
+    "chainId": "ethereum",
+    "tokenAddress": "0x6982508145454ce325ddbe47a25d4ec3d2311933",
+    "type": "communityTakeover",
+    "status": "cancelled",
+    "paymentTimestamp": 1730682005838
+   },
+   {
+    "chainId": "ethereum",
+    "tokenAddress": "0x6982508145454Ce325dDbE47a25d4ec3d2311933",
+    "type": "communityTakeover",
+    "status": "cancelled",
+    "paymentTimestamp": 1727829947475
+   },
+   {
+    "chainId": "ethereum",
+    "tokenAddress": "0x6982508145454Ce325dDbE47a25d4ec3d2311933",
+    "type": "tokenProfile",
+    "status": "approved",
+    "paymentTimestamp": 1727829946532
+   },
+   {
+    "chainId": "ethereum",
+    "tokenAddress": "0x6982508145454Ce325dDbE47a25d4ec3d2311933",
+    "type": "communityTakeover",
+    "status": "cancelled",
+    "paymentTimestamp": 1727829132414
+   },
+   {
+    "chainId": "ethereum",
+    "tokenAddress": "0x6982508145454Ce325dDbE47a25d4ec3d2311933",
+    "type": "communityTakeover",
+    "status": "cancelled",
+    "paymentTimestamp": 1720207899000
+   }
+  ],
+  "boosts": [],
+  "hasPaidPromotion": true,
+  "orderTypes": [
+   "communityTakeover",
+   "tokenProfile"
+  ],
+  "orderStatuses": [
+   "cancelled",
+   "approved"
+  ],
+  "boostsActive": null,
+  "source": "dexscreener_orders",
+  "error": null,
+  "note": "只覆盖 Dexscreener 付费推广（Boost 与付费订单），X/Telegram/KOL 付费与 Ave/GMGN 付费置顶无公开免费接口，本字段不覆盖"
+ },
+ "backupSources": {
+  "price": [
+   "dexscreener",
+   "geckoterminal",
+   "coingecko_single",
+   "exchange_spot_gate_kraken_coinbase",
+   "evm_pool_known_or_factory"
+  ],
+  "security": [
+   "goplus",
+   "honeypot_is",
+   "etherscan_source"
+  ],
+  "holdersTop10Creator": [
+   "blockscout_pro",
+   "alchemy_logscan",
+   "public_rpc_logscan",
+   "goplus_honeypot_holders"
+  ],
+  "lp": [
+   "alchemy_lp",
+   "public_rpc_lp_burn"
+  ]
+ },
+ "creatorHistory": {
+  "creatorAddress": "0xfbfEaF0DA0F2fdE5c66dF570133aE35f3eB58c9A",
+  "creationTxHash": "0x2afae7763487e60b893cb57803694810e6d3d136186a6de6719921afd7ca304a",
+  "creationTimestamp": 1681483895
+ },
+ "risk": "yellow",
+ "riskSource": "honeypot_is",
+ "security": {
+  "source": "honeypot_is",
+  "flags": {
+   "openSource": true,
+   "isProxy": false,
+   "summaryRisk": "low",
+   "simulationSuccess": true,
+   "blockscout_pro": {
+    "holders": 575309,
+    "topHoldersPct": 39.32,
+    "totalSupply": "420689899644011345266333139582774",
+    "bsProError": {}
+   },
+   "etherscan": {
+    "mintable": false,
+    "blacklist": true,
+    "sourceScan": {
+     "verified": true,
+     "mintable": false,
+     "blacklist": true,
+     "scannedFrom": "self"
+    }
+   },
+   "lpAlchemy": {
+    "burnPct": 0,
+    "topHolder": "0x6982508145454ce325ddbe47a25d4ec3d2311933",
+    "topHolderPct": 99.4,
+    "topHolderIsContract": true,
+    "error": null
+   }
+  }
+ },
+ "securityError": null,
+ "bsError": null,
+ "bsProError": null,
+ "etherscanError": null,
+ "logScan": null,
+ "tradeLinks": {
+  "ave": "https://ave.ai/token/0x6982508145454Ce325dDbE47a25d4ec3d2311933-eth",
+  "gmgn": "https://gmgn.ai/eth/token/0x6982508145454Ce325dDbE47a25d4ec3d2311933",
+  "dexscreener": "https://dexscreener.com/ethereum/0xA43fe16908251ee70EF74718545e4FE6C5cCEc9f",
+  "xSearch": "https://x.com/search?q=%24PEPE"
+ }
+}

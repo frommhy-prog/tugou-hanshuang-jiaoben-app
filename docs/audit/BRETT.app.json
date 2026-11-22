@@ -1,0 +1,197 @@
+{
+ "chain": "base",
+ "address": "0x532f27101965dd16442E59d40670FaF5eBB142E4",
+ "fetchedAt": 1795349119257,
+ "cacheTtlSec": 60,
+ "minPollIntervalSec": 60,
+ "fresh": false,
+ "cached": false,
+ "apiCost": {
+  "endpoint": "token",
+  "dexscreener": "1-2",
+  "geckoterminal": "1",
+  "goplus": "1",
+  "honeypot": "0-1",
+  "blockscout_pro": "0-3",
+  "etherscan": "0-2",
+  "alchemy_logscan_pages": "0-10",
+  "lp_rpc": "0-2",
+  "paidPromotion": "1",
+  "fallback": "0-2",
+  "note": "全量体检并行 8 家上游；日志扫描页数随币龄浮动，老币页多、新币页少",
+  "costText": "dexscreener 1-2次、geckoterminal 1次、goplus 1次、honeypot 0-1次、blockscout_pro 0-3次、etherscan 0-2次、alchemy_logscan_pages 0-10次、lp_rpc 0-2次、paidPromotion 1次、fallback 0-2次"
+ },
+ "price": {
+  "name": "Brett",
+  "symbol": "BRETT",
+  "priceUsd": 0.0031615243491109717,
+  "liquidityUsd": null,
+  "volume24hUsd": 43169.11801532904,
+  "priceChange24hPct": -1.7208694870481516,
+  "txns24h": {
+   "buys": 680,
+   "sells": 1027
+  },
+  "pairAddress": null,
+  "dexId": null,
+  "source": "dexpaprika"
+ },
+ "holders": 911158,
+ "topHoldersPct": null,
+ "topHolders": null,
+ "holdersSource": null,
+ "tradeFlow": {
+  "m5": null,
+  "h1": null,
+  "h24": {
+   "buys": 680,
+   "sells": 1027,
+   "buySharePct": 39.84,
+   "buySellRatio": 0.66
+  },
+  "source": "dexscreener",
+  "moneyFlowNote": "5 分钟/1 小时/24 小时买卖笔数只能说买盘笔数占优还是卖盘笔数占优，不能据此定庄家出货还是散户抢筹：Dex 笔数不区分大户还是散户，也不给每笔金额，净流入金额算不出，不编；笔数是 Dex 最深池子那一对的，不是全市场所有池子合计"
+ },
+ "solanaAuthorities": null,
+ "buyTax": 0,
+ "sellTax": 0,
+ "honeypot": false,
+ "renounced": true,
+ "mintable": false,
+ "blacklist": false,
+ "lpLocked": null,
+ "lpBurnPct": null,
+ "lpTopHolder": null,
+ "lpTopHolderPct": null,
+ "lpTopHolderIsContract": null,
+ "lpError": null,
+ "poolAge": null,
+ "marketCapUsd": 31615235.72748085,
+ "totalSupplyTokens": 9999997544.340006,
+ "totalSupplyRaw": "9999997544340006294456944163",
+ "txns5m": null,
+ "txns1h": null,
+ "txns24h": {
+  "buys": 680,
+  "sells": 1027
+ },
+ "totalVolume24hUsd": null,
+ "totalLiquidityUsd": null,
+ "volumePoolRatio": null,
+ "liquidityBase": null,
+ "liquidityQuote": null,
+ "quoteTokenSymbol": null,
+ "priceChange5mPct": null,
+ "priceChange1hPct": null,
+ "swapFeePct": null,
+ "swapFeeError": null,
+ "gasPriceGwei": 0.006002358,
+ "realHolders": null,
+ "allPairs": null,
+ "internalMarket": {
+  "platform": null,
+  "status": "external_only",
+  "externalPools": null,
+  "note": "本链无统一免费内盘接口（Base/ETH 等发射台各异、无统一代理余额法），本版只给外盘多池，内盘不编数"
+ },
+ "multiSource": {
+  "priceDexUsd": null,
+  "priceGeckoUsd": null,
+  "priceDiscrepancyPct": null,
+  "pricePrimary": null,
+  "holdersPro": null,
+  "holdersSecurity": 911158,
+  "holdersLogScan": null,
+  "goplusError": "goplus_code_4029",
+  "honeypotError": null,
+  "queryTimeMs": 2426
+ },
+ "contractQuote": {
+  "four": {
+   "source": "four_helper3",
+   "helper": "0x1172FABbAc4Fe05f5a5Cebd8EBBC593A76c42399",
+   "error": "not_four_token"
+  },
+  "pump": null,
+  "pool": null,
+  "poolError": null,
+  "coingecko": null,
+  "coingeckoError": null,
+  "primaryPriceUsd": 0.0031615243491109717,
+  "primarySource": "dexpaprika",
+  "dexPriceUsd": 0.0031615243491109717,
+  "discrepancyPct": null,
+  "primaryNote": null
+ },
+ "quoteUsd": 0.0031615243491109717,
+ "quoteSource": "dexpaprika",
+ "internalMarketGecko": null,
+ "paidPromotion": {
+  "orders": null,
+  "boosts": null,
+  "hasPaidPromotion": null,
+  "orderTypes": null,
+  "orderStatuses": null,
+  "boostsActive": null,
+  "source": "dexscreener_orders",
+  "error": "dex_orders_status_429",
+  "note": "只覆盖 Dexscreener 付费推广（Boost 与付费订单），X/Telegram/KOL 付费与 Ave/GMGN 付费置顶无公开免费接口，本字段不覆盖"
+ },
+ "backupSources": {
+  "price": [
+   "dexscreener",
+   "geckoterminal",
+   "coingecko_single",
+   "exchange_spot_gate_kraken_coinbase",
+   "evm_pool_known_or_factory"
+  ],
+  "security": [
+   "goplus",
+   "honeypot_is",
+   "etherscan_source"
+  ],
+  "holdersTop10Creator": [
+   "blockscout_pro",
+   "alchemy_logscan",
+   "public_rpc_logscan",
+   "goplus_honeypot_holders"
+  ],
+  "lp": [
+   "alchemy_lp",
+   "public_rpc_lp_burn"
+  ]
+ },
+ "creatorHistory": null,
+ "risk": "green",
+ "riskSource": "honeypot_is",
+ "security": {
+  "source": "honeypot_is",
+  "flags": {
+   "openSource": true,
+   "isProxy": false,
+   "summaryRisk": "low",
+   "simulationSuccess": true,
+   "etherscan": {
+    "mintable": false,
+    "blacklist": false,
+    "sourceScan": {
+     "verified": true,
+     "mintable": false,
+     "blacklist": false,
+     "scannedFrom": "self"
+    }
+   }
+  }
+ },
+ "securityError": null,
+ "bsError": null,
+ "bsProError": "blockscout_pro_token_upstream_status_402_holders_upstream_status_402_address_upstream_status_402",
+ "etherscanError": "creation_NOTOK",
+ "logScan": null,
+ "tradeLinks": {
+  "ave": "https://ave.ai/token/0x532f27101965dd16442E59d40670FaF5eBB142E4-base",
+  "gmgn": "https://gmgn.ai/base/token/0x532f27101965dd16442E59d40670FaF5eBB142E4",
+  "dexscreener": null,
+  "xSearch": "https://x.com/search?q=%24BRETT"
+ }
+}
