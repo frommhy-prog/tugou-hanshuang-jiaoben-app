@@ -421,6 +421,15 @@ p31-kind-sig
 p31-pons-chain
 p31-strip-obs
 p31-val-pad
+p32-boot
+p32-deeplink
+p32-fav-info
+p32-set-alerts
+p32-set-sub
+p32-w-icon
+p32-w-pill
+p32-w-qty
+p32-w-spam
 promo_guard
 promo_state
 rc_hn

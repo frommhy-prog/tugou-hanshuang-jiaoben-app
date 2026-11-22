@@ -8,7 +8,7 @@ struct SettingsView: View {
             Image(systemName: icon).font(.title3).foregroundStyle(Color.accentColor).frame(width: 30)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(.body)
-                Text(sub).font(.caption).foregroundStyle(.secondary)
+                EmptyView()
             }
         }
         .padding(.vertical, 2)
@@ -31,7 +31,8 @@ struct SettingsView: View {
                 }
                 Section("互动") {
                     NavigationLink { GXPageShare() } label: { row("square.and.arrow.up", "分享", "分享哪些内容 · 联系方式") }
-                    NavigationLink { GXPageAlerts() } label: { row("bell.badge", "提醒", "本地通知 · Telegram · Bark · 提醒规则") }
+                    NavigationLink { GXPageAlerts2() } label: { row("bell.badge", "提醒", "") }
+                    NavigationLink { GXScoutSettingsView() } label: { row("dot.radiowaves.left.and.right", "自动找币", "") }
                     NavigationLink { GXPageConnect() } label: { row("link", "连接", "服务令牌 · 连接测试") }
                 }
                 Section("其他") {

@@ -19,7 +19,7 @@ enum GMPx {
     static var sym: String { Money.resolved().0.symbol }
 
     static func sync(_ m: DexPair?) {
-        guard let m = m, let p = m.price, p > 0, let mc = (m.marketCap ?? m.fdv), mc > 0 else { return }
+        guard let m = m, let p = m.price, p > 0, let mc = (GMPx.minCap(m.marketCap, m.fdv)), mc > 0 else { return }
         supply = mc / p
     }
 
@@ -85,7 +85,7 @@ enum GMPx {
     // 头部大数字：价格模式显示价格，市值模式显示市值
     static func headline(_ m: DexPair, mcap: Bool? = nil) -> String {
         let on: Bool = mcap ?? mcapMode
-        if on { return cap(m.marketCap ?? m.fdv) }
+        if on { return cap(GMPx.minCap(m.marketCap, m.fdv)) }
         return m.price.map { usd($0) } ?? "—"
     }
 

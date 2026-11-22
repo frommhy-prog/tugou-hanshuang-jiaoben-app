@@ -369,7 +369,7 @@ struct WalletDetailView: View {
 
     // MARK: 持仓
     private var holdingsSection: some View {
-        let hs = (result?.resp?.merged?.holdings ?? []).filter { $0.spamLikely != true }.sorted { ($0.usd ?? -1) > ($1.usd ?? -1) }
+        let hs = (result?.resp?.merged?.holdings ?? []).filter { $0.spamLikely != true && !GXSpam.looks($0) }.sorted { ($0.usd ?? -1) > ($1.usd ?? -1) }
         return Card {
             VStack(alignment: .leading, spacing: 10) {
                 Label("当前持仓", systemImage: "square.stack.3d.up").font(.headline)
@@ -379,10 +379,11 @@ struct WalletDetailView: View {
                     HStack(alignment: .top) {
                         VStack(alignment: .leading, spacing: 2) {
                             HStack(spacing: 6) {
+                                GXHoldIcon(h: h)
                                 Text(h.symbol ?? "?").font(.subheadline.weight(.semibold))
-                                Pill(text: Chain(rawValue: h.chain ?? "")?.title ?? (h.chain ?? ""), color: Color.blue)
+                                EmptyView()
                             }
-                            Text("数量 " + Fmt2.qty(h.amount)).font(.caption).foregroundStyle(.secondary)
+                            Text(Fmt2.qty(h.amount)).font(.caption).foregroundStyle(.secondary)
                         }
                         Spacer()
                         VStack(alignment: .trailing, spacing: 2) {

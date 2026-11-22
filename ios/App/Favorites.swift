@@ -135,6 +135,8 @@ final class WatchMonitor: ObservableObject {
         let c = UNMutableNotificationContent()
         c.title = it.symbol + " 监控提醒"
         c.body = text
+        c.userInfo = ["chain": it.chain, "address": it.address]
+        c.threadIdentifier = "tstzm"
         c.sound = .default
         let req = UNNotificationRequest(identifier: UUID().uuidString, content: c, trigger: nil)
         UNUserNotificationCenter.current().add(req, withCompletionHandler: nil)

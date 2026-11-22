@@ -21,7 +21,7 @@ MISS gml_jupstudio
 MISS gml_zora
 
 CN_REWRITE 0 
-FMT_SCAN_LEFT 8
+FMT_SCAN_LEFT 10
   ios/App/Avatars.swift:12: case .bsc: return "B"
   ios/App/Avatars.swift:18: case .okc: return "K"
   ios/App/DeepAnalysis.swift:386: Tier(name: "中单 $100–1K", lo: 100, hi: 1000),
@@ -29,5 +29,30 @@ FMT_SCAN_LEFT 8
   ios/App/DeepAnalysis.swift:388: Tier(name: "巨单 ≥ $10K", lo: 10000, hi: Double.greatestFiniteMagnitude),
   ios/App/GMMarks.swift:206: disc(Color(red: 1.0, green: 0.55, blue: 0.1), Color(red: 1.0, green: 0.8, blue: 0.2), "B", Color.white)
   ios/App/GMMarks.swift:221: disc(Color(red: 0.2, green: 0.85, blue: 0.4), Color(red: 0.05, green: 0.55, blue: 0.25), "B", Color.white)
+  ios/App/GXScoutSettings.swift:112: if v >= 1_000_000 { return "$" + String(format: "%g", v / 1_000_000) + "M" }
+  ios/App/GXScoutSettings.swift:113: if v >= 1_000 { return "$" + String(format: "%g", v / 1_000) + "K" }
   ios/App/Prefs.swift:231: f.correctionLevel = "M"
-PATCH_OK (none new)
+CAP_REWRITE 23
+TEXT_SWEEP 44
+LOGOS2:
+OK2   gmc_bob <- https://unavatar.io/x/build_on_bob?fallback=false
+OK2   gmc_coredao <- https://unavatar.io/x/Coredao_Org?fallback=false
+OK2   gmc_flare <- https://unavatar.io/x/FlareNetworks?fallback=false
+OK2   gmc_fraxtal <- https://unavatar.io/x/fraxfinance?fallback=false
+OK2   gmc_lisk <- https://unavatar.io/x/LiskHQ?fallback=false
+OK2   gmc_mode <- https://unavatar.io/x/modenetwork?fallback=false
+OK2   gmc_okc <- https://unavatar.io/x/okx?fallback=false
+OK2   gmc_story <- https://unavatar.io/x/StoryProtocol?fallback=false
+OK2   gmc_taiko <- https://unavatar.io/x/taikoxyz?fallback=false
+OK2   gmc_xlayer <- https://unavatar.io/x/XLayerOfficial?fallback=false
+OK2   gmc_zora <- https://unavatar.io/x/zora?fallback=false
+OK2   gmd_lifinity <- https://unavatar.io/x/Lifinity_io?fallback=false
+OK2   gmd_phoenix <- https://unavatar.io/x/PhoenixTrade?fallback=false
+OK2   gml_believe <- https://unavatar.io/x/believeapp?fallback=false
+OK2   gml_boop <- https://unavatar.io/x/boopdotfun?fallback=false
+OK2   gml_daos <- https://unavatar.io/x/daosdotfun?fallback=false
+OK2   gml_jupstudio <- https://unavatar.io/x/JupiterExchange?fallback=false
+OK2   gml_zora <- https://unavatar.io/x/zora?fallback=false
+SUMMARY2 ok=18
+
+PATCH_OK p32-fav-info p32-set-sub p32-set-alerts p32-boot p32-deeplink p32-w-spam p32-w-icon p32-w-pill p32-w-qty

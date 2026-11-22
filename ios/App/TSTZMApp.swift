@@ -9,7 +9,7 @@ struct TSTZMApp: App {
     @Environment(\.scenePhase) private var phase
     @UIApplicationDelegateAdaptor(TSTZAppDelegate.self) private var appDelegate
 
-    init() { TZ.apply(); SourceHub.install(); GateNet.install() } // 启动即应用统一时区，并开启请求日志
+    init() { TZ.apply(); SourceHub.install(); GateNet.install(); GXNote.boot() } // 启动即应用统一时区，并开启请求日志
 
     var body: some Scene {
         WindowGroup {
@@ -57,6 +57,11 @@ enum Deeplink {
     static func handle(_ url: URL) {
         guard url.scheme == "tstzm" else { return }
         let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+        if url.host == "token", let a = items.first(where: { $0.name == "address" })?.value, !a.isEmpty {
+            let ch = items.first(where: { $0.name == "chain" })?.value
+            Task { @MainActor in GXOpen.token(chain: ch, address: a) }
+            return
+        }
         if url.host == "setup" {
             if let t = items.first(where: { $0.name == "token" })?.value, !t.isEmpty { Cfg.token = t }
             if let b = items.first(where: { $0.name == "base" })?.value, !b.isEmpty { Cfg.base = b }
